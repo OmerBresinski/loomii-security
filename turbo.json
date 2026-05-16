@@ -1,17 +1,42 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "globalDependencies": [".env"],
+  "globalEnv": [
+    "NODE_ENV",
+    "DATABASE_URL",
+    "REDIS_URL"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**"],
+      "env": [
+        "WORKOS_*",
+        "LINEAR_*",
+        "NOTION_*",
+        "AWS_*",
+        "ENCRYPTION_KEY",
+        "API_PORT",
+        "FRONTEND_URL",
+        "CORS_ORIGIN"
+      ]
     },
     "dev": {
       "cache": false,
       "persistent": true
     },
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "env": [
+        "WORKOS_*",
+        "LINEAR_*",
+        "NOTION_*",
+        "AWS_*",
+        "ENCRYPTION_KEY",
+        "API_PORT",
+        "FRONTEND_URL",
+        "CORS_ORIGIN"
+      ]
     },
     "lint": {
       "dependsOn": ["^build"]
