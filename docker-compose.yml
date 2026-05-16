@@ -1,0 +1,95 @@
+services:
+  # ============================================
+  # Infrastructure
+  # ============================================
+  postgres:
+    image: pgvector/pgvector:pg16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: loomii
+      POSTGRES_PASSWORD: loomii_dev
+      POSTGRES_DB: loomii
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U loomii -d loomii"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ============================================
+  # Backend Services
+  # ============================================
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: development
+      API_PORT: 3000
+      DATABASE_URL: postgresql://loomii:loomii_dev@postgres:5432/loomii
+      REDIS_URL: redis://redis:6379
+      FRONTEND_URL: http://localhost:5173
+      CORS_ORIGIN: http://localhost:5173
+      WORKOS_API_KEY: sk_test_placeholder
+      WORKOS_CLIENT_ID: client_placeholder
+      WORKOS_REDIRECT_URI: http://localhost:3000/auth/callback
+      LINEAR_CLIENT_ID: linear_placeholder
+      LINEAR_CLIENT_SECRET: linear_secret_placeholder
+      LINEAR_REDIRECT_URI: http://localhost:3000/integrations/linear/callback
+      LINEAR_WEBHOOK_SECRET: webhook_secret_placeholder
+      NOTION_CLIENT_ID: notion_placeholder
+      NOTION_CLIENT_SECRET: notion_secret_placeholder
+      NOTION_REDIRECT_URI: http://localhost:3000/integrations/notion/callback
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: placeholder
+      AWS_SECRET_ACCESS_KEY: placeholder
+      ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "bun -e \"fetch('http://localhost:3000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+
+  workers:
+    build:
+      context: .
+      dockerfile: apps/workers/Dockerfile
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://loomii:loomii_dev@postgres:5432/loomii
+      REDIS_URL: redis://redis:6379
+      ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    stop_signal: SIGTERM
+    stop_grace_period: 10s
+
+volumes:
+  postgres_data:
+  redis_data:
