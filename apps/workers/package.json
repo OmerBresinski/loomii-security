@@ -1,0 +1,15 @@
+{
+  "name": "@loomii/workers",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "bun build ./src/index.ts --outdir ./dist --target bun",
+    "dev": "bun run --watch src/index.ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@loomii/db": "workspace:*",
+    "@loomii/shared": "workspace:*",
+    "@loomii/queue": "workspace:*"
+  }
+}
