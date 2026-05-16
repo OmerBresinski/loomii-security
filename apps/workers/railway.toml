@@ -1,0 +1,9 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "apps/workers/Dockerfile"
+watchPatterns = ["apps/workers/**", "packages/**", "package.json", "bun.lock", "turbo.json"]
+
+[deploy]
+startCommand = "bun run apps/workers/src/index.ts"
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
