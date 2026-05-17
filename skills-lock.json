@@ -48,6 +48,12 @@
       "sourceType": "github",
       "skillPath": "plugins/railway/skills/use-railway/SKILL.md",
       "computedHash": "1588856eb874891ee51ecc5584dc79cdd19c32f99e097f40fe60a03a9a94a9d1"
+    },
+    "workos": {
+      "source": "workos/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/workos/skills/workos/SKILL.md",
+      "computedHash": "ff8d5d307edb2e3c173f98215a405e50f7154de0bc295d8a87abc2e10b89b287"
     }
   }
 }
