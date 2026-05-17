@@ -87,7 +87,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
     let dbUser = userStore.get(userKey);
     if (!dbUser) {
       // Check if this is the first user for this tenant
-      const isFirstUser = ![...userStore.values()].some(
+      const isFirstUser = !Array.from(userStore.values()).some(
         (u) => u.tenantId === tenant!.id
       );
 
