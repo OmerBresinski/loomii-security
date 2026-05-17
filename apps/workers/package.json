@@ -5,7 +5,7 @@
   "scripts": {
     "build": "true",
     "dev": "bun run --watch src/index.ts",
-    "test": "bun test",
+    "test": "bun test --env-file=../../.env",
     "clean": "rm -rf dist"
   },
   "dependencies": {
