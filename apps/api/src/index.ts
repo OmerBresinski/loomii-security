@@ -4,6 +4,8 @@ import { validateEnv } from "./lib/env";
 import { requestId } from "./middleware/request-id";
 import { loggerMiddleware, logger } from "./middleware/logger";
 import { errorHandler } from "./middleware/error-handler";
+import { authMiddleware } from "./middleware/auth";
+import { rateLimiter } from "./middleware/rate-limit";
 import { healthRoute } from "./routes/health";
 import { v1Routes } from "./routes/v1/index";
 
@@ -24,15 +26,17 @@ app.use(
     origin: env.CORS_ORIGIN,
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type", "Authorization", "X-Request-ID"],
-    exposeHeaders: ["X-Request-ID"],
+    exposeHeaders: ["X-Request-ID", "X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
     credentials: true,
   })
 );
 
-// Public routes
+// Public routes (no auth required)
 app.route("/", healthRoute);
 
-// API v1 routes (auth middleware will be added in a separate task)
+// Protected routes - auth + rate limiting
+app.use("/api/*", authMiddleware);
+app.use("/api/*", rateLimiter);
 app.route("/api/v1", v1Routes);
 
 // 404 handler
