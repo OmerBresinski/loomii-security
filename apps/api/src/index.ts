@@ -7,6 +7,7 @@ import { errorHandler } from "./middleware/error-handler";
 import { authMiddleware } from "./middleware/auth";
 import { rateLimiter } from "./middleware/rate-limit";
 import { healthRoute } from "./routes/health";
+import { authRoutes } from "./routes/auth";
 import { v1Routes } from "./routes/v1/index";
 
 // Validate environment variables on startup (fail fast)
@@ -33,6 +34,7 @@ app.use(
 
 // Public routes (no auth required)
 app.route("/", healthRoute);
+app.route("/", authRoutes);
 
 // Protected routes - auth + rate limiting
 app.use("/api/*", authMiddleware);
