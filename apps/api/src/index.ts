@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { execSync } from "child_process";
 import { validateEnv } from "./lib/env";
 import { requestId } from "./middleware/request-id";
 import { loggerMiddleware, logger } from "./middleware/logger";
@@ -12,6 +13,21 @@ import { v1Routes } from "./routes/v1/index";
 
 // Validate environment variables on startup (fail fast)
 const env = validateEnv();
+
+// Run database migrations on startup (production)
+if (env.NODE_ENV === "production") {
+  try {
+    logger.info("Running database migrations...");
+    execSync("cd packages/db && bunx --bun prisma migrate deploy", {
+      stdio: "inherit",
+      cwd: process.cwd(),
+    });
+    logger.info("Database migrations completed");
+  } catch (error) {
+    logger.error({ error }, "Database migration failed");
+    process.exit(1);
+  }
+}
 
 const app = new Hono();
 
