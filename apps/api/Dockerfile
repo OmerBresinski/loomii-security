@@ -1,7 +1,7 @@
 # ============================================
 # Stage 1: Install + Build (validation)
 # ============================================
-FROM oven/bun:1.2 AS builder
+FROM oven/bun:1 AS builder
 
 WORKDIR /app
 
@@ -27,7 +27,7 @@ RUN bunx turbo build --filter=@loomii/api...
 # ============================================
 # Stage 2: Production runtime
 # ============================================
-FROM oven/bun:1.2-slim AS runner
+FROM oven/bun:1-slim AS runner
 
 WORKDIR /app
 
