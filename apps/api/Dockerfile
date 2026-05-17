@@ -33,9 +33,9 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Create non-root user
-RUN addgroup --system --gid 1001 loomii && \
-    adduser --system --uid 1001 loomii
+# Create non-root user (using groupadd/useradd available in slim)
+RUN groupadd --system --gid 1001 loomii && \
+    useradd --system --uid 1001 --gid loomii loomii
 
 # Copy workspace config
 COPY --from=builder /app/package.json ./
