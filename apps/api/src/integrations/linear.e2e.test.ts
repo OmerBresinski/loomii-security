@@ -40,7 +40,7 @@ describe("E2E: Linear Integration", () => {
       const url = getLinearAuthorizationUrl("state");
       const parsed = new URL(url);
       expect(parsed.searchParams.get("client_id")).toBe(
-        process.env.LINEAR_CLIENT_ID
+        process.env.LINEAR_CLIENT_ID!
       );
     });
 
@@ -48,7 +48,7 @@ describe("E2E: Linear Integration", () => {
       const url = getLinearAuthorizationUrl("state");
       const parsed = new URL(url);
       expect(parsed.searchParams.get("redirect_uri")).toBe(
-        process.env.LINEAR_REDIRECT_URI
+        process.env.LINEAR_REDIRECT_URI!
       );
     });
 
