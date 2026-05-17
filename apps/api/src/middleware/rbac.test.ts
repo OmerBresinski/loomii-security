@@ -1,15 +1,16 @@
 import { describe, it, expect } from "bun:test";
 import { Hono } from "hono";
+import type { AppEnv } from "../lib/types";
 import { requireRole } from "./rbac";
 import { requestId } from "./request-id";
 
 function createApp(allowedRoles: string[], userRole: string | undefined) {
-  const app = new Hono();
+  const app = new Hono<AppEnv>();
   app.use("*", requestId);
   // Simulate auth middleware setting role
   app.use("*", async (c, next) => {
     if (userRole) {
-      c.set("role", userRole);
+      c.set("role", userRole as any);
     }
     await next();
   });

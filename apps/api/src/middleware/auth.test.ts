@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, mock } from "bun:test";
 import { Hono } from "hono";
+import type { AppEnv } from "../lib/types";
 import { requestId } from "./request-id";
 
 // Mock WorkOS responses
@@ -21,14 +22,14 @@ mock.module("@workos-inc/node", () => ({
 const { authMiddleware, _resetStores } = await import("./auth");
 
 describe("authMiddleware", () => {
-  let app: Hono;
+  let app: Hono<AppEnv>;
 
   beforeEach(() => {
     _resetStores();
     mockAuthResult = null;
     mockAuthError = null;
 
-    app = new Hono();
+    app = new Hono<AppEnv>();
     app.use("*", requestId);
     app.use("*", authMiddleware);
     app.get("/api/test", (c) => {

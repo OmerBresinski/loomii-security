@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, mock } from "bun:test";
 import { Hono } from "hono";
+import type { AppEnv } from "../lib/types";
 import { requestId } from "./request-id";
 
 // Track call count per key to simulate Redis INCR
@@ -31,12 +32,12 @@ mock.module("@loomii/queue", () => ({
 const { rateLimiter } = await import("./rate-limit");
 
 describe("rateLimiter", () => {
-  let app: Hono;
+  let app: Hono<AppEnv>;
 
   beforeEach(() => {
     redisStore = {};
 
-    app = new Hono();
+    app = new Hono<AppEnv>();
     app.use("*", requestId);
     // Simulate auth middleware setting userId
     app.use("*", async (c, next) => {
@@ -96,7 +97,7 @@ describe("rateLimiter", () => {
 
   it("different users have independent limits", async () => {
     // Create a second app with different user
-    const app2 = new Hono();
+    const app2 = new Hono<AppEnv>();
     app2.use("*", requestId);
     app2.use("*", async (c, next) => {
       c.set("userId", "user_456");
