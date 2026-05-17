@@ -1,6 +1,7 @@
 import type { Job, Processor } from "bullmq";
 import { QUEUE_NAMES, type QueueName } from "@loomii/queue";
 import { logger } from "../lib/logger";
+import { processNotionPolling } from "./notion-polling";
 
 /**
  * Processor registry - maps queue names to their job processor functions.
@@ -37,9 +38,7 @@ export const processors: Record<QueueName, Processor> = {
   [QUEUE_NAMES.EMBEDDING_GENERATION]: createPlaceholderProcessor(
     QUEUE_NAMES.EMBEDDING_GENERATION
   ),
-  [QUEUE_NAMES.NOTION_POLLING]: createPlaceholderProcessor(
-    QUEUE_NAMES.NOTION_POLLING
-  ),
+  [QUEUE_NAMES.NOTION_POLLING]: processNotionPolling as Processor,
   [QUEUE_NAMES.INTEGRATION_HEALTH]: createPlaceholderProcessor(
     QUEUE_NAMES.INTEGRATION_HEALTH
   ),
