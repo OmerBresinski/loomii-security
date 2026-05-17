@@ -23,10 +23,11 @@ const envSchema = z.object({
   NOTION_CLIENT_SECRET: z.string().min(1, "NOTION_CLIENT_SECRET is required"),
   NOTION_REDIRECT_URI: z.string().url("NOTION_REDIRECT_URI must be a valid URL"),
 
-  // AWS Bedrock
+  // AWS Bedrock (bearer token OR access key/secret)
   AWS_REGION: z.string().min(1, "AWS_REGION is required"),
-  AWS_ACCESS_KEY_ID: z.string().min(1, "AWS_ACCESS_KEY_ID is required"),
-  AWS_SECRET_ACCESS_KEY: z.string().min(1, "AWS_SECRET_ACCESS_KEY is required"),
+  AWS_BEARER_TOKEN_BEDROCK: z.string().optional(),
+  AWS_ACCESS_KEY_ID: z.string().optional(),
+  AWS_SECRET_ACCESS_KEY: z.string().optional(),
 
   // Encryption
   ENCRYPTION_KEY: z
