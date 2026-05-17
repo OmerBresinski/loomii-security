@@ -1,6 +1,7 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { validateEnv } from "./lib/env";
+import type { AppEnv } from "./lib/types";
 import { requestId } from "./middleware/request-id";
 import { loggerMiddleware, logger } from "./middleware/logger";
 import { errorHandler } from "./middleware/error-handler";
@@ -13,7 +14,7 @@ import { v1Routes } from "./routes/v1/index";
 // Validate environment variables on startup (fail fast)
 const env = validateEnv();
 
-const app = new Hono();
+const app = new Hono<AppEnv>();
 
 // Global error handler
 app.onError(errorHandler);
@@ -43,7 +44,7 @@ app.route("/api/v1", v1Routes);
 
 // 404 handler
 app.notFound((c) => {
-  const requestId = c.get("requestId") as string;
+  const requestId = c.get("requestId");
   return c.json(
     {
       error: {
