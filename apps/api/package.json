@@ -9,6 +9,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@linear/sdk": "^84.0.0",
     "@loomii/db": "workspace:*",
     "@loomii/queue": "workspace:*",
     "@loomii/shared": "workspace:*",

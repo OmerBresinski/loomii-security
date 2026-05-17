@@ -8,8 +8,8 @@
 const LINEAR_AUTHORIZE_URL = "https://linear.app/oauth/authorize";
 const LINEAR_TOKEN_URL = "https://api.linear.app/oauth/token";
 
-/** Required scopes for Loomii's Linear integration */
-const SCOPES = ["read", "write", "issues:create", "comments:create"];
+/** Required scopes for Loomii's Linear integration (read-only access to workspace) */
+const SCOPES = ["read"];
 
 interface LinearOAuthConfig {
   clientId: string;
@@ -21,7 +21,8 @@ interface LinearTokenResponse {
   access_token: string;
   token_type: string;
   expires_in?: number;
-  scope: string[];
+  scope: string | string[];
+  refresh_token?: string;
 }
 
 function getConfig(): LinearOAuthConfig {
