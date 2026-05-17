@@ -15,20 +15,22 @@ import { describe, it, expect, beforeAll } from "bun:test";
 import { bedrock, MODELS, createBedrockAgent } from "./bedrock";
 import { generateText } from "ai";
 
-describe("E2E: Bedrock + Mastra Agent", () => {
-  beforeAll(() => {
-    const hasBearer = !!process.env.AWS_BEARER_TOKEN_BEDROCK;
-    const hasKeys =
-      !!process.env.AWS_ACCESS_KEY_ID &&
-      !!process.env.AWS_SECRET_ACCESS_KEY &&
-      process.env.AWS_ACCESS_KEY_ID !== "placeholder";
+const hasBearer = !!process.env.AWS_BEARER_TOKEN_BEDROCK;
+const hasKeys =
+  !!process.env.AWS_ACCESS_KEY_ID &&
+  !!process.env.AWS_SECRET_ACCESS_KEY &&
+  process.env.AWS_ACCESS_KEY_ID !== "placeholder";
+const hasCredentials = hasBearer || hasKeys;
 
-    if (!hasBearer && !hasKeys) {
-      throw new Error(
-        "AWS credentials not configured. Set AWS_BEARER_TOKEN_BEDROCK or AWS_ACCESS_KEY_ID+AWS_SECRET_ACCESS_KEY in .env",
-      );
-    }
-  });
+const describeE2E = hasCredentials ? describe : describe.skip;
+
+if (!hasCredentials) {
+  console.log(
+    "⚠️  Skipping E2E Bedrock tests: AWS credentials not configured"
+  );
+}
+
+describeE2E("E2E: Bedrock + Mastra Agent", () => {
 
   describe("Bedrock provider initialization", () => {
     it("creates a bedrock provider instance", () => {

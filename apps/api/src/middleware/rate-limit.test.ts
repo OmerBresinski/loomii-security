@@ -26,6 +26,36 @@ mock.module("@loomii/queue", () => ({
       _key: "",
     }),
   }),
+  // Re-export all queue symbols to prevent "export not found" errors
+  // when other modules in the same test process import @loomii/queue
+  eventsQueue: { add: () => Promise.resolve({ id: "mock" }) },
+  contextAssemblyQueue: { add: () => Promise.resolve({ id: "mock" }) },
+  riskClassificationQueue: { add: () => Promise.resolve({ id: "mock" }) },
+  embeddingQueue: { add: () => Promise.resolve({ id: "mock" }) },
+  notionPollingQueue: { add: () => Promise.resolve({ id: "mock" }) },
+  integrationHealthQueue: { add: () => Promise.resolve({ id: "mock" }) },
+  reviewQueue: { add: () => Promise.resolve({ id: "mock" }) },
+  threatModelQueue: { add: () => Promise.resolve({ id: "mock" }) },
+  QUEUE_NAMES: {
+    CONTEXT_ASSEMBLY: "context-assembly",
+    RISK_CLASSIFICATION: "risk-classification",
+    EMBEDDING_GENERATION: "embedding-generation",
+    NOTION_POLLING: "notion-polling",
+    INTEGRATION_HEALTH: "integration-health",
+    REVIEW_GENERATION: "review-generation",
+    THREAT_MODEL_UPDATE: "threat-model-update",
+    EVENTS: "events",
+  },
+  ALL_QUEUE_NAMES: [
+    "context-assembly",
+    "risk-classification",
+    "embedding-generation",
+    "notion-polling",
+    "integration-health",
+    "review-generation",
+    "threat-model-update",
+    "events",
+  ],
 }));
 
 // Import after mocking

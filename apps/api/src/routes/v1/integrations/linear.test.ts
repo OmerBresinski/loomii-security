@@ -98,6 +98,35 @@ mock.module("@loomii/db", () => ({ db: mockDb }));
 mock.module("@loomii/queue", () => ({
   eventsQueue: mockEventsQueue,
   createRedisConnection: () => mockRedis,
+  // Re-export other queue symbols to prevent "export not found" when other
+  // modules in the same test process import @loomii/queue
+  contextAssemblyQueue: { add: mock() },
+  riskClassificationQueue: { add: mock() },
+  embeddingQueue: { add: mock() },
+  notionPollingQueue: { add: mock() },
+  integrationHealthQueue: { add: mock() },
+  reviewQueue: { add: mock() },
+  threatModelQueue: { add: mock() },
+  QUEUE_NAMES: {
+    CONTEXT_ASSEMBLY: "context-assembly",
+    RISK_CLASSIFICATION: "risk-classification",
+    EMBEDDING_GENERATION: "embedding-generation",
+    NOTION_POLLING: "notion-polling",
+    INTEGRATION_HEALTH: "integration-health",
+    REVIEW_GENERATION: "review-generation",
+    THREAT_MODEL_UPDATE: "threat-model-update",
+    EVENTS: "events",
+  },
+  ALL_QUEUE_NAMES: [
+    "context-assembly",
+    "risk-classification",
+    "embedding-generation",
+    "notion-polling",
+    "integration-health",
+    "review-generation",
+    "threat-model-update",
+    "events",
+  ],
 }));
 mock.module("@loomii/shared", () => ({
   encrypt: (text: string) => `encrypted:${text.slice(0, 8)}...`,

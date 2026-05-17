@@ -17,15 +17,19 @@ import {
   LINEAR_AUTHORIZE_URL,
 } from "./linear";
 
-describe("E2E: Linear Integration", () => {
-  beforeAll(() => {
-    if (!process.env.LINEAR_CLIENT_ID || !process.env.LINEAR_CLIENT_SECRET) {
-      throw new Error(
-        "Linear credentials not configured. Set LINEAR_CLIENT_ID and LINEAR_CLIENT_SECRET in .env"
-      );
-    }
-  });
+const hasCredentials = !!(
+  process.env.LINEAR_CLIENT_ID && process.env.LINEAR_CLIENT_SECRET
+);
 
+const describeE2E = hasCredentials ? describe : describe.skip;
+
+if (!hasCredentials) {
+  console.log(
+    "⚠️  Skipping E2E Linear tests: LINEAR_CLIENT_ID and LINEAR_CLIENT_SECRET not set"
+  );
+}
+
+describeE2E("E2E: Linear Integration", () => {
   describe("OAuth authorization URL generation", () => {
     it("generates a valid Linear authorization URL", () => {
       const state = "test-csrf-token-123";
