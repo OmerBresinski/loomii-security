@@ -16,7 +16,7 @@ COPY packages/shared/package.json ./packages/shared/
 COPY packages/queue/package.json ./packages/queue/
 
 # Install all dependencies
-RUN bun install --frozen-lockfile
+RUN bun install
 
 # Copy source code
 COPY . .
@@ -56,7 +56,7 @@ COPY --from=builder /app/packages/queue/src ./packages/queue/src
 COPY --from=builder /app/tooling ./tooling
 
 # Install dependencies fresh (creates correct symlinks for this container)
-RUN bun install --frozen-lockfile
+RUN bun install
 
 USER loomii
 
