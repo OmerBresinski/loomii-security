@@ -33,10 +33,6 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Create non-root user (using groupadd/useradd available in slim)
-RUN groupadd --system --gid 1001 loomii && \
-    useradd --system --uid 1001 --gid loomii loomii
-
 # Copy workspace config
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/bun.lock ./
@@ -57,10 +53,11 @@ COPY --from=builder /app/packages/queue/package.json ./packages/queue/package.js
 COPY --from=builder /app/packages/queue/src ./packages/queue/src
 COPY --from=builder /app/tooling ./tooling
 
-# Install dependencies fresh (creates correct symlinks for this container)
+# Install dependencies (creates correct symlinks for this container)
 RUN bun install
 
-USER loomii
+# Generate Prisma client (needed for both app and migrations)
+RUN cd packages/db && bunx --bun prisma generate
 
 EXPOSE 3000
 
