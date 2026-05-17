@@ -39,16 +39,31 @@ export const authMiddleware = createMiddleware(async (c, next) => {
     const workos = getWorkOS();
 
     // Verify the session token with WorkOS
-    const { user, organizationId } = await workos.userManagement.authenticateWithSessionCookie({
+    const authResult = await workos.userManagement.authenticateWithSessionCookie({
       sessionData: token,
     });
 
-    if (!user || !organizationId) {
+    if (!authResult.authenticated) {
       return c.json(
         {
           error: {
             code: "UNAUTHORIZED",
             message: "Invalid session token",
+            requestId: c.get("requestId") as string,
+          },
+        },
+        401
+      );
+    }
+
+    const { user, organizationId } = authResult;
+
+    if (!organizationId) {
+      return c.json(
+        {
+          error: {
+            code: "UNAUTHORIZED",
+            message: "No organization associated with session",
             requestId: c.get("requestId") as string,
           },
         },

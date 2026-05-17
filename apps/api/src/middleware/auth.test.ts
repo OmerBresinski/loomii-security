@@ -74,6 +74,7 @@ describe("authMiddleware", () => {
 
   it("sets context for valid token", async () => {
     mockAuthResult = {
+      authenticated: true,
       user: {
         id: "user_001",
         email: "alice@example.com",
@@ -97,6 +98,7 @@ describe("authMiddleware", () => {
 
   it("creates tenant on first org login and assigns ADMIN", async () => {
     mockAuthResult = {
+      authenticated: true,
       user: {
         id: "user_first",
         email: "founder@startup.com",
@@ -119,6 +121,7 @@ describe("authMiddleware", () => {
   it("assigns DEVELOPER to subsequent users from same org", async () => {
     // First user creates tenant as ADMIN
     mockAuthResult = {
+      authenticated: true,
       user: {
         id: "user_admin",
         email: "admin@company.com",
@@ -133,6 +136,7 @@ describe("authMiddleware", () => {
 
     // Second user from same org
     mockAuthResult = {
+      authenticated: true,
       user: {
         id: "user_dev",
         email: "dev@company.com",
