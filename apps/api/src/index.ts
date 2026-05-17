@@ -10,6 +10,7 @@ import { rateLimiter } from "./middleware/rate-limit";
 import { healthRoute } from "./routes/health";
 import { authRoutes } from "./routes/auth";
 import { v1Routes } from "./routes/v1/index";
+import { linearWebhookRoute } from "./routes/webhooks/linear";
 
 // Validate environment variables on startup (fail fast)
 const env = validateEnv();
@@ -36,6 +37,7 @@ app.use(
 // Public routes (no auth required)
 app.route("/", healthRoute);
 app.route("/", authRoutes);
+app.route("/webhooks/linear", linearWebhookRoute);
 
 // Protected routes - auth + rate limiting
 app.use("/api/*", authMiddleware);

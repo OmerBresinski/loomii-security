@@ -1,0 +1,5 @@
+[test]
+# Bun runs all discovered test files in a single process, which causes
+# mock.module() pollution across workspace boundaries. Restrict root-level
+# `bun test` to apps/ only. Use `bun run test` (turbo) for the full suite.
+root = "apps"
