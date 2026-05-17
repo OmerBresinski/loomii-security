@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@ai-sdk/amazon-bedrock": "^4.0.107",
+    "@linear/sdk": "^84.0.0",
     "@loomii/db": "workspace:*",
     "@loomii/queue": "workspace:*",
     "@loomii/shared": "workspace:*",

@@ -2,6 +2,7 @@ import type { Job, Processor } from "bullmq";
 import { QUEUE_NAMES, type QueueName } from "@loomii/queue";
 import { logger } from "../lib/logger";
 import { processNotionPolling } from "./notion-polling";
+import { processContextAssembly } from "./context-assembly";
 
 /**
  * Processor registry - maps queue names to their job processor functions.
@@ -29,9 +30,7 @@ const createPlaceholderProcessor = (queueName: string): Processor => {
 };
 
 export const processors: Record<QueueName, Processor> = {
-  [QUEUE_NAMES.CONTEXT_ASSEMBLY]: createPlaceholderProcessor(
-    QUEUE_NAMES.CONTEXT_ASSEMBLY
-  ),
+  [QUEUE_NAMES.CONTEXT_ASSEMBLY]: processContextAssembly as Processor,
   [QUEUE_NAMES.RISK_CLASSIFICATION]: createPlaceholderProcessor(
     QUEUE_NAMES.RISK_CLASSIFICATION
   ),
