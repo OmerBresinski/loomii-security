@@ -6,9 +6,19 @@
   "types": "./src/index.ts",
   "scripts": {
     "build": "true",
-    "dev": "bun run --watch src/index.ts",
-    "db:generate": "echo 'prisma generate placeholder'",
-    "db:migrate": "echo 'prisma migrate placeholder'",
+    "db:generate": "bunx --bun prisma generate",
+    "db:migrate": "bunx --bun prisma migrate deploy",
+    "db:migrate:dev": "bunx --bun prisma migrate dev",
+    "db:studio": "bunx --bun prisma studio",
+    "db:push": "bunx --bun prisma db push",
     "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "prisma": "^7.8.0"
   }
 }

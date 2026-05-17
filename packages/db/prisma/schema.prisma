@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ===========================================
+// Enums
+// ===========================================
+
+enum Role {
+  ADMIN
+  SECURITY_LEAD
+  DEVELOPER
+  VIEWER
+}
+
+enum IntegrationProvider {
+  LINEAR
+  NOTION
+}
+
+enum IntegrationStatus {
+  ACTIVE
+  DISCONNECTED
+  ERROR
+  PENDING
+}
+
+enum EventStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum RiskLevel {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum BundleStatus {
+  ASSEMBLING
+  READY
+  REVIEWING
+  COMPLETED
+  FAILED
+}
+
+// ===========================================
+// Models
+// ===========================================
+
+model Tenant {
+  id         String   @id @default(cuid())
+  name       String
+  workosOrgId String  @unique @map("workos_org_id")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  users          User[]
+  integrations   Integration[]
+  events         Event[]
+  contextBundles ContextBundle[]
+  embeddings     Embedding[]
+
+  @@map("tenants")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  tenantId     String   @map("tenant_id")
+  workosUserId String   @map("workos_user_id")
+  email        String
+  firstName    String?  @map("first_name")
+  lastName     String?  @map("last_name")
+  role         Role     @default(DEVELOPER)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, workosUserId])
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+model Integration {
+  id              String             @id @default(cuid())
+  tenantId        String             @map("tenant_id")
+  provider        IntegrationProvider
+  status          IntegrationStatus  @default(PENDING)
+  externalId      String?            @map("external_id")
+  accessToken     String?            @map("access_token")   // Encrypted
+  refreshToken    String?            @map("refresh_token")  // Encrypted
+  tokenExpiresAt  DateTime?          @map("token_expires_at")
+  metadata        Json?
+  lastSyncAt      DateTime?          @map("last_sync_at")
+  lastSyncCursor  String?            @map("last_sync_cursor")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+
+  // Relations
+  tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  events Event[]
+
+  @@unique([tenantId, provider])
+  @@index([tenantId])
+  @@index([status])
+  @@map("integrations")
+}
+
+model Event {
+  id             String      @id @default(cuid())
+  tenantId       String      @map("tenant_id")
+  integrationId  String      @map("integration_id")
+  source         IntegrationProvider
+  externalId     String      @map("external_id")
+  type           String      // e.g., "issue.created", "page.updated"
+  status         EventStatus @default(PENDING)
+  payload        Json
+  processedAt    DateTime?   @map("processed_at")
+  errorMessage   String?     @map("error_message")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  integration   Integration   @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  contextBundle ContextBundle?
+
+  @@unique([tenantId, source, externalId, type])
+  @@index([tenantId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("events")
+}
+
+model ContextBundle {
+  id           String       @id @default(cuid())
+  tenantId     String       @map("tenant_id")
+  eventId      String       @unique @map("event_id")
+  status       BundleStatus @default(ASSEMBLING)
+  riskLevel    RiskLevel?   @map("risk_level")
+  title        String?
+  summary      String?
+  content      Json?        // Assembled context for LLM review
+  reviewOutput Json?        @map("review_output")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([riskLevel])
+  @@index([createdAt])
+  @@map("context_bundles")
+}
+
+model Embedding {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  documentId String   @map("document_id")
+  chunk      Int      @default(0)
+  content    String   // Original text content
+  vector     Unsupported("vector(1024)")
+  metadata   Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, documentId, chunk])
+  @@index([tenantId])
+  @@map("embeddings")
+}

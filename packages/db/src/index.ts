@@ -1,4 +1,48 @@
-// @loomii/db - Database package placeholder
-// Will be replaced with Prisma client exports
+import { PrismaClient } from "@prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 
-export const db = {};
+// Create PostgreSQL connection pool
+const pool = new pg.Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+// Create Prisma adapter
+const adapter = new PrismaPg(pool);
+
+// Singleton PrismaClient instance
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+
+export const db =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    adapter,
+    log: process.env.NODE_ENV === "development" ? ["query", "warn", "error"] : ["error"],
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = db;
+}
+
+// Re-export Prisma types and client
+export { PrismaClient } from "@prisma/client";
+export type {
+  Tenant,
+  User,
+  Integration,
+  Event,
+  ContextBundle,
+  Embedding,
+} from "@prisma/client";
+export {
+  Role,
+  IntegrationProvider,
+  IntegrationStatus,
+  EventStatus,
+  RiskLevel,
+  BundleStatus,
+} from "@prisma/client";
+
+// Export pgvector helpers
+export { vectorSearch, insertEmbedding } from "./extensions/pgvector";
+export type { VectorSearchOptions, VectorSearchResult } from "./extensions/pgvector";
