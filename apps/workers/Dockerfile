@@ -49,6 +49,8 @@ COPY --from=builder /app/apps/workers/src ./apps/workers/src
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 COPY --from=builder /app/packages/db/package.json ./packages/db/package.json
 COPY --from=builder /app/packages/db/src ./packages/db/src
+COPY --from=builder /app/packages/db/prisma ./packages/db/prisma
+COPY --from=builder /app/packages/db/prisma.config.ts ./packages/db/prisma.config.ts
 COPY --from=builder /app/packages/shared/package.json ./packages/shared/package.json
 COPY --from=builder /app/packages/shared/src ./packages/shared/src
 COPY --from=builder /app/packages/queue/package.json ./packages/queue/package.json
@@ -57,6 +59,9 @@ COPY --from=builder /app/tooling ./tooling
 
 # Install dependencies fresh (creates correct symlinks for this container)
 RUN bun install
+
+# Generate Prisma client (required for @loomii/db to resolve .prisma/client)
+RUN cd packages/db && bunx --bun prisma generate
 
 USER loomii
 
