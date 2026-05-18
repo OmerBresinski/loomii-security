@@ -9,12 +9,14 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@ai-sdk/amazon-bedrock": "^4.0.107",
     "@linear/sdk": "^84.0.0",
     "@loomii/db": "workspace:*",
     "@loomii/queue": "workspace:*",
     "@loomii/shared": "workspace:*",
     "@notionhq/client": "^5.21.0",
     "@workos-inc/node": "^9.3.0",
+    "ai": "^6.0.185",
     "hono": "^4.12.19",
     "ioredis": "^5.10.1",
     "pino": "^10.3.1",

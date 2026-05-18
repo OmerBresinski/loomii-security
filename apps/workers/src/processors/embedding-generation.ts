@@ -101,19 +101,21 @@ async function generateAndStore(
 
   // 3. Upsert embeddings into DB
   // Uses ON CONFLICT (tenant_id, document_id, chunk) DO UPDATE to replace old versions
-  for (const result of embeddingResults) {
-    const id = `${tenantId}_${documentId}_${result.index}`;
-
-    await insertEmbedding(db, {
-      id,
-      tenantId,
-      documentId,
-      chunk: result.index,
-      content: result.content,
-      vector: result.vector,
-      metadata: metadata ?? null,
-    });
-  }
+  // Process in parallel for better throughput (each upsert is independent)
+  await Promise.all(
+    embeddingResults.map((result) => {
+      const id = `${tenantId}_${documentId}_${result.index}`;
+      return insertEmbedding(db, {
+        id,
+        tenantId,
+        documentId,
+        chunk: result.index,
+        content: result.content,
+        vector: result.vector,
+        metadata: metadata ?? null,
+      });
+    })
+  );
 
   // 4. Clean up stale chunks (when re-processing reduces chunk count)
   // Delete any chunks with index >= current chunk count for this document
