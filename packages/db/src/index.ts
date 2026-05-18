@@ -33,6 +33,15 @@ export type {
   Event,
   ContextBundle,
   Embedding,
+  ThreatModel,
+  TmComponent,
+  TmDataFlow,
+  TmTrustBoundary,
+  TmEntryPoint,
+  TmAsset,
+  TmThreat,
+  TmChange,
+  TmGap,
 } from "@prisma/client";
 export {
   Role,
@@ -41,6 +50,9 @@ export {
   EventStatus,
   RiskLevel,
   BundleStatus,
+  ThreatModelStatus,
+  StrideCategory,
+  Severity,
 } from "@prisma/client";
 
 // Export pgvector helpers

@@ -52,6 +52,29 @@ enum BundleStatus {
   FAILED
 }
 
+enum ThreatModelStatus {
+  PENDING
+  GENERATING
+  ACTIVE
+  ERROR
+}
+
+enum StrideCategory {
+  SPOOFING
+  TAMPERING
+  REPUDIATION
+  INFORMATION_DISCLOSURE
+  DENIAL_OF_SERVICE
+  ELEVATION_OF_PRIVILEGE
+}
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
 // ===========================================
 // Models
 // ===========================================
@@ -69,6 +92,7 @@ model Tenant {
   events         Event[]
   contextBundles ContextBundle[]
   embeddings     Embedding[]
+  threatModel    ThreatModel?
 
   @@map("tenants")
 }
@@ -185,4 +209,205 @@ model Embedding {
   @@unique([tenantId, documentId, chunk])
   @@index([tenantId])
   @@map("embeddings")
+}
+
+// ===========================================
+// Threat Model
+// ===========================================
+
+model ThreatModel {
+  id            String            @id @default(cuid())
+  tenantId      String            @unique @map("tenant_id")
+  status        ThreatModelStatus @default(PENDING)
+  version       Int               @default(1)
+  generatedAt   DateTime?         @map("generated_at")
+  lastUpdatedAt DateTime          @updatedAt @map("last_updated_at")
+  errorMessage  String?           @map("error_message")
+  createdAt     DateTime          @default(now()) @map("created_at")
+
+  // Relations
+  tenant         Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  components     TmComponent[]
+  dataFlows      TmDataFlow[]
+  trustBoundaries TmTrustBoundary[]
+  entryPoints    TmEntryPoint[]
+  assets         TmAsset[]
+  threats        TmThreat[]
+  changes        TmChange[]
+  gaps           TmGap[]
+
+  @@index([status])
+  @@map("threat_models")
+}
+
+model TmComponent {
+  id             String      @id @default(cuid())
+  threatModelId  String      @map("threat_model_id")
+  name           String
+  type           String
+  description    String?
+  isDeprecated   Boolean     @default(false) @map("is_deprecated")
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  threatModel       ThreatModel  @relation(fields: [threatModelId], references: [id], onDelete: Cascade)
+  outgoingDataFlows TmDataFlow[] @relation("FromComponent")
+  incomingDataFlows TmDataFlow[] @relation("ToComponent")
+  threats           TmThreat[]
+
+  @@index([threatModelId])
+  @@map("tm_components")
+}
+
+model TmDataFlow {
+  id              String   @id @default(cuid())
+  threatModelId   String   @map("threat_model_id")
+  fromComponentId String   @map("from_component_id")
+  toComponentId   String   @map("to_component_id")
+  description     String?
+  dataType        String?  @map("data_type")
+  sensitivity     String?
+  encryption      String?
+  isDeprecated    Boolean  @default(false) @map("is_deprecated")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  threatModel   ThreatModel @relation(fields: [threatModelId], references: [id], onDelete: Cascade)
+  fromComponent TmComponent @relation("FromComponent", fields: [fromComponentId], references: [id], onDelete: Cascade)
+  toComponent   TmComponent @relation("ToComponent", fields: [toComponentId], references: [id], onDelete: Cascade)
+  threats       TmThreat[]
+
+  @@index([threatModelId])
+  @@index([fromComponentId])
+  @@index([toComponentId])
+  @@map("tm_data_flows")
+}
+
+model TmTrustBoundary {
+  id           String   @id @default(cuid())
+  threatModelId String  @map("threat_model_id")
+  name         String
+  description  String?
+  fromZone     String?  @map("from_zone")
+  toZone       String?  @map("to_zone")
+  isDeprecated Boolean  @default(false) @map("is_deprecated")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  threatModel ThreatModel @relation(fields: [threatModelId], references: [id], onDelete: Cascade)
+
+  @@index([threatModelId])
+  @@map("tm_trust_boundaries")
+}
+
+model TmEntryPoint {
+  id           String   @id @default(cuid())
+  threatModelId String  @map("threat_model_id")
+  name         String
+  type         String
+  description  String?
+  authRequired Boolean  @default(false) @map("auth_required")
+  authType     String?  @map("auth_type")
+  rateLimited  Boolean  @default(false) @map("rate_limited")
+  isDeprecated Boolean  @default(false) @map("is_deprecated")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  threatModel ThreatModel @relation(fields: [threatModelId], references: [id], onDelete: Cascade)
+  threats     TmThreat[]
+
+  @@index([threatModelId])
+  @@map("tm_entry_points")
+}
+
+model TmAsset {
+  id           String   @id @default(cuid())
+  threatModelId String  @map("threat_model_id")
+  name         String
+  type         String
+  sensitivity  String?
+  description  String?
+  isDeprecated Boolean  @default(false) @map("is_deprecated")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  threatModel ThreatModel @relation(fields: [threatModelId], references: [id], onDelete: Cascade)
+
+  @@index([threatModelId])
+  @@map("tm_assets")
+}
+
+model TmThreat {
+  id               String         @id @default(cuid())
+  threatModelId    String         @map("threat_model_id")
+  title            String
+  description      String?
+  strideCategory   StrideCategory @map("stride_category")
+  severity         Severity
+  likelihood       String?
+  mitigationStatus String         @default("UNMITIGATED") @map("mitigation_status")
+  mitigationNotes  String?        @map("mitigation_notes")
+  componentId      String?        @map("component_id")
+  dataFlowId       String?        @map("data_flow_id")
+  entryPointId     String?        @map("entry_point_id")
+  isDeprecated     Boolean        @default(false) @map("is_deprecated")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  // Relations
+  threatModel ThreatModel  @relation(fields: [threatModelId], references: [id], onDelete: Cascade)
+  component   TmComponent? @relation(fields: [componentId], references: [id], onDelete: SetNull)
+  dataFlow    TmDataFlow?  @relation(fields: [dataFlowId], references: [id], onDelete: SetNull)
+  entryPoint  TmEntryPoint? @relation(fields: [entryPointId], references: [id], onDelete: SetNull)
+
+  @@index([threatModelId])
+  @@index([severity])
+  @@index([mitigationStatus])
+  @@index([strideCategory])
+  @@map("tm_threats")
+}
+
+model TmChange {
+  id            String   @id @default(cuid())
+  threatModelId String   @map("threat_model_id")
+  version       Int
+  changeType    String   @map("change_type")
+  triggeredBy   String?  @map("triggered_by")
+  summary       String
+  diff          Json
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  threatModel ThreatModel @relation(fields: [threatModelId], references: [id], onDelete: Cascade)
+
+  @@unique([threatModelId, version])
+  @@index([threatModelId])
+  @@map("tm_changes")
+}
+
+model TmGap {
+  id            String    @id @default(cuid())
+  threatModelId String    @map("threat_model_id")
+  type          String
+  severity      Severity
+  description   String
+  entityType    String    @map("entity_type")
+  entityId      String    @map("entity_id")
+  isResolved    Boolean   @default(false) @map("is_resolved")
+  resolvedAt    DateTime? @map("resolved_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // Relations
+  threatModel ThreatModel @relation(fields: [threatModelId], references: [id], onDelete: Cascade)
+
+  @@index([threatModelId])
+  @@index([severity])
+  @@index([isResolved])
+  @@map("tm_gaps")
 }
