@@ -32,13 +32,25 @@ export const MODELS = {
 } as const;
 
 /**
+ * System message type for Mastra agent instructions.
+ * Using the explicit { role: 'system', content: string } format
+ * ensures Mastra sends these as proper system messages to the LLM.
+ */
+type SystemMessage = string | { role: "system"; content: string } | Array<{ role: "system"; content: string }>;
+
+/**
  * Create a Mastra Agent backed by a Bedrock model.
  * This is the factory used by all Loomii AI agents (design-review, risk-classifier, etc.)
+ *
+ * The `instructions` parameter becomes the system prompt sent to the LLM.
+ * Pass a string (auto-wrapped) or explicit { role: 'system', content: '...' } messages.
+ *
+ * User messages are passed separately via agent.generate(messages).
  */
 export function createBedrockAgent(config: {
   id: string;
   name: string;
-  instructions: string;
+  instructions: SystemMessage;
   model?: keyof typeof MODELS;
 }) {
   const modelId = MODELS[config.model ?? "CLAUDE_SONNET"];
