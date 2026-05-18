@@ -138,17 +138,21 @@ async function classifyWithAgent(
   });
 
   // Race the agent call against a timeout
+  // Note: Type assertion avoids TS2589 "excessively deep" error from Mastra's
+  // deeply-nested generics when combined with Zod schema inference.
+  const generatePromise = riskClassifierAgent.generate(messages, {
+    structuredOutput: {
+      schema: riskClassificationSchema,
+    },
+    modelSettings: {
+      temperature: 0,
+      maxOutputTokens: 1000,
+      maxRetries: 2,
+    },
+  } as any) as Promise<{ object: RiskClassification; text: string }>;
+
   const result = await Promise.race([
-    riskClassifierAgent.generate(messages, {
-      structuredOutput: {
-        schema: riskClassificationSchema,
-      },
-      modelSettings: {
-        temperature: 0,
-        maxOutputTokens: 1000,
-        maxRetries: 2,
-      },
-    }),
+    generatePromise,
     createTimeout(LLM_TIMEOUT_MS),
   ]);
 
@@ -156,7 +160,7 @@ async function classifyWithAgent(
     throw new Error(`LLM call timed out after ${LLM_TIMEOUT_MS}ms`);
   }
 
-  const classification = (result as any).object as RiskClassification;
+  const classification = result.object;
 
   if (!classification || !classification.level || !classification.reasoning) {
     throw new Error("Invalid structured output: missing level or reasoning");
