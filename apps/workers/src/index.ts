@@ -1,5 +1,5 @@
 import { Worker } from "bullmq";
-import { createRedisConnection, ALL_QUEUE_NAMES, type QueueName } from "@loomii/queue";
+import { createRedisConnection, ALL_QUEUE_NAMES, type QueueName, integrationHealthQueue } from "@loomii/queue";
 import { logger } from "./lib/logger";
 import { processors, concurrency } from "./processors/index";
 
@@ -44,6 +44,37 @@ async function startWorkers(): Promise<void> {
     { queues: ALL_QUEUE_NAMES },
     `Workers started: ${ALL_QUEUE_NAMES.join(", ")}`
   );
+
+  // Register repeatable jobs for token refresh and health checks
+  await registerRepeatableJobs();
+}
+
+/**
+ * Register repeatable jobs that run on a schedule.
+ * BullMQ deduplicates these by jobId - safe to call on every startup.
+ */
+async function registerRepeatableJobs(): Promise<void> {
+  // Token refresh: every 15 minutes - finds and refreshes expiring Linear tokens
+  await integrationHealthQueue.add(
+    "refresh",
+    {} as any,
+    {
+      repeat: { every: 15 * 60 * 1000 }, // 15 min
+      jobId: "repeatable:token-refresh",
+    }
+  );
+
+  // Health check: every 30 minutes - verifies all active integrations
+  await integrationHealthQueue.add(
+    "check",
+    {} as any,
+    {
+      repeat: { every: 30 * 60 * 1000 }, // 30 min
+      jobId: "repeatable:health-check",
+    }
+  );
+
+  logger.info("Repeatable jobs registered: token-refresh (15m), health-check (30m)");
 }
 
 async function shutdown(): Promise<void> {

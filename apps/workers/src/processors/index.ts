@@ -5,6 +5,7 @@ import { processNotionPolling } from "./notion-polling";
 import { processContextAssembly } from "./context-assembly";
 import { processRiskClassification } from "./risk-classification";
 import { processEmbeddingGeneration } from "./embedding-generation";
+import { processIntegrationHealth } from "./integration-health";
 
 /**
  * Processor registry - maps queue names to their job processor functions.
@@ -36,9 +37,7 @@ export const processors: Record<QueueName, Processor> = {
   [QUEUE_NAMES.RISK_CLASSIFICATION]: processRiskClassification as Processor,
   [QUEUE_NAMES.EMBEDDING_GENERATION]: processEmbeddingGeneration as Processor,
   [QUEUE_NAMES.NOTION_POLLING]: processNotionPolling as Processor,
-  [QUEUE_NAMES.INTEGRATION_HEALTH]: createPlaceholderProcessor(
-    QUEUE_NAMES.INTEGRATION_HEALTH
-  ),
+  [QUEUE_NAMES.INTEGRATION_HEALTH]: processIntegrationHealth as Processor,
   [QUEUE_NAMES.REVIEW_GENERATION]: createPlaceholderProcessor(
     QUEUE_NAMES.REVIEW_GENERATION
   ),
