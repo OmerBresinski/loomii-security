@@ -158,8 +158,11 @@ describe("Integration Health Check", () => {
   });
 
   describe("Health check - Linear", () => {
-    it("detects revoked Linear token -> marks ERROR (AC5)", async () => {
-      const integration = createActiveIntegration({ provider: "LINEAR" });
+    it("detects revoked Linear token -> marks ERROR after 2 failures (AC5)", async () => {
+      const integration = createActiveIntegration({
+        provider: "LINEAR",
+        metadata: { healthCheckFailures: 1 }, // Already 1 failure
+      });
       mockFindMany.mockImplementation(async () => [integration]);
 
       // Make Linear viewer call fail (token revoked)
@@ -170,7 +173,7 @@ describe("Integration Health Check", () => {
       const job = createMockJob("check");
       await processIntegrationHealth(job);
 
-      // Should mark as ERROR
+      // Should mark as ERROR (2nd consecutive failure)
       expect(mockUpdate).toHaveBeenCalled();
       const updateCall = mockUpdate.mock.calls[0][0];
       expect(updateCall.data.status).toBe("ERROR");
@@ -191,8 +194,11 @@ describe("Integration Health Check", () => {
       expect(updateCall.data.metadata.lastHealthCheckAt).toBeDefined();
     });
 
-    it("publishes error event when Linear token is revoked", async () => {
-      const integration = createActiveIntegration({ provider: "LINEAR" });
+    it("publishes error event when Linear token is revoked (after 2 failures)", async () => {
+      const integration = createActiveIntegration({
+        provider: "LINEAR",
+        metadata: { healthCheckFailures: 1 }, // Already 1 failure
+      });
       mockFindMany.mockImplementation(async () => [integration]);
 
       mockLinearViewer.mockImplementation(async () => {
@@ -211,10 +217,10 @@ describe("Integration Health Check", () => {
   });
 
   describe("Health check - Notion", () => {
-    it("detects revoked Notion token -> marks ERROR (AC6)", async () => {
+    it("detects revoked Notion token -> marks ERROR after 2 failures (AC6)", async () => {
       const integration = createActiveIntegration({
         provider: "NOTION",
-        metadata: { lastHealthCheckAt: new Date(0).toISOString() }, // Long ago
+        metadata: { lastHealthCheckAt: new Date(0).toISOString(), healthCheckFailures: 1 },
       });
       mockFindMany.mockImplementation(async () => [integration]);
 

@@ -26,6 +26,9 @@ import { logger } from "../lib/logger";
 /** Notion is only health-checked every 6 hours */
 const NOTION_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
+/** Number of consecutive health check failures before marking as ERROR */
+const MAX_HEALTH_FAILURES = 2;
+
 /**
  * Main processor for the integration-health queue.
  * Dispatches based on job name.
@@ -169,12 +172,12 @@ async function verifyIntegration(
       await verifyNotionToken(accessToken);
     }
 
-    // Update last health check timestamp
+    // Update last health check timestamp and reset failure counter
     const metadata = (integration.metadata as Record<string, unknown>) ?? {};
     await db.integration.update({
       where: { id: integration.id },
       data: {
-        metadata: { ...metadata, lastHealthCheckAt: new Date().toISOString() },
+        metadata: { ...metadata, lastHealthCheckAt: new Date().toISOString(), healthCheckFailures: 0 },
         updatedAt: new Date(),
       },
     });
@@ -184,37 +187,61 @@ async function verifyIntegration(
   } catch (err: any) {
     integrationLogger.error(
       { error: err.message },
-      "Integration health check failed - marking as ERROR"
+      "Integration health check failed"
     );
 
-    // Mark integration as ERROR
+    // Track consecutive failures before marking as ERROR
     const metadata = (integration.metadata as Record<string, unknown>) ?? {};
-    await db.integration.update({
-      where: { id: integration.id },
-      data: {
-        status: "ERROR",
-        metadata: {
-          ...metadata,
-          lastHealthCheckAt: new Date().toISOString(),
-          errorReason: "health_check_failed",
-          lastError: err.message,
-        },
-        updatedAt: new Date(),
-      },
-    });
+    const failures = ((metadata.healthCheckFailures as number) ?? 0) + 1;
 
-    // Publish error event
-    await eventsQueue.add("integration-error", {
-      tenantId: integration.tenantId,
-      eventType: "integration.error",
-      data: {
-        integrationId: integration.id,
-        provider: integration.provider,
-        reason: "health_check_failed",
-        message: `Health check failed: ${err.message}`,
-      },
-      timestamp: new Date().toISOString(),
-    });
+    if (failures >= MAX_HEALTH_FAILURES) {
+      // Mark integration as ERROR after consecutive failures
+      await db.integration.update({
+        where: { id: integration.id },
+        data: {
+          status: "ERROR",
+          metadata: {
+            ...metadata,
+            lastHealthCheckAt: new Date().toISOString(),
+            healthCheckFailures: failures,
+            errorReason: "health_check_failed",
+            lastError: err.message,
+          },
+          updatedAt: new Date(),
+        },
+      });
+
+      // Publish error event
+      await eventsQueue.add("integration-error", {
+        tenantId: integration.tenantId,
+        eventType: "integration.error",
+        data: {
+          integrationId: integration.id,
+          provider: integration.provider,
+          reason: "health_check_failed",
+          message: `Health check failed: ${err.message}`,
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      // Increment failure counter but don't mark as ERROR yet
+      await db.integration.update({
+        where: { id: integration.id },
+        data: {
+          metadata: {
+            ...metadata,
+            lastHealthCheckAt: new Date().toISOString(),
+            healthCheckFailures: failures,
+          },
+          updatedAt: new Date(),
+        },
+      });
+
+      integrationLogger.warn(
+        { failures, maxFailures: MAX_HEALTH_FAILURES },
+        "Health check failed, will retry next cycle"
+      );
+    }
 
     return false;
   }
@@ -227,7 +254,13 @@ async function verifyIntegration(
 async function verifyLinearToken(accessToken: string): Promise<void> {
   const client = new LinearClient({ accessToken });
   // The viewer query is lightweight and confirms token validity
-  await client.viewer;
+  // 10s timeout to prevent hanging on API issues
+  await Promise.race([
+    client.viewer,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Linear health check timed out")), 10_000)
+    ),
+  ]);
 }
 
 /**
@@ -237,7 +270,13 @@ async function verifyLinearToken(accessToken: string): Promise<void> {
 async function verifyNotionToken(accessToken: string): Promise<void> {
   const client = new NotionClient({ auth: accessToken });
   // Search with page_size=1 is the lightest-weight check
-  await client.search({ page_size: 1 });
+  // 10s timeout to prevent hanging on API issues
+  await Promise.race([
+    client.search({ page_size: 1 }),
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Notion health check timed out")), 10_000)
+    ),
+  ]);
 }
 
 /** Exported for testing */
