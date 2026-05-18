@@ -16,10 +16,10 @@
 import type { Job } from "bullmq";
 import { Client } from "@notionhq/client";
 import { db } from "@loomii/db";
-import { contextAssemblyQueue } from "@loomii/queue";
 import { decrypt } from "@loomii/shared";
 import type { NotionPollingPayload } from "@loomii/queue";
 import { acquireToken } from "../lib/notion-rate-limiter";
+import { enqueueWithDebounce } from "../lib/debounce";
 import { logger } from "../lib/logger";
 
 /** Default lookback window for first poll (5 minutes ago) */
@@ -230,7 +230,7 @@ export async function processNotionPolling(
       Math.abs(event.createdAt.getTime() - event.updatedAt.getTime()) < 1000;
 
     if (isNew) {
-      await contextAssemblyQueue.add("assemble", {
+      await enqueueWithDebounce({
         eventId: event.id,
         tenantId,
         sourceType: "notion",

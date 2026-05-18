@@ -30,9 +30,10 @@ const mockDb = {
 };
 
 const mockContextAssemblyQueue = {
-  add: mock((_name: string, _payload: any) =>
+  add: mock((_name: string, _payload: any, _opts?: any) =>
     Promise.resolve({ id: "job_123" })
   ),
+  getJob: mock((_jobId: string) => Promise.resolve(null)),
 };
 
 const mockDecrypt = mock((_text: string) => "ntn_decrypted_token_123");
