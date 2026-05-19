@@ -77,8 +77,8 @@ export async function embedThreats(
   // 4. Upsert each embedding into pgvector
   // documentId format: "threat_{threatId}" ensures upsert replaces on modification
   await Promise.all(
-    embeddingResults.map((result, i) => {
-      const threat = threats[i]!;
+    embeddingResults.map((result) => {
+      const threat = threats[result.index]!;
       const documentId = `threat_${threat.id}`;
 
       return insertEmbedding(db, {
@@ -158,8 +158,8 @@ export async function embedSpecificThreats(
   const embeddingResults = await generateEmbeddings(chunks);
 
   await Promise.all(
-    embeddingResults.map((result, i) => {
-      const threat = threats[i]!;
+    embeddingResults.map((result) => {
+      const threat = threats[result.index]!;
       const documentId = `threat_${threat.id}`;
 
       return insertEmbedding(db, {
