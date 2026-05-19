@@ -846,6 +846,35 @@ describe("Threat Model Generation Processor", () => {
         expect(opts.tools.getCurrentModel).toBeDefined();
       }
     });
+
+    it("passes abortSignal to both generate calls", async () => {
+      mockDb.threatModel.findUnique.mockResolvedValue(null);
+      mockDb.contextBundle.findMany.mockResolvedValue(
+        createMockContextBundles(3)
+      );
+
+      mockAgentGenerate.mockResolvedValueOnce({
+        object: MOCK_STRUCTURE_OUTPUT,
+        text: "",
+      });
+      mockAgentGenerate.mockResolvedValueOnce({
+        object: MOCK_THREATS_OUTPUT,
+        text: "",
+      });
+
+      const job = createMockJob({
+        tenantId: "tenant_123",
+        changeType: "initial_generation",
+      });
+
+      await processThreatModelGeneration(job);
+
+      for (const call of mockAgentGenerate.mock.calls) {
+        const opts = call[1] as any;
+        expect(opts.abortSignal).toBeDefined();
+        expect(opts.abortSignal).toBeInstanceOf(AbortSignal);
+      }
+    });
   });
 
   describe("Reference resolution", () => {
@@ -1068,17 +1097,17 @@ describe("Threat Model Output Schemas", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects structure with fewer than 3 components", async () => {
+  it("accepts structure with fewer than 3 components (no min constraint)", async () => {
     const { StructureOutputSchema } = await import(
       "@loomii/shared/schemas"
     );
 
-    const invalid = {
+    const minimal = {
       ...MOCK_STRUCTURE_OUTPUT,
       components: [MOCK_STRUCTURE_OUTPUT.components[0]!],
     };
-    const result = StructureOutputSchema.safeParse(invalid);
-    expect(result.success).toBe(false);
+    const result = StructureOutputSchema.safeParse(minimal);
+    expect(result.success).toBe(true);
   });
 
   it("validates correct threats output", async () => {
@@ -1090,14 +1119,14 @@ describe("Threat Model Output Schemas", () => {
     expect(result.success).toBe(true);
   });
 
-  it("rejects threats with fewer than 3 entries", async () => {
+  it("accepts threats with fewer than 3 entries (no min constraint)", async () => {
     const { ThreatsOutputSchema } = await import(
       "@loomii/shared/schemas"
     );
 
-    const invalid = { threats: [MOCK_THREATS_OUTPUT.threats[0]!] };
-    const result = ThreatsOutputSchema.safeParse(invalid);
-    expect(result.success).toBe(false);
+    const minimal = { threats: [MOCK_THREATS_OUTPUT.threats[0]!] };
+    const result = ThreatsOutputSchema.safeParse(minimal);
+    expect(result.success).toBe(true);
   });
 
   it("rejects invalid STRIDE category", async () => {

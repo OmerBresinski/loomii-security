@@ -80,20 +80,16 @@ export const AssetOutputSchema = z.object({
 export const StructureOutputSchema = z.object({
   components: z
     .array(ComponentOutputSchema)
-    .min(3)
-    .describe("System components (minimum 3)"),
+    .describe("System components (aim for 3+)"),
   dataFlows: z
     .array(DataFlowOutputSchema)
-    .min(2)
-    .describe("Data flows between components (minimum 2)"),
+    .describe("Data flows between components (aim for 2+)"),
   trustBoundaries: z
     .array(TrustBoundaryOutputSchema)
-    .min(1)
-    .describe("Trust boundaries (minimum 1)"),
+    .describe("Trust boundaries (aim for 1+)"),
   entryPoints: z
     .array(EntryPointOutputSchema)
-    .min(2)
-    .describe("External entry points (minimum 2)"),
+    .describe("External entry points (aim for 2+)"),
   assets: z
     .array(AssetOutputSchema)
     .describe("Data assets in the system"),
@@ -147,8 +143,7 @@ export const ThreatOutputSchema = z.object({
 export const ThreatsOutputSchema = z.object({
   threats: z
     .array(ThreatOutputSchema)
-    .min(3)
-    .describe("STRIDE threats identified for the system (minimum 3)"),
+    .describe("STRIDE threats identified for the system (aim for 3+)"),
 });
 
 // ─── Inferred Types ───────────────────────────────────────────────────────────

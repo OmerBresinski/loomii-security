@@ -59,34 +59,34 @@ export async function processThreatModelGeneration(
   childLogger.info("Starting threat model generation");
   const startTime = Date.now();
 
-  // Race the entire generation against timeout
-  const result = await Promise.race([
-    runTwoPassGeneration(tenantId, childLogger),
-    createTimeout(GENERATION_TIMEOUT_MS),
-  ]);
+  // AbortController to cancel LLM calls on timeout
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), GENERATION_TIMEOUT_MS);
 
-  if (result === "TIMEOUT") {
-    childLogger.error("Threat model generation timed out (5 min)");
-    // Try to mark as error
-    const model = await db.threatModel.findUnique({ where: { tenantId } });
-    if (model) {
-      await markThreatModelError(
-        model.id,
-        "Generation timed out after 5 minutes"
-      );
+  try {
+    const result = await runTwoPassGeneration(tenantId, childLogger, controller.signal);
+
+    const durationMs = Date.now() - startTime;
+    childLogger.info(
+      { durationMs, ...result },
+      "Threat model generation completed successfully"
+    );
+  } catch (error: any) {
+    if (controller.signal.aborted) {
+      childLogger.error("Threat model generation timed out (5 min)");
+      const model = await db.threatModel.findUnique({ where: { tenantId } });
+      if (model && model.status === "GENERATING") {
+        await markThreatModelError(
+          model.id,
+          "Generation timed out after 5 minutes"
+        );
+      }
+      return;
     }
-    return;
+    throw error; // Re-throw non-timeout errors so BullMQ retries
+  } finally {
+    clearTimeout(timeout);
   }
-
-  const durationMs = Date.now() - startTime;
-  childLogger.info(
-    { durationMs, ...result },
-    "Threat model generation completed successfully"
-  );
-}
-
-function createTimeout(ms: number): Promise<"TIMEOUT"> {
-  return new Promise((resolve) => setTimeout(() => resolve("TIMEOUT"), ms));
 }
 
 // ─── Two-Pass Generation ──────────────────────────────────────────────────────
@@ -103,7 +103,8 @@ interface GenerationResult {
 
 async function runTwoPassGeneration(
   tenantId: string,
-  childLogger: typeof logger
+  childLogger: typeof logger,
+  signal: AbortSignal
 ): Promise<GenerationResult> {
   // 1. Ensure ThreatModel record exists and is in PENDING/ERROR state
   let threatModel = await db.threatModel.findUnique({
@@ -170,7 +171,7 @@ async function runTwoPassGeneration(
 
     // 4. Pass 1: Structure identification
     childLogger.info("Starting Pass 1: Structure identification");
-    const structureResult = await runPass1(tenantId, contextSummaries, childLogger);
+    const structureResult = await runPass1(tenantId, contextSummaries, childLogger, signal);
     childLogger.info(
       {
         components: structureResult.components.length,
@@ -188,7 +189,8 @@ async function runTwoPassGeneration(
       tenantId,
       contextSummaries,
       structureResult,
-      childLogger
+      childLogger,
+      signal
     );
     childLogger.info(
       { threats: threatsResult.threats.length },
@@ -223,7 +225,8 @@ async function runTwoPassGeneration(
 async function runPass1(
   tenantId: string,
   contextSummaries: Array<{ title: string | null; content: string }>,
-  childLogger: typeof logger
+  childLogger: typeof logger,
+  signal: AbortSignal
 ): Promise<StructureOutput> {
   const prompt = buildStructurePrompt(contextSummaries);
 
@@ -241,6 +244,7 @@ async function runPass1(
       maxOutputTokens: 8000,
       maxRetries: 2,
     },
+    abortSignal: signal,
   } as any) as Promise<{ object: StructureOutput; text: string }>);
 
   if (!result.object) {
@@ -265,7 +269,8 @@ async function runPass2(
   tenantId: string,
   contextSummaries: Array<{ title: string | null; content: string }>,
   structure: StructureOutput,
-  childLogger: typeof logger
+  childLogger: typeof logger,
+  signal: AbortSignal
 ): Promise<ThreatsOutput> {
   const prompt = buildThreatsPrompt(contextSummaries, structure);
 
@@ -283,6 +288,7 @@ async function runPass2(
       maxOutputTokens: 16000,
       maxRetries: 2,
     },
+    abortSignal: signal,
   } as any) as Promise<{ object: ThreatsOutput; text: string }>);
 
   if (!result.object) {
