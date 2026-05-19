@@ -43,8 +43,11 @@ export interface ReviewGenerationPayload {
 
 export interface ThreatModelUpdatePayload {
   tenantId: string;
-  designDocId: string;
-  changeType: "created" | "updated" | "deleted";
+  /** Document ID that triggered the update (optional for initial generation) */
+  designDocId?: string;
+  changeType: "created" | "updated" | "deleted" | "initial_generation";
+  /** Number of context bundles at time of trigger (for initial generation) */
+  bundleCount?: number;
 }
 
 export interface EventsPayload {

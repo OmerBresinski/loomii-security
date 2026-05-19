@@ -6,6 +6,7 @@ import { processContextAssembly } from "./context-assembly";
 import { processRiskClassification } from "./risk-classification";
 import { processEmbeddingGeneration } from "./embedding-generation";
 import { processIntegrationHealth } from "./integration-health";
+import { processThreatModelGeneration } from "./threat-model-generation";
 
 /**
  * Processor registry - maps queue names to their job processor functions.
@@ -41,9 +42,7 @@ export const processors: Record<QueueName, Processor> = {
   [QUEUE_NAMES.REVIEW_GENERATION]: createPlaceholderProcessor(
     QUEUE_NAMES.REVIEW_GENERATION
   ),
-  [QUEUE_NAMES.THREAT_MODEL_UPDATE]: createPlaceholderProcessor(
-    QUEUE_NAMES.THREAT_MODEL_UPDATE
-  ),
+  [QUEUE_NAMES.THREAT_MODEL_UPDATE]: processThreatModelGeneration as Processor,
   [QUEUE_NAMES.EVENTS]: createPlaceholderProcessor(QUEUE_NAMES.EVENTS),
 };
 
@@ -58,6 +57,6 @@ export const concurrency: Record<QueueName, number> = {
   [QUEUE_NAMES.NOTION_POLLING]: 10,
   [QUEUE_NAMES.INTEGRATION_HEALTH]: 10,
   [QUEUE_NAMES.REVIEW_GENERATION]: 3,
-  [QUEUE_NAMES.THREAT_MODEL_UPDATE]: 10,
+  [QUEUE_NAMES.THREAT_MODEL_UPDATE]: 2,
   [QUEUE_NAMES.EVENTS]: 10,
 };

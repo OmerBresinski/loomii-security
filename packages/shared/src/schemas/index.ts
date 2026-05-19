@@ -37,3 +37,26 @@ export type {
   EventListResponse,
   LinearWebhookPayload,
 } from "./events";
+
+export {
+  ComponentOutputSchema,
+  DataFlowOutputSchema,
+  TrustBoundaryOutputSchema,
+  EntryPointOutputSchema,
+  AssetOutputSchema,
+  StructureOutputSchema,
+  ThreatOutputSchema,
+  ThreatsOutputSchema,
+  STRIDE_CATEGORIES,
+  SEVERITY_LEVELS,
+} from "./threat-model-output";
+export type {
+  ComponentOutput,
+  DataFlowOutput,
+  TrustBoundaryOutput,
+  EntryPointOutput,
+  AssetOutput,
+  StructureOutput,
+  ThreatOutput,
+  ThreatsOutput,
+} from "./threat-model-output";
