@@ -17,7 +17,10 @@ export const db =
   globalForPrisma.prisma ||
   new PrismaClient({
     adapter,
-    log: process.env.NODE_ENV === "development" ? ["query", "warn", "error"] : ["error"],
+    log:
+      process.env.NODE_ENV === "development"
+        ? ["query", "warn", "error"]
+        : ["error"],
   });
 
 if (process.env.NODE_ENV !== "production") {
@@ -25,7 +28,7 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // Re-export Prisma types and client
-export { PrismaClient } from "@prisma/client";
+export { PrismaClient, Prisma } from "@prisma/client";
 export type {
   Tenant,
   User,
@@ -57,4 +60,7 @@ export {
 
 // Export pgvector helpers
 export { vectorSearch, insertEmbedding } from "./extensions/pgvector";
-export type { VectorSearchOptions, VectorSearchResult } from "./extensions/pgvector";
+export type {
+  VectorSearchOptions,
+  VectorSearchResult,
+} from "./extensions/pgvector";

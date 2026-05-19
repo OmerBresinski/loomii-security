@@ -15,7 +15,7 @@
  *     await enqueueContextAssembly(event);
  *   }
  */
-import { db } from "@loomii/db";
+import { db, Prisma } from "@loomii/db";
 
 /** Events within this window of an existing event are considered duplicates */
 const DEDUP_WINDOW_MS = 5 * 60 * 1000; // 5 minutes
@@ -26,7 +26,7 @@ export interface DeduplicateEventInput {
   source: "LINEAR" | "NOTION";
   externalId: string;
   type: string;
-  payload: Record<string, unknown>;
+  payload: Prisma.InputJsonValue;
 }
 
 export interface DeduplicateEventResult {
