@@ -19,7 +19,7 @@
  */
 import type { Job } from "bullmq";
 import { db } from "@loomii/db";
-import { embeddingQueue, type ThreatModelUpdatePayload } from "@loomii/queue";
+import { type ThreatModelUpdatePayload } from "@loomii/queue";
 import {
   StructureOutputSchema,
   ThreatsOutputSchema,
@@ -37,6 +37,8 @@ import {
   markThreatModelError,
 } from "../lib/threat-model-saver";
 import { runGapAnalysis } from "../lib/gap-analysis";
+import { embedThreats } from "../lib/threat-embeddings";
+import { publishThreatModelGenerated } from "../lib/threat-model-events";
 import { logger } from "../lib/logger";
 
 /** 5 minute overall timeout for initial generation */
@@ -207,12 +209,25 @@ async function runTwoPassGeneration(
       threatsResult
     );
 
-    // 7. Enqueue embedding jobs for all threats
-    await enqueueThreatEmbeddings(tenantId, threatModelId, childLogger);
+    // 7. Embed all threats in pgvector (non-critical)
+    try {
+      const embedResult = await embedThreats(tenantId, threatModelId);
+      childLogger.info(
+        { embedded: embedResult.embedded, durationMs: embedResult.durationMs },
+        "Threat embeddings complete"
+      );
+    } catch (err: any) {
+      childLogger.warn(
+        { error: err.message },
+        "Threat embedding failed (non-critical, model already saved)"
+      );
+    }
 
     // 8. Run gap analysis (non-critical — don't fail the job if this errors)
+    let gapsTotal = 0;
     try {
       const gapResult = await runGapAnalysis(threatModelId);
+      gapsTotal = gapResult.total;
       childLogger.info(
         { gapsCreated: gapResult.created, gapsResolved: gapResult.resolved, gapsTotal: gapResult.total },
         "Gap analysis complete"
@@ -221,6 +236,29 @@ async function runTwoPassGeneration(
       childLogger.warn(
         { error: err.message },
         "Gap analysis failed (non-critical, model already saved)"
+      );
+    }
+
+    // 9. Publish threat-model.generated event (non-critical)
+    try {
+      await publishThreatModelGenerated({
+        tenantId,
+        modelId: threatModelId,
+        version: 1,
+        summary: {
+          components: saveResult.componentCount,
+          dataFlows: saveResult.dataFlowCount,
+          trustBoundaries: saveResult.trustBoundaryCount,
+          entryPoints: saveResult.entryPointCount,
+          assets: saveResult.assetCount,
+          threats: saveResult.threatCount,
+          gaps: gapsTotal,
+        },
+      });
+    } catch (err: any) {
+      childLogger.warn(
+        { error: err.message },
+        "Event publishing failed (non-critical)"
       );
     }
 
@@ -356,43 +394,4 @@ function prepareContextSummaries(
   }
 
   return summaries;
-}
-
-/**
- * Enqueue embedding jobs for all threats in the model.
- * Each threat gets its own embedding for semantic search.
- */
-async function enqueueThreatEmbeddings(
-  tenantId: string,
-  threatModelId: string,
-  childLogger: typeof logger
-): Promise<void> {
-  const threats = await db.tmThreat.findMany({
-    where: { threatModelId, isDeprecated: false },
-    select: { id: true, title: true, description: true, strideCategory: true },
-  });
-
-  if (threats.length === 0) return;
-
-  const jobs = threats.map((threat) => ({
-    name: "threat-embedding",
-    data: {
-      tenantId,
-      documentId: `threat_${threat.id}`,
-      content: `[${threat.strideCategory}] ${threat.title}: ${threat.description ?? ""}`,
-      metadata: {
-        sourceType: "threat",
-        threatId: threat.id,
-        threatModelId,
-        strideCategory: threat.strideCategory,
-      },
-    },
-  }));
-
-  await embeddingQueue.addBulk(jobs);
-
-  childLogger.info(
-    { count: threats.length },
-    "Enqueued threat embedding jobs"
-  );
 }

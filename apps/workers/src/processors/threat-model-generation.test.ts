@@ -184,6 +184,19 @@ mock.module("../../lib/embeddings", () => ({
   generateQueryEmbedding: mock(async () => new Array(1024).fill(0)),
 }));
 
+const mockEmbedThreats = mock(async () => ({ embedded: 0, durationMs: 10 }));
+const mockPublishGenerated = mock(async () => {});
+
+mock.module("../lib/threat-embeddings", () => ({
+  embedThreats: mockEmbedThreats,
+  embedSpecificThreats: mock(async () => ({ embedded: 0, durationMs: 0 })),
+}));
+
+mock.module("../lib/threat-model-events", () => ({
+  publishThreatModelGenerated: mockPublishGenerated,
+  publishThreatModelUpdated: mock(async () => {}),
+}));
+
 // Import after mocks
 const { processThreatModelGeneration } = await import("./threat-model-generation");
 const { __setAgent } = await import("../agents/threat-model");
@@ -372,6 +385,8 @@ describe("Threat Model Generation Processor", () => {
     mockTransaction.mockReset();
     mockEmbeddingQueue.addBulk.mockReset();
     mockAgentGenerate.mockReset();
+    mockEmbedThreats.mockReset();
+    mockPublishGenerated.mockReset();
     mockTxTmComponent.create.mockReset();
     mockTxTmDataFlow.create.mockReset();
     mockTxTmTrustBoundary.create.mockReset();
@@ -390,6 +405,8 @@ describe("Threat Model Generation Processor", () => {
     mockDb.threatModel.update.mockResolvedValue({});
     mockDb.tmThreat.findMany.mockResolvedValue([]);
     mockEmbeddingQueue.addBulk.mockResolvedValue([]);
+    mockEmbedThreats.mockResolvedValue({ embedded: 0, durationMs: 10 });
+    mockPublishGenerated.mockResolvedValue(undefined);
 
     // Reset $transaction to execute callback
     mockTransaction.mockImplementation(async (fn: (tx: any) => Promise<any>) => {
@@ -974,8 +991,8 @@ describe("Threat Model Generation Processor", () => {
     });
   });
 
-  describe("Embedding enqueue after save", () => {
-    it("enqueues embedding jobs for all saved threats", async () => {
+  describe("Embedding and event publishing after save", () => {
+    it("embeds threats and publishes generated event", async () => {
       mockDb.threatModel.findUnique.mockResolvedValue(null);
       mockDb.contextBundle.findMany.mockResolvedValue(
         createMockContextBundles(3)
@@ -990,16 +1007,6 @@ describe("Threat Model Generation Processor", () => {
         text: "",
       });
 
-      // After save, findMany returns the saved threats
-      mockDb.tmThreat.findMany.mockResolvedValue(
-        MOCK_THREATS_OUTPUT.threats.map((t, i) => ({
-          id: `threat_saved_${i}`,
-          title: t.title,
-          description: t.description,
-          strideCategory: t.strideCategory,
-        }))
-      );
-
       const job = createMockJob({
         tenantId: "tenant_123",
         changeType: "initial_generation",
@@ -1007,11 +1014,19 @@ describe("Threat Model Generation Processor", () => {
 
       await processThreatModelGeneration(job);
 
-      // Should enqueue bulk embedding jobs
-      expect(mockEmbeddingQueue.addBulk).toHaveBeenCalledTimes(1);
-      const bulkJobs = mockEmbeddingQueue.addBulk.mock.calls[0]![0] as any[];
-      expect(bulkJobs.length).toBe(6); // 6 threats
-      expect(bulkJobs[0].data.metadata.sourceType).toBe("threat");
+      // Should call embedThreats
+      expect(mockEmbedThreats).toHaveBeenCalledTimes(1);
+      const [embedTenantId, embedModelId] = mockEmbedThreats.mock.calls[0]!;
+      expect(embedTenantId).toBe("tenant_123");
+      expect(embedModelId).toBe("tm_123");
+
+      // Should publish threat-model.generated event
+      expect(mockPublishGenerated).toHaveBeenCalledTimes(1);
+      const eventArg = mockPublishGenerated.mock.calls[0]![0] as any;
+      expect(eventArg.tenantId).toBe("tenant_123");
+      expect(eventArg.modelId).toBe("tm_123");
+      expect(eventArg.version).toBe(1);
+      expect(eventArg.summary.threats).toBe(6);
     });
   });
 
