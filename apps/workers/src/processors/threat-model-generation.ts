@@ -36,6 +36,7 @@ import {
   saveThreatModelAtomically,
   markThreatModelError,
 } from "../lib/threat-model-saver";
+import { runGapAnalysis } from "../lib/gap-analysis";
 import { logger } from "../lib/logger";
 
 /** 5 minute overall timeout for initial generation */
@@ -208,6 +209,20 @@ async function runTwoPassGeneration(
 
     // 7. Enqueue embedding jobs for all threats
     await enqueueThreatEmbeddings(tenantId, threatModelId, childLogger);
+
+    // 8. Run gap analysis (non-critical — don't fail the job if this errors)
+    try {
+      const gapResult = await runGapAnalysis(threatModelId);
+      childLogger.info(
+        { gapsCreated: gapResult.created, gapsResolved: gapResult.resolved, gapsTotal: gapResult.total },
+        "Gap analysis complete"
+      );
+    } catch (err: any) {
+      childLogger.warn(
+        { error: err.message },
+        "Gap analysis failed (non-critical, model already saved)"
+      );
+    }
 
     return saveResult;
   } catch (error: any) {

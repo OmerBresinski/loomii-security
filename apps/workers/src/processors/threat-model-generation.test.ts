@@ -85,6 +85,21 @@ const mockDb = {
   tmThreat: {
     findMany: mock((_args: any) => Promise.resolve([] as any[])),
   },
+  tmDataFlow: {
+    findMany: mock((_args: any) => Promise.resolve([] as any[])),
+  },
+  tmEntryPoint: {
+    findMany: mock((_args: any) => Promise.resolve([] as any[])),
+  },
+  tmComponent: {
+    findMany: mock((_args: any) => Promise.resolve([] as any[])),
+  },
+  tmGap: {
+    findMany: mock((_args: any) => Promise.resolve([] as any[])),
+    createMany: mock((_args: any) => Promise.resolve({ count: 0 })),
+    updateMany: mock((_args: any) => Promise.resolve({ count: 0 })),
+    count: mock((_args: any) => Promise.resolve(0)),
+  },
   $transaction: mockTransaction,
 };
 
