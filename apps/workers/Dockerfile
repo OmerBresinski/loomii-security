@@ -61,7 +61,9 @@ COPY --from=builder /app/tooling ./tooling
 RUN bun install
 
 # Generate Prisma client (required for @loomii/db to resolve .prisma/client)
-RUN cd packages/db && bunx --bun prisma generate
+# Run from packages/db where prisma.config.ts lives; Prisma auto-detects
+# @prisma/client location and generates .prisma/client in root node_modules
+RUN cd packages/db && bunx prisma generate
 
 USER loomii
 

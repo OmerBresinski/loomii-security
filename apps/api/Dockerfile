@@ -57,7 +57,9 @@ COPY --from=builder /app/tooling ./tooling
 RUN bun install
 
 # Generate Prisma client (needed for both app and migrations)
-RUN cd packages/db && bunx --bun prisma generate
+# Run from packages/db where prisma.config.ts lives; Prisma auto-detects
+# @prisma/client location and generates .prisma/client in root node_modules
+RUN cd packages/db && bunx prisma generate
 
 EXPOSE 3000
 
