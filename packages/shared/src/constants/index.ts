@@ -87,3 +87,14 @@ export const Role = {
   VIEWER: "VIEWER",
 } as const;
 export type Role = (typeof Role)[keyof typeof Role];
+
+/**
+ * Tenant ID used for built-in (global) embeddings.
+ *
+ * Built-in policies (tenantId=null in the Policy table) need their embeddings
+ * stored with a consistent tenantId so vectorSearch can find them.
+ * This constant MUST be used by:
+ * - The seed/embedding script when generating policy embeddings
+ * - The searchPolicies tool when querying for built-in policy embeddings
+ */
+export const BUILT_IN_TENANT_ID = "__built_in__";
