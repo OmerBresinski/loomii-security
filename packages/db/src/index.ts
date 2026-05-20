@@ -36,6 +36,7 @@ export type {
   Event,
   ContextBundle,
   Embedding,
+  Policy,
   Review,
   ReviewVersion,
   Finding,

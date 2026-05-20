@@ -141,6 +141,7 @@ model Tenant {
   embeddings     Embedding[]
   threatModel    ThreatModel?
   reviews        Review[]
+  policies       Policy[]
 
   @@map("tenants")
 }
@@ -258,6 +259,32 @@ model Embedding {
   @@unique([tenantId, documentId, chunk])
   @@index([tenantId])
   @@map("embeddings")
+}
+
+// ===========================================
+// Policies
+// ===========================================
+
+model Policy {
+  id          String   @id @default(cuid())
+  tenantId    String?  @map("tenant_id")
+  name        String
+  framework   String   // "OWASP_TOP_10_2021", "OWASP_LLM_TOP_10", "CUSTOM"
+  identifier  String   @unique // e.g., "A01", "LLM01", "custom_<cuid>"
+  content     String   // Full policy text (markdown)
+  keywords    String[] // Trigger keywords for mandatory inclusion
+  isBuiltIn   Boolean  @default(false) @map("is_built_in")
+  isEnabled   Boolean  @default(true) @map("is_enabled")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([framework])
+  @@index([isEnabled])
+  @@map("policies")
 }
 
 // ===========================================
