@@ -13,7 +13,7 @@ const adapter = new PrismaPg(pool);
 // Singleton PrismaClient instance
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-export const db =
+export const db: PrismaClient =
   globalForPrisma.prisma ||
   new PrismaClient({
     adapter,
@@ -36,6 +36,10 @@ export type {
   Event,
   ContextBundle,
   Embedding,
+  Review,
+  ReviewVersion,
+  Finding,
+  FindingRelation,
   ThreatModel,
   TmComponent,
   TmDataFlow,
@@ -56,6 +60,12 @@ export {
   ThreatModelStatus,
   StrideCategory,
   Severity,
+  ReviewStatus,
+  ReviewMode,
+  FindingType,
+  FindingStatus,
+  Effort,
+  RelationType,
 } from "@prisma/client";
 
 // Export pgvector helpers

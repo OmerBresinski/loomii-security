@@ -76,6 +76,52 @@ enum Severity {
   LOW
 }
 
+enum ReviewStatus {
+  PENDING
+  GENERATING
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  PUBLISHED
+  ERROR
+}
+
+enum ReviewMode {
+  AUTOMATED
+  MANUAL
+  HYBRID
+}
+
+enum FindingType {
+  THREAT
+  REQUIREMENT
+  MITIGATION
+  OBSERVATION
+}
+
+enum FindingStatus {
+  OPEN
+  ACCEPTED
+  REJECTED
+  RESOLVED
+  DEFERRED
+}
+
+enum Effort {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RelationType {
+  THREAT_TO_REQUIREMENT
+  REQUIREMENT_TO_MITIGATION
+  THREAT_TO_MITIGATION
+  RELATED
+}
+
 // ===========================================
 // Models
 // ===========================================
@@ -94,6 +140,7 @@ model Tenant {
   contextBundles ContextBundle[]
   embeddings     Embedding[]
   threatModel    ThreatModel?
+  reviews        Review[]
 
   @@map("tenants")
 }
@@ -185,6 +232,7 @@ model ContextBundle {
   // Relations
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  review Review?
 
   @@index([tenantId])
   @@index([status])
@@ -210,6 +258,103 @@ model Embedding {
   @@unique([tenantId, documentId, chunk])
   @@index([tenantId])
   @@map("embeddings")
+}
+
+// ===========================================
+// Design Reviews
+// ===========================================
+
+model Review {
+  id               String       @id @default(cuid())
+  tenantId         String       @map("tenant_id")
+  contextBundleId  String       @unique @map("context_bundle_id")
+  status           ReviewStatus @default(PENDING)
+  mode             ReviewMode   @default(AUTOMATED)
+  severity         Severity?
+  confidence       Float?       // 0-1 confidence score
+  summary          String?
+  modelUsed        String?      @map("model_used")
+  currentVersion   Int          @default(1) @map("current_version")
+  errorMessage     String?      @map("error_message")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  updatedAt        DateTime     @updatedAt @map("updated_at")
+
+  // Relations
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contextBundle  ContextBundle   @relation(fields: [contextBundleId], references: [id], onDelete: Cascade)
+  versions       ReviewVersion[]
+  findings       Finding[]
+
+  @@index([tenantId])
+  @@index([status])
+  @@index([severity])
+  @@index([createdAt])
+  @@map("reviews")
+}
+
+model ReviewVersion {
+  id         String   @id @default(cuid())
+  reviewId   String   @map("review_id")
+  version    Int
+  content    Json     // Full review content snapshot
+  editorType String   @map("editor_type") // "agent" | "human"
+  editorId   String?  @map("editor_id")   // User ID if human edit
+  editReason String?  @map("edit_reason")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  // Relations
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, version])
+  @@index([reviewId])
+  @@map("review_versions")
+}
+
+model Finding {
+  id              String          @id @default(cuid())
+  reviewId        String          @map("review_id")
+  type            FindingType
+  title           String
+  description     String?
+  severity        Severity
+  confidence      Float?          // 0-1 confidence score
+  strideCategory  StrideCategory? @map("stride_category")
+  policyId        String?         @map("policy_id")
+  policyName      String?         @map("policy_name")
+  effortEstimate  Effort?         @map("effort_estimate")
+  status          FindingStatus   @default(OPEN)
+  resolvedBy      String?         @map("resolved_by")
+  resolvedAt      DateTime?       @map("resolved_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+
+  // Relations
+  review            Review            @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+  outgoingRelations FindingRelation[]  @relation("FromFinding")
+  incomingRelations FindingRelation[]  @relation("ToFinding")
+
+  @@index([reviewId])
+  @@index([type])
+  @@index([severity])
+  @@index([status])
+  @@map("findings")
+}
+
+model FindingRelation {
+  id            String       @id @default(cuid())
+  fromFindingId String       @map("from_finding_id")
+  toFindingId   String       @map("to_finding_id")
+  relationType  RelationType @map("relation_type")
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  // Relations
+  fromFinding Finding @relation("FromFinding", fields: [fromFindingId], references: [id], onDelete: Cascade)
+  toFinding   Finding @relation("ToFinding", fields: [toFindingId], references: [id], onDelete: Cascade)
+
+  @@unique([fromFindingId, toFindingId])
+  @@index([fromFindingId])
+  @@index([toFindingId])
+  @@map("finding_relations")
 }
 
 // ===========================================
