@@ -7,6 +7,7 @@ import { processRiskClassification } from "./risk-classification";
 import { processEmbeddingGeneration } from "./embedding-generation";
 import { processIntegrationHealth } from "./integration-health";
 import { processThreatModelGeneration } from "./threat-model-generation";
+import { processThreatModelUpdate } from "./threat-model-update";
 import { processReviewGeneration } from "./review-generation";
 
 /**
@@ -41,7 +42,14 @@ export const processors: Record<QueueName, Processor> = {
   [QUEUE_NAMES.NOTION_POLLING]: processNotionPolling as Processor,
   [QUEUE_NAMES.INTEGRATION_HEALTH]: processIntegrationHealth as Processor,
   [QUEUE_NAMES.REVIEW_GENERATION]: processReviewGeneration as Processor,
-  [QUEUE_NAMES.THREAT_MODEL_UPDATE]: processThreatModelGeneration as Processor,
+  [QUEUE_NAMES.THREAT_MODEL_UPDATE]: ((job: Job) => {
+    // Dispatch between initial generation and incremental update
+    const changeType = job.data?.changeType;
+    if (changeType === "initial_generation") {
+      return processThreatModelGeneration(job);
+    }
+    return processThreatModelUpdate(job);
+  }) as Processor,
   [QUEUE_NAMES.EVENTS]: createPlaceholderProcessor(QUEUE_NAMES.EVENTS),
 };
 

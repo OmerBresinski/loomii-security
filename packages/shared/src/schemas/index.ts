@@ -70,3 +70,20 @@ export {
   EFFORT_LEVELS,
 } from "./review-output";
 export type { ReviewOutput, ReviewFinding } from "./review-output";
+
+export {
+  ThreatModelUpdateOutputSchema,
+  NewComponentSchema,
+  NewDataFlowSchema,
+  NewEntryPointSchema,
+  NewThreatSchema,
+  ModifiedThreatSchema,
+} from "./threat-model-update";
+export type {
+  ThreatModelUpdateOutput,
+  NewComponent,
+  NewDataFlow,
+  NewEntryPoint,
+  NewThreat,
+  ModifiedThreat,
+} from "./threat-model-update";
