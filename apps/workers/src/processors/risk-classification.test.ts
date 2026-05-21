@@ -11,6 +11,7 @@
  * - ContextBundle updated with riskLevel + reasoning (AC6)
  * - Events published based on risk level
  */
+import "../test-setup";
 import { describe, it, expect, beforeEach, mock } from "bun:test";
 import type { Job } from "bullmq";
 import type { RiskClassificationPayload } from "@loomii/queue";

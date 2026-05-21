@@ -10,6 +10,7 @@
  * - Enqueueing risk-classification and embedding-generation jobs (AC5)
  * - Cross-reference resolution bidirectionally (AC6)
  */
+import "../test-setup";
 import { describe, it, expect, beforeEach, mock } from "bun:test";
 import type { Job } from "bullmq";
 import type { ContextAssemblyPayload } from "@loomii/queue";

@@ -10,6 +10,7 @@
  * - LOW + confidence < 60 -> ASSISTED
  * - Edge cases: confidence exactly at threshold
  */
+import "../test-setup";
 import { describe, it, expect } from "bun:test";
 import { routeReview } from "./review-router";
 

@@ -11,6 +11,7 @@
  * - Enqueueing context assembly jobs
  * - Pagination handling
  */
+import "../test-setup";
 import { describe, it, expect, beforeEach, mock, spyOn } from "bun:test";
 import type { Job } from "bullmq";
 import type { NotionPollingPayload } from "@loomii/queue";

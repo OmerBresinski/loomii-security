@@ -10,6 +10,7 @@
  * - Publishes error event on detection
  * - Dispatches by job name (check, refresh)
  */
+import "../test-setup";
 import { describe, it, expect, beforeEach, mock } from "bun:test";
 import type { Job } from "bullmq";
 import type { IntegrationHealthPayload } from "@loomii/queue";

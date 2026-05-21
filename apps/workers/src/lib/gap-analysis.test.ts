@@ -10,6 +10,7 @@
  * - AC5: Analysis completes within 10 seconds (mocked)
  * - AC6: Running twice produces same result (idempotent)
  */
+import "../test-setup";
 import { describe, it, expect, beforeEach, mock } from "bun:test";
 
 // =========================================

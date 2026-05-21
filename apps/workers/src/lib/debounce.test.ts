@@ -8,6 +8,7 @@
  * - Different entities get different jobIds (AC5)
  * - getDebounceJobId generates correct format
  */
+import "../test-setup";
 import { describe, it, expect, beforeEach, mock } from "bun:test";
 
 // =========================================

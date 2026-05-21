@@ -5,8 +5,9 @@
   "scripts": {
     "build": "true",
     "dev": "bun run --watch src/index.ts",
-    "test": "bun test --env-file=../../.env $(find src -name '*.test.ts' ! -name '*.e2e.test.ts')",
-    "test:e2e": "bun test --env-file=../../.env --preload='' .e2e.",
+    "test": "bun run test:unit && bun run test:e2e",
+    "test:unit": "bun test --env-file=../../.env $(find src -name '*.test.ts' ! -name '*.e2e.test.ts')",
+    "test:e2e": "bun test --env-file=../../.env $(find src -name '*.e2e.test.ts')",
     "clean": "rm -rf dist"
   },
   "dependencies": {

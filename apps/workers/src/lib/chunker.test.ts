@@ -9,6 +9,7 @@
  * - Handling empty content
  * - A 2000-token document producing ~4 chunks (AC1)
  */
+import "../test-setup";
 import { describe, it, expect } from "bun:test";
 import { chunkContent, estimateTokens } from "../lib/chunker";
 

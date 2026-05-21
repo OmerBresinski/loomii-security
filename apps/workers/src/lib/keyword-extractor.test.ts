@@ -9,6 +9,7 @@
  * - AC5: Retrieval completes within 2 seconds (mocked)
  * - AC6: Disabled policies not returned
  */
+import "../test-setup";
 import { describe, it, expect, beforeEach, mock } from "bun:test";
 
 // =========================================

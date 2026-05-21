@@ -11,6 +11,7 @@
  * - Saves review + version + findings (AC7)
  * - Creates finding relations (AC8)
  */
+import "../test-setup";
 import { describe, it, expect, beforeEach, mock, afterEach } from "bun:test";
 import type { ReviewOutput } from "@loomii/shared/schemas";
 

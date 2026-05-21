@@ -1,3 +1,4 @@
+import "../test-setup";
 import { describe, it, expect } from "bun:test";
 import { processors, concurrency } from "./index";
 import { ALL_QUEUE_NAMES, QUEUE_NAMES } from "@loomii/queue";

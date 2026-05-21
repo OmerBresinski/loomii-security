@@ -9,6 +9,7 @@
  * - finding.status_changed -> eventsQueue (AC5)
  * - All payloads have required fields / no nulls (AC6)
  */
+import "../test-setup";
 import { describe, it, expect, beforeEach, mock } from "bun:test";
 
 // =========================================

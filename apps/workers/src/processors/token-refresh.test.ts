@@ -9,6 +9,7 @@
  * - Publishes error event on failure (AC4)
  * - Tokens never appear in logs (AC7)
  */
+import "../test-setup";
 import { describe, it, expect, beforeEach, afterAll, mock } from "bun:test";
 
 // =========================================

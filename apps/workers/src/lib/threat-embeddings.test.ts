@@ -9,6 +9,7 @@
  * - AC5: "threat-model.updated" event published
  * - AC6: Embeddings are tenant-scoped
  */
+import "../test-setup";
 import { describe, it, expect, beforeEach, mock } from "bun:test";
 
 // =========================================

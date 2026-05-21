@@ -9,6 +9,7 @@
  * - Handles empty content gracefully
  * - Cleans up stale chunks on re-process
  */
+import "../test-setup";
 import { describe, it, expect, beforeEach, mock } from "bun:test";
 import type { Job } from "bullmq";
 import type { EmbeddingGenerationPayload } from "@loomii/queue";

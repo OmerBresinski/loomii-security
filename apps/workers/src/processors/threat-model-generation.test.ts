@@ -11,6 +11,7 @@
  * - AC6: Generation completes within 5 minutes (mocked)
  * - AC7: Trigger fires on 3rd bundle OR after 10 minutes
  */
+import "../test-setup";
 import { describe, it, expect, beforeEach, mock } from "bun:test";
 import type { Job } from "bullmq";
 import type { ThreatModelUpdatePayload } from "@loomii/queue";
