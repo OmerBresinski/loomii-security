@@ -22,11 +22,18 @@ const hasKeys =
   process.env.AWS_ACCESS_KEY_ID !== "placeholder";
 const hasCredentials = hasBearer || hasKeys;
 
-const describeE2E = hasCredentials ? describe : describe.skip;
+// Detect if mock.module leaked from unit tests (happens with bare `bun test`)
+const isMocked = (bedrock as any)("test")?.provider === "mock";
+
+const describeE2E = hasCredentials && !isMocked ? describe : describe.skip;
 
 if (!hasCredentials) {
   console.log(
     "⚠️  Skipping E2E Bedrock tests: AWS credentials not configured"
+  );
+} else if (isMocked) {
+  console.log(
+    "⚠️  Skipping E2E Bedrock tests: modules are mocked (use `bun run test` for full suite)"
   );
 }
 
