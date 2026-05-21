@@ -199,7 +199,7 @@ const mockNotionClient = {
 };
 
 // Apply mocks BEFORE importing the processor
-mock.module("@loomii/db", () => ({ db: mockDb }));
+mock.module("@loomii/db", () => ({ db: mockDb, vectorSearch: async () => [], insertEmbedding: async () => {} }));
 mock.module("@loomii/queue", () => ({
   contextAssemblyQueue: { add: mock() },
   riskClassificationQueue: mockRiskClassificationQueue,

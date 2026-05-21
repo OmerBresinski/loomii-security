@@ -40,6 +40,7 @@ const mockEventsQueue = {
 mock.module("@loomii/db", () => ({
   db: mockDb,
   insertEmbedding: mockInsertEmbedding,
+  vectorSearch: async () => [],
 }));
 
 mock.module("@loomii/queue", () => ({

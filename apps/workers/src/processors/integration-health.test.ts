@@ -34,7 +34,7 @@ const mockEventsQueueAdd = mock((_name: string, _payload: any) =>
   Promise.resolve({ id: "event_job_123" })
 );
 
-mock.module("@loomii/db", () => ({ db: mockDb }));
+mock.module("@loomii/db", () => ({ db: mockDb, vectorSearch: async () => [], insertEmbedding: async () => {} }));
 mock.module("@loomii/queue", () => ({
   eventsQueue: { add: mockEventsQueueAdd },
   integrationHealthQueue: { add: mock() },

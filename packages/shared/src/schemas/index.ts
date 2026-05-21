@@ -60,3 +60,13 @@ export type {
   ThreatOutput,
   ThreatsOutput,
 } from "./threat-model-output";
+
+export {
+  ReviewOutputSchema,
+  ReviewFindingSchema,
+  FINDING_TYPES,
+  REVIEW_SEVERITY_LEVELS,
+  REVIEW_STRIDE_CATEGORIES,
+  EFFORT_LEVELS,
+} from "./review-output";
+export type { ReviewOutput, ReviewFinding } from "./review-output";

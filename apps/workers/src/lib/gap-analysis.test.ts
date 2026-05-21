@@ -48,6 +48,7 @@ const mockDb = {
 };
 
 mock.module("@loomii/db", () => ({
+  vectorSearch: async () => [], insertEmbedding: async () => {},
   db: mockDb,
 }));
 

@@ -50,6 +50,8 @@ const mockAgentGenerate = mock((_prompt: any, _opts: any): Promise<any> =>
 mock.module("@loomii/db", () => ({
   db: mockDb,
   BundleStatus: { ASSEMBLING: "ASSEMBLING", READY: "READY", REVIEWING: "REVIEWING", COMPLETED: "COMPLETED", FAILED: "FAILED" },
+  vectorSearch: async () => [],
+  insertEmbedding: async () => {},
 }));
 mock.module("@loomii/queue", () => ({
   reviewQueue: mockReviewQueue,

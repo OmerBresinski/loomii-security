@@ -53,11 +53,9 @@ const mockEmbedMany = mock(async ({ values }: { values: string[] }) => ({
   usage: { tokens: values.length * 100 },
 }));
 
-mock.module("ai", () => ({
-  embedMany: mockEmbedMany,
-}));
-
-// Mock the local embeddings module to avoid needing the real Bedrock provider
+// Mock the local embeddings module to avoid needing the real Bedrock provider.
+// Do NOT mock the top-level "ai" package here - it contaminates the module cache
+// and breaks @ai-sdk/amazon-bedrock and @mastra/core in other test files.
 mock.module("../lib/embeddings", () => ({
   generateEmbeddings: async (chunks: Array<{ index: number; content: string }>) => {
     // Call the tracked mock for assertion purposes
