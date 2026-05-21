@@ -1,4 +1,4 @@
-import { Outlet, Link, useRouterState } from "@tanstack/react-router"
+import { Outlet, Link, useRouterState, useNavigate } from "@tanstack/react-router"
 import {
   Sidebar,
   SidebarContent,
@@ -18,6 +18,16 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/hooks/use-auth"
 
@@ -57,10 +67,24 @@ function AppBreadcrumb() {
   )
 }
 
+function getInitials(firstName?: string | null, lastName?: string | null, email?: string): string {
+  if (firstName && lastName) {
+    return `${firstName[0]}${lastName[0]}`.toUpperCase()
+  }
+  if (firstName) {
+    return firstName[0].toUpperCase()
+  }
+  if (email) {
+    return email[0].toUpperCase()
+  }
+  return "?"
+}
+
 function AppSidebar() {
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
-  const { user, logout } = useAuth()
+  const navigate = useNavigate()
+  const { user, role, logout } = useAuth()
 
   return (
     <Sidebar>
@@ -87,21 +111,63 @@ function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="space-y-2 p-4">
-        {user && (
-          <div className="flex items-center justify-between">
-            <span className="truncate text-xs text-muted-foreground">
-              {user.email}
-            </span>
-            <button
-              onClick={logout}
-              className="text-xs text-muted-foreground underline underline-offset-2 hover:text-foreground"
-            >
-              Logout
-            </button>
-          </div>
-        )}
-        <ThemeToggle />
+      <SidebarFooter className="p-3">
+        <div className="flex items-center justify-between">
+          {user && (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm outline-hidden hover:bg-sidebar-accent">
+                <Avatar className="size-6">
+                  <AvatarFallback className="text-[10px]">
+                    {getInitials(user.firstName, user.lastName, user.email)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col leading-tight">
+                  <span className="truncate text-xs font-medium">
+                    {user.firstName && user.lastName
+                      ? `${user.firstName} ${user.lastName}`
+                      : user.email}
+                  </span>
+                  {role && (
+                    <span className="truncate text-[10px] text-muted-foreground">
+                      {role.charAt(0) + role.slice(1).toLowerCase().replace("_", " ")}
+                    </span>
+                  )}
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" side="top" className="w-48">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col gap-1">
+                      <p className="text-sm font-medium">
+                        {user.firstName && user.lastName
+                          ? `${user.firstName} ${user.lastName}`
+                          : "Account"}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem
+                    onClick={() => navigate({ to: "/settings" })}
+                  >
+                    Settings
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem onClick={logout}>
+                    Log out
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <ThemeToggle />
+        </div>
       </SidebarFooter>
     </Sidebar>
   )
