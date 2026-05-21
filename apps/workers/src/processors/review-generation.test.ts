@@ -22,15 +22,19 @@ const mockEventsQueueAdd = mock(async (_name: string, _data: any) => ({
   id: "event_job_123",
 }));
 
+const mockThreatModelQueueAdd = mock(async (_name: string, _data: any) => ({
+  id: "tm_job_123",
+}));
+
 mock.module("@loomii/queue", () => ({
   eventsQueue: { add: mockEventsQueueAdd },
+  threatModelQueue: { add: mockThreatModelQueueAdd },
   reviewQueue: { add: mock(async () => ({ id: "job_1" })) },
   contextAssemblyQueue: { add: mock() },
   riskClassificationQueue: { add: mock() },
   embeddingQueue: { add: mock() },
   notionPollingQueue: { add: mock() },
   integrationHealthQueue: { add: mock() },
-  threatModelQueue: { add: mock() },
   createRedisConnection: () => ({}),
   QUEUE_NAMES: {
     CONTEXT_ASSEMBLY: "context-assembly",
@@ -169,6 +173,7 @@ describe("Review Generation Processor", () => {
     mockReviewUpsert.mockReset();
     mockAgentGenerate.mockReset();
     mockEventsQueueAdd.mockReset();
+    mockThreatModelQueueAdd.mockReset();
     mockFindingCreate.mockReset();
     mockFindingRelationCreate.mockReset();
     mockReviewVersionCreate.mockReset();
@@ -360,13 +365,19 @@ describe("Review Generation Processor", () => {
     expect(mockFindingRelationCreate.mock.calls.length).toBeGreaterThan(0);
   });
 
-  it("publishes review.completed event always", async () => {
+  it("publishes review.completed to both events queue and threat model queue", async () => {
     const job = createMockJob({ tenantId: "tenant_1", contextId: "ctx_123", reviewType: "design-review" });
     await processReviewGeneration(job);
 
+    // Events queue receives review.completed
     const eventCalls = mockEventsQueueAdd.mock.calls;
     const completedCall = eventCalls.find((c: any) => c[0] === "review.completed");
     expect(completedCall).toBeDefined();
+
+    // Threat model queue also receives it (for re-evaluation)
+    const tmCalls = mockThreatModelQueueAdd.mock.calls;
+    const tmCall = tmCalls.find((c: any) => c[0] === "review-completed");
+    expect(tmCall).toBeDefined();
   });
 
   it("throws on missing context bundle", async () => {

@@ -32,7 +32,12 @@ import {
 } from "../agents/design-review";
 import { routeReview, type RiskLevel } from "../lib/review-router";
 import { saveReviewAtomically, markReviewError } from "../lib/review-saver";
-import { eventsQueue } from "@loomii/queue";
+import {
+  publishReviewPublished,
+  publishReviewPendingApproval,
+  publishReviewCompleted,
+  publishReviewFailed,
+} from "../lib/review-events";
 import { logger } from "../lib/logger";
 import { MODELS } from "../lib/bedrock";
 
@@ -163,43 +168,61 @@ export async function processReviewGeneration(
     // ─── 7. Publish events ──────────────────────────────────────────────────
     const durationMs = Date.now() - startTime;
 
-    try {
-      const eventType =
-        routing.mode === "AUTONOMOUS"
-          ? "review.published"
-          : "review.pending_approval";
+    // Count findings by type for the completed event
+    const findingSummary = {
+      threats: reviewOutput.findings.filter((f) => f.type === "THREAT").length,
+      requirements: reviewOutput.findings.filter((f) => f.type === "REQUIREMENT").length,
+      mitigations: reviewOutput.findings.filter((f) => f.type === "MITIGATION").length,
+    };
 
-      await eventsQueue.add(eventType, {
-        tenantId,
-        eventType,
-        data: {
+    // 7a. Publish routing-specific event (non-critical - swallow errors)
+    try {
+      if (routing.mode === "AUTONOMOUS") {
+        await publishReviewPublished({
+          tenantId,
           reviewId: saveResult.reviewId,
           contextBundleId: contextId,
           severity: reviewOutput.severity,
           confidence: reviewOutput.confidence,
-          mode: routing.mode,
           findingCount: saveResult.findingCount,
+          publishedVia: "autonomous",
           durationMs,
-        },
-        timestamp: new Date().toISOString(),
-      });
-
-      // Always publish review.completed event (consumed by Threat Model Agent)
-      await eventsQueue.add("review.completed", {
-        tenantId,
-        eventType: "review.completed",
-        data: {
+        });
+      } else {
+        await publishReviewPendingApproval({
+          tenantId,
           reviewId: saveResult.reviewId,
           contextBundleId: contextId,
           severity: reviewOutput.severity,
-          mode: routing.mode,
-        },
-        timestamp: new Date().toISOString(),
-      });
+          confidence: reviewOutput.confidence,
+          findingCount: saveResult.findingCount,
+          reason: routing.reason,
+        });
+      }
     } catch (err: any) {
       childLogger.warn(
         { error: err.message },
-        "Event publishing failed (non-critical, review already saved)"
+        "Routing event publishing failed (non-critical, review already saved)"
+      );
+    }
+
+    // 7b. Publish review.completed (critical - Threat Model Agent depends on this)
+    // Separated from the routing event so a failure there doesn't block this.
+    try {
+      await publishReviewCompleted({
+        tenantId,
+        reviewId: saveResult.reviewId,
+        contextBundleId: contextId,
+        severity: reviewOutput.severity,
+        mode: routing.mode,
+        findingCount: saveResult.findingCount,
+        findingSummary,
+      });
+    } catch (err: any) {
+      // Log as error (not warn) since the Threat Model Agent may miss this
+      childLogger.error(
+        { error: err.message, reviewId: saveResult.reviewId },
+        "review.completed event publishing failed - Threat Model Agent may not re-evaluate"
       );
     }
 
@@ -226,15 +249,11 @@ export async function processReviewGeneration(
 
     // Publish failure event (non-critical)
     try {
-      await eventsQueue.add("review.failed", {
+      await publishReviewFailed({
         tenantId,
-        eventType: "review.failed",
-        data: {
-          contextBundleId: contextId,
-          error: error.message?.slice(0, 500) ?? "Unknown error",
-          durationMs,
-        },
-        timestamp: new Date().toISOString(),
+        contextBundleId: contextId,
+        error: error.message ?? "Unknown error",
+        durationMs,
       });
     } catch {
       // Swallow event publishing errors
