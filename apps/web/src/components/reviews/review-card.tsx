@@ -1,6 +1,4 @@
-import { Badge } from "@/components/ui/badge"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { GithubIcon, NotionIcon } from "@hugeicons/core-free-icons"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import type { Review } from "@/queries/reviews"
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -23,13 +21,7 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString()
 }
 
-const riskStyles: Record<string, string> = {
-  CRITICAL: "bg-red-500/10 text-red-600 dark:text-red-400",
-  HIGH: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
-  MEDIUM: "bg-yellow-500/10 text-yellow-600 dark:text-yellow-400",
-  LOW: "bg-green-500/10 text-green-600 dark:text-green-400",
-  INFO: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-}
+// ─── Risk Icons ─────────────────────────────────────────────────────────────
 
 const riskLabels: Record<string, string> = {
   CRITICAL: "Critical",
@@ -39,35 +31,87 @@ const riskLabels: Record<string, string> = {
   INFO: "Info",
 }
 
-const statusStyles: Record<string, string> = {
-  ASSEMBLING: "bg-muted text-muted-foreground",
-  READY: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
-  REVIEWING: "bg-purple-500/10 text-purple-600 dark:text-purple-400",
-  COMPLETED: "bg-green-500/10 text-green-600 dark:text-green-400",
-  FAILED: "bg-red-500/10 text-red-600 dark:text-red-400",
+function RiskIcon({ level }: { level: string }) {
+  if (level === "CRITICAL") {
+    return (
+      <svg width="16" height="16" viewBox="0 0 16 16" className="text-muted-foreground dark:text-muted-foreground text-primary/60">
+        <rect width="16" height="16" rx="3" fill="currentColor" />
+        <text x="8" y="12" textAnchor="middle" fontSize="11" fontWeight="bold" fill="var(--background)">!</text>
+      </svg>
+    )
+  }
+
+  const activeBars = level === "HIGH" ? 3 : level === "MEDIUM" ? 2 : level === "LOW" ? 1 : 0
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" className="text-primary/60 dark:text-muted-foreground">
+      <rect x="2" y="10" width="3" height="5" rx="0.5" fill="currentColor" opacity={activeBars >= 1 ? 1 : 0.3} />
+      <rect x="6.5" y="6" width="3" height="9" rx="0.5" fill="currentColor" opacity={activeBars >= 2 ? 1 : 0.3} />
+      <rect x="11" y="2" width="3" height="13" rx="0.5" fill="currentColor" opacity={activeBars >= 3 ? 1 : 0.3} />
+    </svg>
+  )
+}
+
+// ─── Status Icons ───────────────────────────────────────────────────────────
+
+const statusLabels: Record<string, string> = {
+  ASSEMBLING: "Assembling",
+  READY: "Todo",
+  REVIEWING: "In Review",
+  COMPLETED: "Done",
+  FAILED: "Failed",
+}
+
+function StatusIcon({ status }: { status: string }) {
+  switch (status) {
+    case "COMPLETED":
+      return (
+        <svg width="15" height="15" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="7" fill="oklch(0.55 0.2 260)" />
+          <path d="M5 8l2 2 4-4" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      )
+    case "FAILED":
+      return (
+        <svg width="15" height="15" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="7" fill="oklch(0.5 0 0)" />
+          <path d="M6 6l4 4M10 6l-4 4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+        </svg>
+      )
+    case "REVIEWING":
+      return (
+        <svg width="15" height="15" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="6.5" fill="none" stroke="oklch(0.65 0.2 330)" strokeWidth="1.5" />
+          <path d="M8 1.5 A6.5 6.5 0 0 1 8 14.5" fill="oklch(0.65 0.2 330)" />
+        </svg>
+      )
+    case "READY":
+      return (
+        <svg width="15" height="15" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="6.5" fill="none" stroke="oklch(0.55 0 0)" strokeWidth="1.5" />
+        </svg>
+      )
+    case "ASSEMBLING":
+    default:
+      return (
+        <svg width="15" height="15" viewBox="0 0 16 16">
+          <circle cx="8" cy="8" r="6.5" fill="none" stroke="oklch(0.45 0 0)" strokeWidth="1.5" strokeDasharray="2.5 2" />
+        </svg>
+      )
+  }
+}
+
+// ─── Source ─────────────────────────────────────────────────────────────────
+
+const sourceFavicons: Record<string, string> = {
+  LINEAR: "https://www.google.com/s2/favicons?domain=linear.app&sz=64",
+  NOTION: "https://www.google.com/s2/favicons?domain=notion.so&sz=64",
+  GITHUB: "https://www.google.com/s2/favicons?domain=github.com&sz=64",
 }
 
 const sourceLabels: Record<string, string> = {
   LINEAR: "Linear",
   NOTION: "Notion",
   GITHUB: "GitHub",
-}
-
-function SourceIcon({ source }: { source: string }) {
-  switch (source) {
-    case "GITHUB":
-      return <HugeiconsIcon icon={GithubIcon} size={14} strokeWidth={1.5} />
-    case "NOTION":
-      return <HugeiconsIcon icon={NotionIcon} size={20} strokeWidth={1.5} />
-    case "LINEAR":
-      return (
-        <svg width="14" height="14" viewBox="0 0 100 100" fill="currentColor">
-          <path d="M1.22541 61.5228c-.2225-.9485.90748-1.5459 1.59638-.8437L39.3342 98.1845c.7025.7025.1004 1.8189-.8484 1.5765C20.0515 95.5703 5.16312 80.4479 1.22541 61.5228ZM.00189 46.8891c-.01764.2833.00951.5765.09498.8748l52.135 52.1349c.2984.0866.5765.1139.8749.095 7.3517-.5765 14.2664-2.7908 20.3487-6.2442L1.56667 21.8612C-1.69665 28.0346-.60928 39.4444.00189 46.8891ZM12.751 7.15679c-1.00514.80879-.88783 2.32934.15587 3.37304L88.4716 72.0944c1.0437 1.0437 2.5765.9949 3.3731-.1559 4.2568-6.1572 7.0764-13.2453 8.0012-20.8196.0901-.7372-.1694-1.4749-.7053-2.0108L50.9739 1.04082c-.536-.536-1.2737-.79538-2.0109-.70524-7.5742.92479-14.6624 3.74438-20.8196 8.00121l-.0653.04624Z" />
-        </svg>
-      )
-    default:
-      return null
-  }
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -78,57 +122,66 @@ interface ReviewRowProps {
 
 export function ReviewRow({ review }: ReviewRowProps) {
   return (
-    <div className="flex h-12 cursor-pointer items-center border-b border-border/60 px-4 hover:bg-primary/[0.03]">
+    <div className="flex h-12 cursor-pointer items-center px-4 hover:bg-accent dark:hover:bg-[#25262A]">
+      {/* Risk */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex w-8 shrink-0 items-center justify-center">
+            {review.riskLevel ? <RiskIcon level={review.riskLevel} /> : null}
+          </div>
+        </TooltipTrigger>
+        {review.riskLevel && (
+          <TooltipContent side="top" className="text-xs">
+            {riskLabels[review.riskLevel]}
+          </TooltipContent>
+        )}
+      </Tooltip>
+
       {/* External ID */}
-      <div className="w-24 shrink-0 pr-3">
-        <span className="text-xs uppercase text-muted-foreground">{review.externalId}</span>
+      <div className="flex w-20 shrink-0 items-center pr-1">
+        <span className="text-[11px] uppercase text-muted-foreground">
+          {review.externalId}
+        </span>
       </div>
 
+      {/* Status */}
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="flex w-8 shrink-0 items-center justify-center">
+            <StatusIcon status={review.status} />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          {statusLabels[review.status] ?? review.status}
+        </TooltipContent>
+      </Tooltip>
+
       {/* Title */}
-      <div className="min-w-0 flex-1 pr-4">
-        <span className="truncate text-sm">
+      <div className="flex min-w-0 flex-1 items-center pl-2 pr-4">
+        <span className="truncate text-[13px]">
           {review.title ?? "Untitled review"}
         </span>
       </div>
 
       {/* Source */}
-      <div
-        className="flex w-16 shrink-0 items-center justify-center text-muted-foreground"
-        title={sourceLabels[review.source] ?? review.source}
-      >
-        <SourceIcon source={review.source} />
-      </div>
-
-      {/* Risk */}
-      <div className="w-20 shrink-0 text-center">
-        {review.riskLevel && (
-          <Badge
-            variant="secondary"
-            className={`text-[10px] font-normal ${riskStyles[review.riskLevel] ?? ""}`}
-          >
-            {riskLabels[review.riskLevel] ?? review.riskLevel}
-          </Badge>
-        )}
-      </div>
-
-      {/* Status */}
-      <div className="w-24 shrink-0 text-center">
-        <Badge
-          variant="secondary"
-          className={`text-[10px] font-normal ${statusStyles[review.status] ?? ""}`}
-        >
-          {review.status.charAt(0) + review.status.slice(1).toLowerCase()}
-        </Badge>
+      <div className="flex w-16 shrink-0 items-center justify-center" title={sourceLabels[review.source] ?? review.source}>
+        <img
+          src={sourceFavicons[review.source]}
+          alt={sourceLabels[review.source] ?? review.source}
+          width={18}
+          height={18}
+          loading="lazy"
+          decoding="async"
+        />
       </div>
 
       {/* Findings */}
-      <div className="w-20 shrink-0 text-right text-xs text-muted-foreground">
-        {review.findingCount}{" "}
-        {review.findingCount === 1 ? "finding" : "findings"}
+      <div className="flex w-20 shrink-0 items-center justify-end text-[11px] text-muted-foreground">
+        {review.findingCount} {review.findingCount === 1 ? "finding" : "findings"}
       </div>
 
       {/* Time */}
-      <div className="w-16 shrink-0 text-right text-xs text-muted-foreground">
+      <div className="flex w-16 shrink-0 items-center justify-end text-[11px] text-muted-foreground">
         {timeAgo(review.createdAt)}
       </div>
     </div>

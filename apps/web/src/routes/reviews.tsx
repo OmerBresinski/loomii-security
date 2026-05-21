@@ -101,15 +101,15 @@ export default function ReviewsPage() {
 
       {/* Table */}
       {isPending ? (
-        <div className="flex flex-col rounded-md border">
+        <div className="flex flex-col rounded-md">
           {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="flex h-12 items-center border-b px-4 last:border-b-0">
+            <div key={i} className="flex h-12 items-center px-4">
               <Skeleton className="h-4 w-full max-w-md" />
             </div>
           ))}
         </div>
       ) : allReviews.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-md border p-6 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-md p-6 text-center">
           <p className="text-sm font-medium">No reviews found</p>
           <p className="text-xs text-muted-foreground">
             {filters.search || filters.status?.length || filters.riskLevel?.length
@@ -118,18 +118,7 @@ export default function ReviewsPage() {
           </p>
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col rounded-md border">
-          {/* Column Headers */}
-          <div className="flex h-9 shrink-0 items-center border-b bg-muted/40 px-4 text-xs font-medium text-muted-foreground">
-            <div className="w-24 shrink-0 pr-3">ID</div>
-            <div className="min-w-0 flex-1">Title</div>
-            <div className="w-16 shrink-0 text-center">Source</div>
-            <div className="w-20 shrink-0 text-center">Risk</div>
-            <div className="w-24 shrink-0 text-center">Status</div>
-            <div className="w-20 shrink-0 text-right">Findings</div>
-            <div className="w-16 shrink-0 text-right">Time</div>
-          </div>
-
+        <div className="flex min-h-0 flex-1 flex-col rounded-md">
           {/* Scrollable rows */}
           <div ref={parentRef} className="min-h-0 flex-1 overflow-y-auto">
             <div
