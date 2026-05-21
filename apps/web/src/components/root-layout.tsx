@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useAuth } from "@/hooks/use-auth"
 
 const navItems = [
   { title: "Reviews", href: "/reviews" },
@@ -26,9 +27,13 @@ const navItems = [
   { title: "Settings", href: "/settings" },
 ]
 
+/** Routes that should not show the sidebar/app shell */
+const PUBLIC_ROUTES = ["/login", "/auth/callback"]
+
 function AppSidebar() {
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
+  const { user, logout } = useAuth()
 
   return (
     <Sidebar>
@@ -58,7 +63,20 @@ function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-4">
+      <SidebarFooter className="p-4 space-y-2">
+        {user && (
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-muted-foreground truncate">
+              {user.email}
+            </span>
+            <button
+              onClick={logout}
+              className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+            >
+              Logout
+            </button>
+          </div>
+        )}
         <ThemeToggle />
       </SidebarFooter>
     </Sidebar>
@@ -66,6 +84,18 @@ function AppSidebar() {
 }
 
 export function RootLayout() {
+  const routerState = useRouterState()
+  const currentPath = routerState.location.pathname
+
+  // Public routes render without the app shell (no sidebar)
+  const isPublicRoute = PUBLIC_ROUTES.some((route) =>
+    currentPath.startsWith(route)
+  )
+
+  if (isPublicRoute) {
+    return <Outlet />
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar />

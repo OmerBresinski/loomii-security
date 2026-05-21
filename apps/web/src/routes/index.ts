@@ -3,81 +3,109 @@ import {
   createRoute,
   createRootRoute,
   lazyRouteComponent,
+  redirect,
 } from "@tanstack/react-router"
 import { RootLayout } from "@/components/root-layout"
+import { getSessionToken } from "@/lib/api-client"
 
-// Root route with layout
+// ─── Auth Guard ─────────────────────────────────────────────────────────────
+
+/**
+ * beforeLoad guard for protected routes.
+ * Checks localStorage for a session token; if absent, redirects to /login.
+ * The full validation against the API happens in AuthProvider on mount.
+ */
+function requireAuth() {
+  const token = getSessionToken()
+  if (!token) {
+    throw redirect({ to: "/login" })
+  }
+}
+
+// ─── Root Route ─────────────────────────────────────────────────────────────
+
 const rootRoute = createRootRoute({
   component: RootLayout,
 })
 
-// Index redirect to /reviews
-const indexRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/",
-  component: lazyRouteComponent(() => import("@/routes/reviews")),
-})
+// ─── Public Routes (no auth required) ───────────────────────────────────────
 
-// Login (public, no sidebar)
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
   component: lazyRouteComponent(() => import("@/routes/login")),
 })
 
-// Onboarding
-const onboardingRoute = createRoute({
+const authCallbackRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/onboarding",
-  component: lazyRouteComponent(() => import("@/routes/onboarding")),
+  path: "/auth/callback",
+  component: lazyRouteComponent(() => import("@/routes/auth-callback")),
 })
 
-// Reviews
-const reviewsRoute = createRoute({
+// ─── Protected Routes (require auth) ───────────────────────────────────────
+
+const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/reviews",
+  path: "/",
+  beforeLoad: requireAuth,
   component: lazyRouteComponent(() => import("@/routes/reviews")),
 })
 
-// Metrics
+const reviewsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/reviews",
+  beforeLoad: requireAuth,
+  component: lazyRouteComponent(() => import("@/routes/reviews")),
+})
+
 const metricsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/metrics",
+  beforeLoad: requireAuth,
   component: lazyRouteComponent(() => import("@/routes/metrics")),
 })
 
-// Policies
 const policiesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/policies",
+  beforeLoad: requireAuth,
   component: lazyRouteComponent(() => import("@/routes/policies")),
 })
 
-// Threats
 const threatsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/threats",
+  beforeLoad: requireAuth,
   component: lazyRouteComponent(() => import("@/routes/threats")),
 })
 
-// Settings
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
+  beforeLoad: requireAuth,
   component: lazyRouteComponent(() => import("@/routes/settings")),
 })
 
-// Notifications
 const notificationsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/notifications",
+  beforeLoad: requireAuth,
   component: lazyRouteComponent(() => import("@/routes/notifications")),
 })
 
-// Route tree
+const onboardingRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/onboarding",
+  beforeLoad: requireAuth,
+  component: lazyRouteComponent(() => import("@/routes/onboarding")),
+})
+
+// ─── Route Tree ─────────────────────────────────────────────────────────────
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
+  authCallbackRoute,
   onboardingRoute,
   reviewsRoute,
   metricsRoute,
@@ -87,7 +115,8 @@ const routeTree = rootRoute.addChildren([
   notificationsRoute,
 ])
 
-// Create the router
+// ─── Router Instance ────────────────────────────────────────────────────────
+
 export const router = createRouter({
   routeTree,
   defaultPreload: "intent",
