@@ -11,7 +11,6 @@
  * - Saves review + version + findings (AC7)
  * - Creates finding relations (AC8)
  */
-import "../test-setup";
 import { describe, it, expect, beforeEach, mock, afterEach } from "bun:test";
 import type { ReviewOutput } from "@loomii/shared/schemas";
 
@@ -150,11 +149,24 @@ const mockAgentGenerate = mock(async () => ({
   text: "",
 }));
 
+const mockGenerateWithFallback = mock(async () => ({
+  output: VALID_REVIEW_OUTPUT,
+  modelUsed: "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+  attemptNumber: 1,
+  usedFallback: false,
+}));
+
 mock.module("../agents/design-review", () => ({
   designReviewAgent: { generate: mockAgentGenerate },
   designReviewTools: {},
   buildReviewPrompt: (_content: string, _risk: string, _title?: string) =>
     "mock review prompt",
+}));
+
+mock.module("../lib/fallback-handler", () => ({
+  generateWithFallback: mockGenerateWithFallback,
+  generateWithFallbackAgents: mockGenerateWithFallback, // Exposed for cross-file mock compat
+  __setSleep: () => {},
 }));
 
 const _mockLogger: any = { info: () => {}, warn: () => {}, error: () => {}, child: () => _mockLogger };
@@ -172,7 +184,7 @@ describe("Review Generation Processor", () => {
     mockReviewFindUnique.mockReset();
     mockContextBundleFindUnique.mockReset();
     mockReviewUpsert.mockReset();
-    mockAgentGenerate.mockReset();
+    mockGenerateWithFallback.mockReset();
     mockEventsQueueAdd.mockReset();
     mockThreatModelQueueAdd.mockReset();
     mockFindingCreate.mockReset();
@@ -193,9 +205,11 @@ describe("Review Generation Processor", () => {
       contextBundleId: "ctx_123",
       status: "GENERATING",
     });
-    mockAgentGenerate.mockResolvedValue({
-      object: VALID_REVIEW_OUTPUT,
-      text: "",
+    mockGenerateWithFallback.mockResolvedValue({
+      output: VALID_REVIEW_OUTPUT,
+      modelUsed: "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      attemptNumber: 1,
+      usedFallback: false,
     });
     mockReviewVersionCreate.mockResolvedValue({ id: "version_123", version: 1 });
 
@@ -204,14 +218,15 @@ describe("Review Generation Processor", () => {
       id: `finding_${findingCounter++}`,
     }));
     mockFindingRelationCreate.mockResolvedValue({ id: "relation_123" });
+    mockThreatModelQueueAdd.mockResolvedValue({ id: "tm_job_123" });
   });
 
   it("generates review with correct structure", async () => {
     const job = createMockJob({ tenantId: "tenant_1", contextId: "ctx_123", reviewType: "design-review" });
     await processReviewGeneration(job);
 
-    // Agent was called
-    expect(mockAgentGenerate).toHaveBeenCalledTimes(1);
+    // Fallback handler was called
+    expect(mockGenerateWithFallback).toHaveBeenCalledTimes(1);
 
     // Review was saved
     expect(mockReviewVersionCreate).toHaveBeenCalledTimes(1);
@@ -232,16 +247,11 @@ describe("Review Generation Processor", () => {
   });
 
   it("handles fallback on invalid output (AC3)", async () => {
-    // First call returns invalid, second returns valid
-    mockAgentGenerate
-      .mockResolvedValueOnce({ object: null, text: "" })
-      .mockResolvedValueOnce({ object: VALID_REVIEW_OUTPUT, text: "" });
+    // Fallback handler throws when all attempts fail
+    mockGenerateWithFallback.mockRejectedValueOnce(new Error("All 4 LLM attempts failed"));
 
     const job = createMockJob({ tenantId: "tenant_1", contextId: "ctx_123", reviewType: "design-review" });
-    await processReviewGeneration(job);
-
-    // Agent was called twice (initial + retry)
-    expect(mockAgentGenerate).toHaveBeenCalledTimes(2);
+    await expect(processReviewGeneration(job)).rejects.toThrow("All 4 LLM attempts failed");
   });
 
   it("routes critical to ASSISTED (AC4)", async () => {
@@ -253,9 +263,11 @@ describe("Review Generation Processor", () => {
       tenantId: "tenant_1",
     });
 
-    mockAgentGenerate.mockResolvedValue({
-      object: { ...VALID_REVIEW_OUTPUT, severity: "CRITICAL", confidence: 90 },
-      text: "",
+    mockGenerateWithFallback.mockResolvedValue({
+      output: { ...VALID_REVIEW_OUTPUT, severity: "CRITICAL", confidence: 90 },
+      modelUsed: "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      attemptNumber: 1,
+      usedFallback: false,
     });
 
     const job = createMockJob({ tenantId: "tenant_1", contextId: "ctx_123", reviewType: "design-review" });
@@ -276,9 +288,11 @@ describe("Review Generation Processor", () => {
       tenantId: "tenant_1",
     });
 
-    mockAgentGenerate.mockResolvedValue({
-      object: { ...VALID_REVIEW_OUTPUT, severity: "MEDIUM", confidence: 80 },
-      text: "",
+    mockGenerateWithFallback.mockResolvedValue({
+      output: { ...VALID_REVIEW_OUTPUT, severity: "MEDIUM", confidence: 80 },
+      modelUsed: "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      attemptNumber: 1,
+      usedFallback: false,
     });
 
     const job = createMockJob({ tenantId: "tenant_1", contextId: "ctx_123", reviewType: "design-review" });
@@ -300,8 +314,8 @@ describe("Review Generation Processor", () => {
     const job = createMockJob({ tenantId: "tenant_1", contextId: "ctx_123", reviewType: "design-review" });
     await processReviewGeneration(job);
 
-    // Agent should NOT be called
-    expect(mockAgentGenerate).not.toHaveBeenCalled();
+    // Fallback handler should NOT be called
+    expect(mockGenerateWithFallback).not.toHaveBeenCalled();
   });
 
   it("allows re-generation if existing review is in ERROR state", async () => {
@@ -314,8 +328,8 @@ describe("Review Generation Processor", () => {
     const job = createMockJob({ tenantId: "tenant_1", contextId: "ctx_123", reviewType: "design-review" });
     await processReviewGeneration(job);
 
-    // Agent SHOULD be called (re-try after error)
-    expect(mockAgentGenerate).toHaveBeenCalledTimes(1);
+    // Fallback handler SHOULD be called (re-try after error)
+    expect(mockGenerateWithFallback).toHaveBeenCalledTimes(1);
   });
 
   it("allows re-generation if existing review is stale GENERATING (>5 min)", async () => {
@@ -329,8 +343,8 @@ describe("Review Generation Processor", () => {
     const job = createMockJob({ tenantId: "tenant_1", contextId: "ctx_123", reviewType: "design-review" });
     await processReviewGeneration(job);
 
-    // Agent SHOULD be called (stale GENERATING = crashed worker)
-    expect(mockAgentGenerate).toHaveBeenCalledTimes(1);
+    // Fallback handler SHOULD be called (stale GENERATING = crashed worker)
+    expect(mockGenerateWithFallback).toHaveBeenCalledTimes(1);
   });
 
   it("skips if existing review is fresh GENERATING (<5 min)", async () => {
@@ -344,8 +358,8 @@ describe("Review Generation Processor", () => {
     const job = createMockJob({ tenantId: "tenant_1", contextId: "ctx_123", reviewType: "design-review" });
     await processReviewGeneration(job);
 
-    // Agent should NOT be called (another worker is actively processing)
-    expect(mockAgentGenerate).not.toHaveBeenCalled();
+    // Fallback handler should NOT be called (another worker is actively processing)
+    expect(mockGenerateWithFallback).not.toHaveBeenCalled();
   });
 
   it("saves ReviewVersion v1 with editorType agent (AC7)", async () => {
