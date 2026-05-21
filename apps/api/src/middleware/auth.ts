@@ -1,5 +1,4 @@
 import { createMiddleware } from "hono/factory";
-import { getWorkOS } from "../lib/workos";
 
 export type UserRole = "ADMIN" | "SECURITY_LEAD" | "DEVELOPER" | "VIEWER";
 
@@ -15,7 +14,33 @@ export interface AuthUser {
  * Will be replaced with @loomii/db (Prisma) queries once LOO-120 is complete.
  */
 const tenantStore = new Map<string, { id: string; workosOrgId: string }>();
-const userStore = new Map<string, { id: string; tenantId: string; workosUserId: string; role: UserRole }>();
+const userStore = new Map<
+  string,
+  { id: string; tenantId: string; workosUserId: string; role: UserRole }
+>();
+
+/**
+ * Server-side session store.
+ * Maps session ID (opaque token) → authenticated user session data.
+ * Will be replaced with Redis/DB-backed sessions in production.
+ */
+export interface SessionEntry {
+  user: AuthUser;
+  organizationId: string;
+  createdAt: number;
+}
+
+export const sessionStore = new Map<string, SessionEntry>();
+
+/**
+ * Create a new session and return the session ID.
+ * Called by the auth callback after successful WorkOS authentication.
+ */
+export function createSession(entry: SessionEntry): string {
+  const sessionId = crypto.randomUUID();
+  sessionStore.set(sessionId, entry);
+  return sessionId;
+}
 
 export const authMiddleware = createMiddleware(async (c, next) => {
   const authHeader = c.req.header("Authorization");
@@ -35,97 +60,17 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 
   const token = authHeader.replace("Bearer ", "");
 
-  try {
-    const workos = getWorkOS();
+  // Look up session in server-side store
+  const session = sessionStore.get(token);
 
-    // Verify the session token with WorkOS
-    const authResult = await workos.userManagement.authenticateWithSessionCookie({
-      sessionData: token,
-    });
-
-    if (!authResult.authenticated) {
-      return c.json(
-        {
-          error: {
-            code: "UNAUTHORIZED",
-            message: "Invalid session token",
-            requestId: c.get("requestId") as string,
-          },
-        },
-        401
-      );
-    }
-
-    const { user, organizationId } = authResult;
-
-    if (!organizationId) {
-      return c.json(
-        {
-          error: {
-            code: "UNAUTHORIZED",
-            message: "No organization associated with session",
-            requestId: c.get("requestId") as string,
-          },
-        },
-        401
-      );
-    }
-
-    // Resolve or create tenant
-    let tenant = tenantStore.get(organizationId);
-    if (!tenant) {
-      // Auto-create tenant on first login from new org
-      tenant = {
-        id: crypto.randomUUID(),
-        workosOrgId: organizationId,
-      };
-      tenantStore.set(organizationId, tenant);
-    }
-
-    // Resolve or create user within tenant
-    const userKey = `${tenant.id}:${user.id}`;
-    let dbUser = userStore.get(userKey);
-    if (!dbUser) {
-      // Check if this is the first user for this tenant
-      const isFirstUser = !Array.from(userStore.values()).some(
-        (u) => u.tenantId === tenant!.id
-      );
-
-      dbUser = {
-        id: crypto.randomUUID(),
-        tenantId: tenant.id,
-        workosUserId: user.id,
-        role: isFirstUser ? "ADMIN" : "DEVELOPER",
-      };
-      userStore.set(userKey, dbUser);
-    }
-
-    // Set context for downstream handlers
-    const authUser: AuthUser = {
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName ?? undefined,
-      lastName: user.lastName ?? undefined,
-    };
-
-    c.set("user", authUser);
-    c.set("userId", user.id);
-    c.set("tenantId", tenant.id);
-    c.set("role", dbUser.role);
-
-    await next();
-  } catch (error) {
-    // Log error without exposing token (mask it)
-    const maskedToken = token.length > 8
-      ? `${token.slice(0, 4)}****${token.slice(-4)}`
-      : "****";
-
+  if (!session) {
     const logger = c.get("logger") as any;
     if (logger) {
-      logger.warn(
-        { maskedToken, error: (error as Error).message },
-        "Auth validation failed"
-      );
+      const maskedToken =
+        token.length > 8
+          ? `${token.slice(0, 4)}****${token.slice(-4)}`
+          : "****";
+      logger.warn({ maskedToken }, "Session not found");
     }
 
     return c.json(
@@ -139,7 +84,51 @@ export const authMiddleware = createMiddleware(async (c, next) => {
       401
     );
   }
+
+  const { user, organizationId } = session;
+
+  // Resolve or create tenant
+  let tenant = tenantStore.get(organizationId);
+  if (!tenant) {
+    tenant = {
+      id: crypto.randomUUID(),
+      workosOrgId: organizationId,
+    };
+    tenantStore.set(organizationId, tenant);
+  }
+
+  // Resolve or create user within tenant
+  const userKey = `${tenant.id}:${user.id}`;
+  let dbUser = userStore.get(userKey);
+  if (!dbUser) {
+    const isFirstUser = !Array.from(userStore.values()).some(
+      (u) => u.tenantId === tenant!.id
+    );
+
+    dbUser = {
+      id: crypto.randomUUID(),
+      tenantId: tenant.id,
+      workosUserId: user.id,
+      role: isFirstUser ? "ADMIN" : "DEVELOPER",
+    };
+    userStore.set(userKey, dbUser);
+  }
+
+  // Set context for downstream handlers
+  c.set("user", user);
+  c.set("userId", user.id);
+  c.set("tenantId", tenant.id);
+  c.set("role", dbUser.role);
+
+  await next();
 });
+
+/**
+ * Invalidate a session (logout).
+ */
+export function destroySession(sessionId: string): boolean {
+  return sessionStore.delete(sessionId);
+}
 
 /**
  * Exported for testing: reset in-memory stores.
@@ -147,4 +136,5 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 export function _resetStores() {
   tenantStore.clear();
   userStore.clear();
+  sessionStore.clear();
 }
