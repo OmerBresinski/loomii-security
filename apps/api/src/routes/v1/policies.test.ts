@@ -28,47 +28,25 @@ const mockPolicyCreate = mock(async (args: any) => ({
   createdAt: new Date(),
 }));
 
-const mockPolicyFindFirst = mock(async () => null);
-
-const mockPolicyFindMany = mock(async () => [
-  {
-    id: "policy_built_in",
-    name: "A01:2021 - Broken Access Control",
-    framework: "OWASP_TOP_10_2021",
-    identifier: "A01",
-    keywords: ["access control"],
-    isEnabled: true,
-    isBuiltIn: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "policy_custom",
-    name: "Custom Auth Policy",
-    framework: "CUSTOM",
-    identifier: "custom_abc123",
-    keywords: ["auth"],
-    isEnabled: true,
-    isBuiltIn: false,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-]);
-
-const mockPolicyFindUnique = mock(async () => null);
-const mockPolicyUpdate = mock(async (args: any) => ({
-  id: args.where.id,
+const mockPolicyFindMany = mock(async (_args?: any) => [] as any[]);
+const mockPolicyFindFirst = mock(async (_args?: any) => null as any);
+const mockPolicyFindUnique = mock(async (_args?: any) => null as any);
+const mockPolicyOverrideUpsert = mock(async (_args?: any) => ({} as any));
+const mockPolicyOverrideFindMany = mock(async (_args?: any) => [] as any[]);
+const mockPolicyOverrideDeleteMany = mock(async (_args?: any) => ({ count: 0 }));
+const mockPolicyUpdate = mock(async (_args?: any) => ({
+  id: "policy_updated",
   name: "Updated Policy",
   framework: "CUSTOM",
   identifier: "custom_abc",
-  keywords: [],
-  isEnabled: args.data.isEnabled ?? true,
+  keywords: [] as string[],
+  isEnabled: true,
   isBuiltIn: false,
   createdAt: new Date(),
   updatedAt: new Date(),
 }));
-const mockPolicyDelete = mock(async () => ({}));
-const mockEmbeddingDeleteMany = mock(async () => ({ count: 0 }));
+const mockPolicyDelete = mock(async (_args?: any) => ({} as any));
+const mockEmbeddingDeleteMany = mock(async (_args?: any) => ({ count: 0 }));
 
 mock.module("@loomii/db", () => ({
   db: {
@@ -79,6 +57,11 @@ mock.module("@loomii/db", () => ({
       findUnique: mockPolicyFindUnique,
       update: mockPolicyUpdate,
       delete: mockPolicyDelete,
+    },
+    policyOverride: {
+      upsert: mockPolicyOverrideUpsert,
+      findMany: mockPolicyOverrideFindMany,
+      deleteMany: mockPolicyOverrideDeleteMany,
     },
     embedding: {
       deleteMany: mockEmbeddingDeleteMany,
@@ -130,11 +113,15 @@ describe("Policy API", () => {
     mockPolicyFindUnique.mockReset();
     mockPolicyUpdate.mockReset();
     mockPolicyDelete.mockReset();
+    mockPolicyOverrideUpsert.mockReset();
+    mockPolicyOverrideFindMany.mockReset();
+    mockPolicyOverrideDeleteMany.mockReset();
     mockEmbeddingDeleteMany.mockReset();
     mockEmbeddingQueueAdd.mockReset();
 
     // Reset defaults
     mockPolicyFindFirst.mockResolvedValue(null); // No duplicates by default
+    mockPolicyOverrideFindMany.mockResolvedValue([]); // No overrides by default
     mockPolicyCreate.mockImplementation(async (args: any) => ({
       id: "policy_new",
       name: args.data.name,
@@ -304,6 +291,20 @@ describe("Policy API", () => {
       expect(findArgs.where.OR).toContainEqual({ tenantId: null });
       expect(findArgs.where.OR).toContainEqual({ tenantId: "tenant_123" });
     });
+
+    it("merges tenant overrides into built-in policy status (AC3)", async () => {
+      mockPolicyOverrideFindMany.mockResolvedValue([
+        { policyId: "policy_built_in", isEnabled: false },
+      ]);
+
+      const app = createTestApp();
+      const res = await app.request("/policies");
+
+      expect(res.status).toBe(200);
+      const data = await res.json();
+      const builtIn = data.policies.find((p: any) => p.id === "policy_built_in");
+      expect(builtIn.isEnabled).toBe(false); // Overridden to false
+    });
   });
 
   describe("PATCH /policies/:id (update)", () => {
@@ -374,11 +375,18 @@ describe("Policy API", () => {
       expect(data.error.message).toContain("cannot be modified");
     });
 
-    it("blocks toggling built-in policy (would affect all tenants)", async () => {
+    it("creates per-tenant override when toggling built-in policy (AC1)", async () => {
       mockPolicyFindUnique.mockResolvedValue({
         id: "policy_built_in",
+        name: "A01:2021 - Broken Access Control",
         tenantId: null,
         isBuiltIn: true,
+        framework: "OWASP",
+        identifier: "A01",
+        keywords: [],
+        isEnabled: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
 
       const app = createTestApp();
@@ -388,9 +396,19 @@ describe("Policy API", () => {
         body: JSON.stringify({ isEnabled: false }),
       });
 
-      expect(res.status).toBe(403);
+      expect(res.status).toBe(200);
       const data = await res.json();
-      expect(data.error.message).toContain("cannot be modified");
+      expect(data.policy.isEnabled).toBe(false);
+
+      // Override was created (not the global policy row)
+      expect(mockPolicyOverrideUpsert).toHaveBeenCalledTimes(1);
+      const upsertArgs = mockPolicyOverrideUpsert.mock.calls[0]![0] as any;
+      expect(upsertArgs.where.tenantId_policyId.tenantId).toBe("tenant_123");
+      expect(upsertArgs.where.tenantId_policyId.policyId).toBe("policy_built_in");
+      expect(upsertArgs.create.isEnabled).toBe(false);
+
+      // Global policy was NOT updated
+      expect(mockPolicyUpdate).not.toHaveBeenCalled();
     });
 
     it("rejects empty update body", async () => {
@@ -468,6 +486,51 @@ describe("Policy API", () => {
 
       expect(res.status).toBe(404);
       expect(mockPolicyDelete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("DELETE /policies/:id/override (restore default)", () => {
+    it("deletes the override for a built-in policy (AC4)", async () => {
+      mockPolicyFindUnique.mockResolvedValue({
+        id: "policy_built_in",
+        isBuiltIn: true,
+      });
+
+      const app = createTestApp();
+      const res = await app.request("/policies/policy_built_in/override", {
+        method: "DELETE",
+      });
+
+      expect(res.status).toBe(204);
+      expect(mockPolicyOverrideDeleteMany).toHaveBeenCalledTimes(1);
+      const deleteArgs = mockPolicyOverrideDeleteMany.mock.calls[0]![0] as any;
+      expect(deleteArgs.where.tenantId).toBe("tenant_123");
+      expect(deleteArgs.where.policyId).toBe("policy_built_in");
+    });
+
+    it("returns 400 for custom policies (no overrides)", async () => {
+      mockPolicyFindUnique.mockResolvedValue({
+        id: "policy_custom",
+        isBuiltIn: false,
+      });
+
+      const app = createTestApp();
+      const res = await app.request("/policies/policy_custom/override", {
+        method: "DELETE",
+      });
+
+      expect(res.status).toBe(400);
+    });
+
+    it("returns 404 for non-existent policy", async () => {
+      mockPolicyFindUnique.mockResolvedValue(null);
+
+      const app = createTestApp();
+      const res = await app.request("/policies/not_real/override", {
+        method: "DELETE",
+      });
+
+      expect(res.status).toBe(404);
     });
   });
 });

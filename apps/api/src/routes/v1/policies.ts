@@ -162,7 +162,22 @@ policyRoutes.get("/", async (c) => {
     },
   });
 
-  return c.json({ policies });
+  // Fetch this tenant's overrides for built-in policies
+  const overrides = await db.policyOverride.findMany({
+    where: { tenantId },
+    select: { policyId: true, isEnabled: true },
+  });
+  const overrideMap = new Map(overrides.map((o) => [o.policyId, o.isEnabled]));
+
+  // Merge override status into built-in policies
+  const policiesWithOverrides = policies.map((policy) => {
+    if (policy.isBuiltIn && overrideMap.has(policy.id)) {
+      return { ...policy, isEnabled: overrideMap.get(policy.id)! };
+    }
+    return policy;
+  });
+
+  return c.json({ policies: policiesWithOverrides });
 });
 
 // ─── PATCH /api/v1/policies/:id ───────────────────────────────────────────────
@@ -218,19 +233,56 @@ policyRoutes.patch("/:id", async (c) => {
     );
   }
 
-  // Built-in policies cannot be modified (would affect all tenants).
-  // Tenants should create a custom policy if they need different behavior.
+  // Built-in policies: create/update a per-tenant override (does NOT mutate the global policy)
   if (existing.isBuiltIn) {
-    return c.json(
-      {
-        error: {
-          code: "FORBIDDEN",
-          message: "Built-in policies cannot be modified. Create a custom policy instead.",
-          requestId,
+    const { isEnabled } = parsed.data;
+    if (isEnabled === undefined) {
+      return c.json(
+        {
+          error: {
+            code: "FORBIDDEN",
+            message: "Built-in policies can only be enabled or disabled per-tenant. Content cannot be modified.",
+            requestId,
+          },
         },
+        403
+      );
+    }
+
+    // Upsert a tenant-scoped override (doesn't touch the shared Policy row)
+    await db.policyOverride.upsert({
+      where: {
+        tenantId_policyId: { tenantId, policyId },
       },
-      403
-    );
+      create: {
+        tenantId,
+        policyId,
+        isEnabled,
+      },
+      update: {
+        isEnabled,
+      },
+    });
+
+    // Return the policy with the override status
+    const policy = await db.policy.findUnique({
+      where: { id: policyId },
+      select: {
+        id: true,
+        name: true,
+        framework: true,
+        identifier: true,
+        keywords: true,
+        isEnabled: true,
+        isBuiltIn: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return c.json({
+      policy: { ...policy, isEnabled }, // Reflect the tenant's override
+    });
   }
 
   // Custom policy: can update content, keywords, name, isEnabled
@@ -289,6 +341,47 @@ policyRoutes.patch("/:id", async (c) => {
   }
 
   return c.json({ policy });
+});
+
+// ─── DELETE /api/v1/policies/:id/override ─────────────────────────────────────
+
+policyRoutes.delete("/:id/override", async (c) => {
+  const tenantId = c.get("tenantId");
+  const requestId = c.get("requestId");
+  const policyId = c.req.param("id");
+
+  // Verify it's a built-in policy
+  const existing = await db.policy.findUnique({
+    where: { id: policyId },
+    select: { id: true, isBuiltIn: true },
+  });
+
+  if (!existing) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Policy not found", requestId } },
+      404
+    );
+  }
+
+  if (!existing.isBuiltIn) {
+    return c.json(
+      {
+        error: {
+          code: "BAD_REQUEST",
+          message: "Only built-in policies have overrides. Use DELETE /policies/:id for custom policies.",
+          requestId,
+        },
+      },
+      400
+    );
+  }
+
+  // Delete the override (restores default enabled state)
+  await db.policyOverride.deleteMany({
+    where: { tenantId, policyId },
+  });
+
+  return c.body(null, 204);
 });
 
 // ─── DELETE /api/v1/policies/:id ──────────────────────────────────────────────

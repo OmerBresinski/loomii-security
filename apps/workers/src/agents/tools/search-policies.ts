@@ -57,16 +57,20 @@ export const searchPoliciesTool = createTool({
     const { contextSummary } = inputData;
 
     // Run both retrieval strategies in parallel (graceful degradation on failure)
-    const [semanticResults, keywordResults] = await Promise.all([
+    const [semanticResults, keywordResults, disabledPolicyIds] = await Promise.all([
       retrieveSemantic(contextSummary, tenantId).catch(() => [] as PolicyResult[]),
       retrieveByKeywords(contextSummary, tenantId).catch(() => [] as PolicyResult[]),
+      getDisabledPolicyIds(tenantId),
     ]);
 
     // Merge and deduplicate (semantic results take priority for relevanceReason)
     const merged = mergeAndDeduplicate(semanticResults, keywordResults);
 
+    // Filter out policies disabled by tenant-specific overrides
+    const filtered = merged.filter((p) => !disabledPolicyIds.has(p.id));
+
     // Cap at MAX_RESULTS
-    const policies = merged.slice(0, MAX_RESULTS);
+    const policies = filtered.slice(0, MAX_RESULTS);
 
     return {
       policies,
@@ -245,4 +249,27 @@ function mergeAndDeduplicate(
   }
 
   return merged;
+}
+
+// ─── Override Filtering ───────────────────────────────────────────────────────
+
+/**
+ * Get the set of policy IDs that have been disabled by a tenant-specific override.
+ * Returns an empty set if no tenant is specified or no overrides exist.
+ */
+async function getDisabledPolicyIds(
+  tenantId: string | undefined
+): Promise<Set<string>> {
+  if (!tenantId) return new Set();
+
+  try {
+    const overrides = await db.policyOverride.findMany({
+      where: { tenantId, isEnabled: false },
+      select: { policyId: true },
+    });
+    return new Set(overrides.map((o) => o.policyId));
+  } catch {
+    // Graceful degradation: if override table doesn't exist yet, return empty
+    return new Set();
+  }
 }

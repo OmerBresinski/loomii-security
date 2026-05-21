@@ -141,6 +141,7 @@ model Tenant {
   threatModel    ThreatModel?
   reviews        Review[]
   policies       Policy[]
+  policyOverrides PolicyOverride[]
 
   @@map("tenants")
 }
@@ -279,11 +280,29 @@ model Policy {
 
   // Relations
   tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  overrides PolicyOverride[]
 
   @@index([tenantId])
   @@index([framework])
   @@index([isEnabled])
   @@map("policies")
+}
+
+model PolicyOverride {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  policyId  String   @map("policy_id")
+  isEnabled Boolean  @default(false) @map("is_enabled")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  policy Policy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, policyId])
+  @@index([tenantId])
+  @@index([policyId])
+  @@map("policy_overrides")
 }
 
 // ===========================================
