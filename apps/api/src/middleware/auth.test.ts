@@ -1,33 +1,14 @@
-import { describe, it, expect, beforeEach, mock } from "bun:test";
+import { describe, it, expect, beforeEach } from "bun:test";
 import { Hono } from "hono";
 import type { AppEnv } from "../lib/types";
 import { requestId } from "./request-id";
-
-// Mock WorkOS responses
-let mockAuthResult: any = null;
-let mockAuthError: Error | null = null;
-
-mock.module("@workos-inc/node", () => ({
-  WorkOS: class MockWorkOS {
-    userManagement = {
-      authenticateWithSessionCookie: async ({ sessionData }: { sessionData: string }) => {
-        if (mockAuthError) throw mockAuthError;
-        return mockAuthResult;
-      },
-    };
-  },
-}));
-
-// Import after mocking
-const { authMiddleware, _resetStores } = await import("./auth");
+import { authMiddleware, createSession, _resetStores } from "./auth";
 
 describe("authMiddleware", () => {
   let app: Hono<AppEnv>;
 
   beforeEach(() => {
     _resetStores();
-    mockAuthResult = null;
-    mockAuthError = null;
 
     app = new Hono<AppEnv>();
     app.use("*", requestId);
@@ -61,10 +42,8 @@ describe("authMiddleware", () => {
   });
 
   it("returns 401 for invalid token", async () => {
-    mockAuthError = new Error("Invalid session");
-
     const res = await app.request("/api/test", {
-      headers: { Authorization: "Bearer invalid_session_token_here" },
+      headers: { Authorization: "Bearer nonexistent_session_id" },
     });
     expect(res.status).toBe(401);
 
@@ -73,9 +52,8 @@ describe("authMiddleware", () => {
     expect(body.error.message).toContain("Invalid or expired");
   });
 
-  it("sets context for valid token", async () => {
-    mockAuthResult = {
-      authenticated: true,
+  it("sets context for valid session", async () => {
+    const sessionId = createSession({
       user: {
         id: "user_001",
         email: "alice@example.com",
@@ -83,10 +61,11 @@ describe("authMiddleware", () => {
         lastName: "Smith",
       },
       organizationId: "org_123",
-    };
+      createdAt: Date.now(),
+    });
 
     const res = await app.request("/api/test", {
-      headers: { Authorization: "Bearer valid_session_token" },
+      headers: { Authorization: `Bearer ${sessionId}` },
     });
     expect(res.status).toBe(200);
 
@@ -98,19 +77,18 @@ describe("authMiddleware", () => {
   });
 
   it("creates tenant on first org login and assigns ADMIN", async () => {
-    mockAuthResult = {
-      authenticated: true,
+    const sessionId = createSession({
       user: {
         id: "user_first",
         email: "founder@startup.com",
         firstName: "Founder",
-        lastName: null,
       },
       organizationId: "org_new",
-    };
+      createdAt: Date.now(),
+    });
 
     const res = await app.request("/api/test", {
-      headers: { Authorization: "Bearer valid_token" },
+      headers: { Authorization: `Bearer ${sessionId}` },
     });
     expect(res.status).toBe(200);
 
@@ -121,33 +99,31 @@ describe("authMiddleware", () => {
 
   it("assigns DEVELOPER to subsequent users from same org", async () => {
     // First user creates tenant as ADMIN
-    mockAuthResult = {
-      authenticated: true,
+    const session1 = createSession({
       user: {
         id: "user_admin",
         email: "admin@company.com",
         firstName: "Admin",
-        lastName: null,
       },
       organizationId: "org_existing",
-    };
+      createdAt: Date.now(),
+    });
     await app.request("/api/test", {
-      headers: { Authorization: "Bearer token1" },
+      headers: { Authorization: `Bearer ${session1}` },
     });
 
     // Second user from same org
-    mockAuthResult = {
-      authenticated: true,
+    const session2 = createSession({
       user: {
         id: "user_dev",
         email: "dev@company.com",
         firstName: "Dev",
-        lastName: null,
       },
       organizationId: "org_existing",
-    };
+      createdAt: Date.now(),
+    });
     const res = await app.request("/api/test", {
-      headers: { Authorization: "Bearer token2" },
+      headers: { Authorization: `Bearer ${session2}` },
     });
     expect(res.status).toBe(200);
 
@@ -156,8 +132,6 @@ describe("authMiddleware", () => {
   });
 
   it("does not expose token in error response", async () => {
-    mockAuthError = new Error("Token expired");
-
     const res = await app.request("/api/test", {
       headers: { Authorization: "Bearer super_secret_token_value_here" },
     });

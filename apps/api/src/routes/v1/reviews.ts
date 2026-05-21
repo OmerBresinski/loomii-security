@@ -1,8 +1,15 @@
 import { Hono } from "hono";
-import { db, BundleStatus, RiskLevel } from "@loomii/db";
+import { db } from "@loomii/db";
 import type { AppEnv } from "../../lib/types";
 
 export const reviewRoutes = new Hono<AppEnv>();
+
+// Valid enum values (matches Prisma schema)
+const VALID_STATUSES = ["ASSEMBLING", "READY", "REVIEWING", "COMPLETED", "FAILED"] as const;
+const VALID_RISK_LEVELS = ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"] as const;
+
+type BundleStatus = (typeof VALID_STATUSES)[number];
+type RiskLevel = (typeof VALID_RISK_LEVELS)[number];
 
 // ─── Route Handler ──────────────────────────────────────────────────────────
 
@@ -26,16 +33,16 @@ reviewRoutes.get("/", async (c) => {
 
   const limit = Math.min(Math.max(parseInt(limitParam || "20", 10) || 20, 1), 100);
 
-  // Parse comma-separated filter values against Prisma enums
+  // Parse comma-separated filter values
   const statusFilter = statusParam
     ? statusParam.split(",").filter((s): s is BundleStatus =>
-        Object.values(BundleStatus).includes(s as BundleStatus)
+        (VALID_STATUSES as readonly string[]).includes(s)
       )
     : undefined;
 
   const riskFilter = riskParam
     ? riskParam.split(",").filter((r): r is RiskLevel =>
-        Object.values(RiskLevel).includes(r as RiskLevel)
+        (VALID_RISK_LEVELS as readonly string[]).includes(r)
       )
     : undefined;
 

@@ -108,20 +108,6 @@ mock.module("@loomii/db", () => ({
       findMany: mockFindMany,
     },
   },
-  BundleStatus: {
-    ASSEMBLING: "ASSEMBLING",
-    READY: "READY",
-    REVIEWING: "REVIEWING",
-    COMPLETED: "COMPLETED",
-    FAILED: "FAILED",
-  },
-  RiskLevel: {
-    CRITICAL: "CRITICAL",
-    HIGH: "HIGH",
-    MEDIUM: "MEDIUM",
-    LOW: "LOW",
-    INFO: "INFO",
-  },
 }));
 
 // Import after mocking

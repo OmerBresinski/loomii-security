@@ -139,23 +139,22 @@ describe("E2E: Auth Flow", () => {
   });
 
   describe("Auth callback", () => {
-    it("GET /auth/callback without code returns 400", async () => {
+    it("GET /auth/callback without code redirects to login with error", async () => {
       if (!serverAvailable) return;
-      const res = await fetch(`${API_URL}/auth/callback`);
-      expect(res.status).toBe(400);
+      const res = await fetch(`${API_URL}/auth/callback`, { redirect: "manual" });
+      expect(res.status).toBe(302);
 
-      const body = await res.json();
-      expect(body.error.code).toBe("BAD_REQUEST");
-      expect(body.error.message).toContain("Missing authorization code");
+      const location = res.headers.get("location") || "";
+      expect(location).toContain("/login?error=missing_code");
     });
 
-    it("GET /auth/callback with invalid code returns 401", async () => {
+    it("GET /auth/callback with invalid code redirects to login with error", async () => {
       if (!serverAvailable) return;
-      const res = await fetch(`${API_URL}/auth/callback?code=invalid_code_123`);
-      expect(res.status).toBe(401);
+      const res = await fetch(`${API_URL}/auth/callback?code=invalid_code_123`, { redirect: "manual" });
+      expect(res.status).toBe(302);
 
-      const body = await res.json();
-      expect(body.error.code).toBe("AUTH_FAILED");
+      const location = res.headers.get("location") || "";
+      expect(location).toContain("/login?error=auth_failed");
     });
   });
 });
