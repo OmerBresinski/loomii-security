@@ -6,7 +6,7 @@ import {
   redirect,
 } from "@tanstack/react-router"
 import { RootLayout } from "@/components/root-layout"
-import { getSessionToken } from "@/lib/api-client"
+import { getSessionToken, getStoredRole } from "@/lib/api-client"
 
 // ─── Auth Guard ─────────────────────────────────────────────────────────────
 
@@ -19,6 +19,18 @@ function requireAuth() {
   const token = getSessionToken()
   if (!token) {
     throw redirect({ to: "/login" })
+  }
+}
+
+/**
+ * beforeLoad guard for admin/security-lead-only routes.
+ * Developers and viewers are redirected to /reviews.
+ */
+function requireAdminOrLead() {
+  requireAuth()
+  const role = getStoredRole()
+  if (role && !["ADMIN", "SECURITY_LEAD"].includes(role)) {
+    throw redirect({ to: "/reviews" })
   }
 }
 
@@ -61,14 +73,14 @@ const reviewsRoute = createRoute({
 const metricsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/metrics",
-  beforeLoad: requireAuth,
+  beforeLoad: requireAdminOrLead,
   component: lazyRouteComponent(() => import("@/routes/metrics")),
 })
 
 const policiesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/policies",
-  beforeLoad: requireAuth,
+  beforeLoad: requireAdminOrLead,
   component: lazyRouteComponent(() => import("@/routes/policies")),
 })
 

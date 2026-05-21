@@ -1,6 +1,7 @@
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000"
 
 const SESSION_KEY = "loomii:session"
+const ROLE_KEY = "loomii:role"
 
 // ─── Session Storage ────────────────────────────────────────────────────────
 
@@ -20,9 +21,27 @@ export function setSessionToken(token: string): void {
   }
 }
 
+export function getStoredRole(): UserRole | null {
+  try {
+    const role = localStorage.getItem(ROLE_KEY)
+    return role as UserRole | null
+  } catch {
+    return null
+  }
+}
+
+export function setStoredRole(role: UserRole): void {
+  try {
+    localStorage.setItem(ROLE_KEY, role)
+  } catch {
+    // noop
+  }
+}
+
 export function clearSession(): void {
   try {
     localStorage.removeItem(SESSION_KEY)
+    localStorage.removeItem(ROLE_KEY)
   } catch {
     // noop
   }
