@@ -1,4 +1,8 @@
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import type { Review } from "@/queries/reviews"
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -34,19 +38,63 @@ const riskLabels: Record<string, string> = {
 function RiskIcon({ level }: { level: string }) {
   if (level === "CRITICAL") {
     return (
-      <svg width="16" height="16" viewBox="0 0 16 16" className="text-muted-foreground dark:text-muted-foreground text-primary/60">
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        className="text-muted-foreground text-primary/60 dark:text-muted-foreground"
+      >
         <rect width="16" height="16" rx="3" fill="currentColor" />
-        <text x="8" y="12" textAnchor="middle" fontSize="11" fontWeight="bold" fill="var(--background)">!</text>
+        <text
+          x="8"
+          y="12"
+          textAnchor="middle"
+          fontSize="11"
+          fontWeight="bold"
+          fill="var(--background)"
+        >
+          !
+        </text>
       </svg>
     )
   }
 
-  const activeBars = level === "HIGH" ? 3 : level === "MEDIUM" ? 2 : level === "LOW" ? 1 : 0
+  const activeBars =
+    level === "HIGH" ? 3 : level === "MEDIUM" ? 2 : level === "LOW" ? 1 : 0
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" className="text-primary/60 dark:text-muted-foreground">
-      <rect x="2" y="10" width="3" height="5" rx="0.5" fill="currentColor" opacity={activeBars >= 1 ? 1 : 0.3} />
-      <rect x="6.5" y="6" width="3" height="9" rx="0.5" fill="currentColor" opacity={activeBars >= 2 ? 1 : 0.3} />
-      <rect x="11" y="2" width="3" height="13" rx="0.5" fill="currentColor" opacity={activeBars >= 3 ? 1 : 0.3} />
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      className="text-primary/60 dark:text-muted-foreground"
+    >
+      <rect
+        x="2"
+        y="10"
+        width="3"
+        height="5"
+        rx="0.5"
+        fill="currentColor"
+        opacity={activeBars >= 1 ? 1 : 0.3}
+      />
+      <rect
+        x="6.5"
+        y="6"
+        width="3"
+        height="9"
+        rx="0.5"
+        fill="currentColor"
+        opacity={activeBars >= 2 ? 1 : 0.3}
+      />
+      <rect
+        x="11"
+        y="2"
+        width="3"
+        height="13"
+        rx="0.5"
+        fill="currentColor"
+        opacity={activeBars >= 3 ? 1 : 0.3}
+      />
     </svg>
   )
 }
@@ -67,34 +115,68 @@ function StatusIcon({ status }: { status: string }) {
       return (
         <svg width="15" height="15" viewBox="0 0 16 16">
           <circle cx="8" cy="8" r="7" fill="oklch(0.55 0.2 260)" />
-          <path d="M5 8l2 2 4-4" stroke="white" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M5 8l2 2 4-4"
+            stroke="white"
+            strokeWidth="1.5"
+            fill="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       )
     case "FAILED":
       return (
         <svg width="15" height="15" viewBox="0 0 16 16">
           <circle cx="8" cy="8" r="7" fill="oklch(0.5 0 0)" />
-          <path d="M6 6l4 4M10 6l-4 4" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+          <path
+            d="M6 6l4 4M10 6l-4 4"
+            stroke="white"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
         </svg>
       )
     case "REVIEWING":
       return (
         <svg width="15" height="15" viewBox="0 0 16 16">
-          <circle cx="8" cy="8" r="6.5" fill="none" stroke="oklch(0.65 0.2 330)" strokeWidth="1.5" />
+          <circle
+            cx="8"
+            cy="8"
+            r="6.5"
+            fill="none"
+            stroke="oklch(0.65 0.2 330)"
+            strokeWidth="1.5"
+          />
           <path d="M8 1.5 A6.5 6.5 0 0 1 8 14.5" fill="oklch(0.65 0.2 330)" />
         </svg>
       )
     case "READY":
       return (
         <svg width="15" height="15" viewBox="0 0 16 16">
-          <circle cx="8" cy="8" r="6.5" fill="none" stroke="oklch(0.55 0 0)" strokeWidth="1.5" />
+          <circle
+            cx="8"
+            cy="8"
+            r="6.5"
+            fill="none"
+            stroke="oklch(0.55 0 0)"
+            strokeWidth="1.5"
+          />
         </svg>
       )
     case "ASSEMBLING":
     default:
       return (
         <svg width="15" height="15" viewBox="0 0 16 16">
-          <circle cx="8" cy="8" r="6.5" fill="none" stroke="oklch(0.45 0 0)" strokeWidth="1.5" strokeDasharray="2.5 2" />
+          <circle
+            cx="8"
+            cy="8"
+            r="6.5"
+            fill="none"
+            stroke="oklch(0.45 0 0)"
+            strokeWidth="1.5"
+            strokeDasharray="2.5 2"
+          />
         </svg>
       )
   }
@@ -125,7 +207,7 @@ export function ReviewRow({ review }: ReviewRowProps) {
     <div className="flex h-12 cursor-pointer items-center px-4 hover:bg-accent dark:hover:bg-[#25262A]">
       {/* Risk */}
       <Tooltip>
-        <TooltipTrigger asChild>
+        <TooltipTrigger>
           <div className="flex w-8 shrink-0 items-center justify-center">
             {review.riskLevel ? <RiskIcon level={review.riskLevel} /> : null}
           </div>
@@ -138,15 +220,15 @@ export function ReviewRow({ review }: ReviewRowProps) {
       </Tooltip>
 
       {/* External ID */}
-      <div className="flex w-20 shrink-0 items-center pr-1">
-        <span className="text-[11px] uppercase text-muted-foreground">
+      <div className="flex w-16 shrink-0 items-center pr-1 tabular-nums">
+        <span className="text-[11px] text-muted-foreground uppercase">
           {review.externalId}
         </span>
       </div>
 
       {/* Status */}
       <Tooltip>
-        <TooltipTrigger asChild>
+        <TooltipTrigger>
           <div className="flex w-8 shrink-0 items-center justify-center">
             <StatusIcon status={review.status} />
           </div>
@@ -157,14 +239,17 @@ export function ReviewRow({ review }: ReviewRowProps) {
       </Tooltip>
 
       {/* Title */}
-      <div className="flex min-w-0 flex-1 items-center pl-2 pr-4">
+      <div className="flex min-w-0 flex-1 items-center pr-4 pl-2">
         <span className="truncate text-[13px]">
           {review.title ?? "Untitled review"}
         </span>
       </div>
 
       {/* Source */}
-      <div className="flex w-16 shrink-0 items-center justify-center" title={sourceLabels[review.source] ?? review.source}>
+      <div
+        className="flex w-16 shrink-0 items-center justify-center"
+        title={sourceLabels[review.source] ?? review.source}
+      >
         <img
           src={sourceFavicons[review.source]}
           alt={sourceLabels[review.source] ?? review.source}
@@ -177,7 +262,8 @@ export function ReviewRow({ review }: ReviewRowProps) {
 
       {/* Findings */}
       <div className="flex w-20 shrink-0 items-center justify-end text-[11px] text-muted-foreground">
-        {review.findingCount} {review.findingCount === 1 ? "finding" : "findings"}
+        {review.findingCount}{" "}
+        {review.findingCount === 1 ? "finding" : "findings"}
       </div>
 
       {/* Time */}
