@@ -35,7 +35,7 @@ mock.module("@loomii/db", () => ({
   insertEmbedding: mock(),
 }));
 
-mock.module("../../lib/embeddings", () => ({
+mock.module("./embeddings", () => ({
   generateEmbeddings: mock(async () => []),
   generateQueryEmbedding: mockGenerateQueryEmbedding,
 }));
