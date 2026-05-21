@@ -248,11 +248,11 @@ export function RootLayout() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-12 items-center border-b px-6">
+      <SidebarInset className="h-svh overflow-hidden">
+        <header className="flex h-12 shrink-0 items-center border-b px-6">
           <AppBreadcrumb />
         </header>
-        <main className="flex-1">
+        <main className="min-h-0 flex-1">
           <Outlet />
         </main>
       </SidebarInset>

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react"
 import { useSearch, useNavigate } from "@tanstack/react-router"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ReviewCard } from "@/components/reviews/review-card"
+import { ReviewRow } from "@/components/reviews/review-card"
 import { ReviewFiltersBar } from "@/components/reviews/review-filters"
 import { ReviewSearch } from "@/components/reviews/review-search"
 import { useReviews, type ReviewFilters } from "@/queries/reviews"
@@ -59,48 +59,57 @@ export default function ReviewsPage() {
 
   // Virtualizer
   const parentRef = useRef<HTMLDivElement>(null)
+  const rowCount = allReviews.length
   const virtualizer = useVirtualizer({
-    count: hasNextPage ? allReviews.length + 1 : allReviews.length,
+    count: rowCount,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 120,
+    estimateSize: () => 48,
     overscan: 5,
   })
 
   const virtualItems = virtualizer.getVirtualItems()
 
-  // Infinite scroll: fetch next page when last item is visible
+  // Infinite scroll: fetch next page when user scrolls near the bottom
   useEffect(() => {
-    const lastItem = virtualItems[virtualItems.length - 1]
-    if (!lastItem) return
+    if (!hasNextPage || isFetchingNextPage) return
 
-    if (
-      lastItem.index >= allReviews.length - 1 &&
-      hasNextPage &&
-      !isFetchingNextPage
-    ) {
-      fetchNextPage()
+    const scrollEl = parentRef.current
+    if (!scrollEl) return
+
+    function onScroll() {
+      if (!scrollEl || !hasNextPage || isFetchingNextPage) return
+      const { scrollTop, scrollHeight, clientHeight } = scrollEl
+      // Trigger when within 200px of the bottom
+      if (scrollHeight - scrollTop - clientHeight < 200) {
+        fetchNextPage()
+      }
     }
-  }, [virtualItems, allReviews.length, hasNextPage, isFetchingNextPage, fetchNextPage])
+
+    scrollEl.addEventListener("scroll", onScroll, { passive: true })
+    return () => scrollEl.removeEventListener("scroll", onScroll)
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   // ─── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col overflow-hidden p-6">
       {/* Toolbar */}
-      <div className="flex items-center gap-3 border-b px-6 py-3">
+      <div className="flex items-center gap-3 pb-4">
         <ReviewSearch value={filters.search ?? ""} onChange={setSearch} />
         <ReviewFiltersBar filters={filters} onFiltersChange={setFilters} />
       </div>
 
-      {/* Feed */}
+      {/* Table */}
       {isPending ? (
-        <div className="flex flex-col gap-3 p-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-[100px] w-full rounded-md" />
+        <div className="flex flex-col rounded-md border">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="flex h-12 items-center border-b px-4 last:border-b-0">
+              <Skeleton className="h-4 w-full max-w-md" />
+            </div>
           ))}
         </div>
       ) : allReviews.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 p-6 text-center">
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-md border p-6 text-center">
           <p className="text-sm font-medium">No reviews found</p>
           <p className="text-xs text-muted-foreground">
             {filters.search || filters.status?.length || filters.riskLevel?.length
@@ -109,31 +118,42 @@ export default function ReviewsPage() {
           </p>
         </div>
       ) : (
-        <div ref={parentRef} className="flex-1 overflow-y-auto">
-          <div
-            className="relative w-full"
-            style={{ height: `${virtualizer.getTotalSize()}px` }}
-          >
-            {virtualItems.map((virtualRow) => {
-              const isLoaderRow = virtualRow.index >= allReviews.length
+        <div className="flex min-h-0 flex-1 flex-col rounded-md border">
+          {/* Column Headers */}
+          <div className="flex h-9 shrink-0 items-center border-b bg-muted/40 px-4 text-xs font-medium text-muted-foreground">
+            <div className="w-24 shrink-0 pr-3">ID</div>
+            <div className="min-w-0 flex-1">Title</div>
+            <div className="w-16 shrink-0 text-center">Source</div>
+            <div className="w-20 shrink-0 text-center">Risk</div>
+            <div className="w-24 shrink-0 text-center">Status</div>
+            <div className="w-20 shrink-0 text-right">Findings</div>
+            <div className="w-16 shrink-0 text-right">Time</div>
+          </div>
 
-              return (
+          {/* Scrollable rows */}
+          <div ref={parentRef} className="min-h-0 flex-1 overflow-y-auto">
+            <div
+              className="relative w-full"
+              style={{ height: `${virtualizer.getTotalSize()}px` }}
+            >
+              {virtualItems.map((virtualRow) => (
                 <div
                   key={virtualRow.key}
-                  className="absolute left-0 top-0 w-full px-6 py-1.5"
+                  className="absolute left-0 top-0 w-full"
                   style={{
                     height: `${virtualRow.size}px`,
                     transform: `translateY(${virtualRow.start}px)`,
                   }}
                 >
-                  {isLoaderRow ? (
-                    <Skeleton className="h-[100px] w-full rounded-md" />
-                  ) : (
-                    <ReviewCard review={allReviews[virtualRow.index]} />
-                  )}
+                  <ReviewRow review={allReviews[virtualRow.index]} />
                 </div>
-              )
-            })}
+              ))}
+            </div>
+            {isFetchingNextPage && (
+              <div className="flex h-12 items-center justify-center text-xs text-muted-foreground">
+                Loading more...
+              </div>
+            )}
           </div>
         </div>
       )}

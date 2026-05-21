@@ -15,6 +15,8 @@ export interface Review {
   title: string | null
   summary: string | null
   findingCount: number
+  source: "LINEAR" | "NOTION" | "GITHUB"
+  externalId: string
   createdAt: string
   updatedAt: string
 }

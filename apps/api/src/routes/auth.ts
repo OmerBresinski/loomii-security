@@ -73,8 +73,21 @@ authRoutes.get("/auth/callback", async (c) => {
       lastName: result.user.lastName ?? undefined,
     };
 
-    // Use organizationId from WorkOS, or a default for dev (personal workspace)
-    const organizationId = result.organizationId ?? `personal_${result.user.id}`;
+    // Resolve organization ID: use from auth result, or look up user's first membership
+    let organizationId = result.organizationId;
+    if (!organizationId) {
+      const memberships = await workos.userManagement.listOrganizationMemberships({
+        userId: result.user.id,
+        statuses: ["active"],
+      });
+      if (memberships.data.length > 0) {
+        organizationId = memberships.data[0].organizationId;
+      }
+    }
+
+    if (!organizationId) {
+      return c.redirect(`${frontendUrl}/login?error=no_organization`);
+    }
 
     // Create a server-side session (session ID is the Bearer token)
     const sessionId = createSession({

@@ -7,6 +7,8 @@ import {
 } from "@tanstack/react-router"
 import { RootLayout } from "@/components/root-layout"
 import { getSessionToken, getStoredRole } from "@/lib/api-client"
+import { queryClient } from "@/lib/query-client"
+import { reviewsInfiniteQueryOptions } from "@/queries/reviews"
 
 // ─── Auth Guard ─────────────────────────────────────────────────────────────
 
@@ -67,6 +69,10 @@ const reviewsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/reviews",
   beforeLoad: requireAuth,
+  loader: () => {
+    // Prefetch the first page of reviews with no filters (default view)
+    queryClient.prefetchInfiniteQuery(reviewsInfiniteQueryOptions({}))
+  },
   component: lazyRouteComponent(() => import("@/routes/reviews")),
 })
 

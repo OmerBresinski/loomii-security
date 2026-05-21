@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -13,7 +14,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
-import type { ReviewFilters } from "@/queries/reviews"
+import { type ReviewFilters, reviewsInfiniteQueryOptions } from "@/queries/reviews"
 
 // ─── Options ────────────────────────────────────────────────────────────────
 
@@ -40,9 +41,10 @@ interface MultiSelectProps {
   options: { value: string; label: string }[]
   selected: string[]
   onSelectionChange: (values: string[]) => void
+  onOptionHover?: (value: string) => void
 }
 
-function MultiSelect({ label, options, selected, onSelectionChange }: MultiSelectProps) {
+function MultiSelect({ label, options, selected, onSelectionChange, onOptionHover }: MultiSelectProps) {
   const [open, setOpen] = useState(false)
 
   function toggle(value: string) {
@@ -59,7 +61,7 @@ function MultiSelect({ label, options, selected, onSelectionChange }: MultiSelec
         <Button variant="outline" size="sm" className="h-8 text-xs">
           {label}
           {selected.length > 0 && (
-            <Badge variant="secondary" className="ml-1.5 px-1 py-0 text-[10px]">
+            <Badge variant="secondary" className="ml-1.5 px-1 py-0 text-[10px] tabular-nums">
               {selected.length}
             </Badge>
           )}
@@ -76,6 +78,7 @@ function MultiSelect({ label, options, selected, onSelectionChange }: MultiSelec
                   <CommandItem
                     key={option.value}
                     onSelect={() => toggle(option.value)}
+                    onMouseEnter={() => onOptionHover?.(option.value)}
                     className="cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
@@ -113,9 +116,30 @@ interface ReviewFiltersProps {
 }
 
 export function ReviewFiltersBar({ filters, onFiltersChange }: ReviewFiltersProps) {
+  const queryClient = useQueryClient()
+
   const hasActiveFilters =
     (filters.riskLevel && filters.riskLevel.length > 0) ||
     (filters.status && filters.status.length > 0)
+
+  // Prefetch the query for a filter option on hover
+  function prefetchRisk(value: string) {
+    const nextRisk = filters.riskLevel?.includes(value)
+      ? filters.riskLevel.filter((v) => v !== value)
+      : [...(filters.riskLevel ?? []), value]
+    queryClient.prefetchInfiniteQuery(
+      reviewsInfiniteQueryOptions({ ...filters, riskLevel: nextRisk })
+    )
+  }
+
+  function prefetchStatus(value: string) {
+    const nextStatus = filters.status?.includes(value)
+      ? filters.status.filter((v) => v !== value)
+      : [...(filters.status ?? []), value]
+    queryClient.prefetchInfiniteQuery(
+      reviewsInfiniteQueryOptions({ ...filters, status: nextStatus })
+    )
+  }
 
   return (
     <div className="flex items-center gap-2">
@@ -126,6 +150,7 @@ export function ReviewFiltersBar({ filters, onFiltersChange }: ReviewFiltersProp
         onSelectionChange={(values) =>
           onFiltersChange({ ...filters, riskLevel: values })
         }
+        onOptionHover={prefetchRisk}
       />
       <MultiSelect
         label="Status"
@@ -134,6 +159,7 @@ export function ReviewFiltersBar({ filters, onFiltersChange }: ReviewFiltersProp
         onSelectionChange={(values) =>
           onFiltersChange({ ...filters, status: values })
         }
+        onOptionHover={prefetchStatus}
       />
       {hasActiveFilters && (
         <Button

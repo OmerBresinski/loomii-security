@@ -1,4 +1,5 @@
 import { createMiddleware } from "hono/factory";
+import { db } from "@loomii/db";
 
 export type UserRole = "ADMIN" | "SECURITY_LEAD" | "DEVELOPER" | "VIEWER";
 
@@ -87,13 +88,26 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 
   const { user, organizationId } = session;
 
-  // Resolve or create tenant
+  // Resolve or create tenant from database
   let tenant = tenantStore.get(organizationId);
   if (!tenant) {
-    tenant = {
-      id: crypto.randomUUID(),
-      workosOrgId: organizationId,
-    };
+    // Try database first
+    const dbTenant = await db.tenant.findUnique({
+      where: { workosOrgId: organizationId },
+    });
+
+    if (dbTenant) {
+      tenant = { id: dbTenant.id, workosOrgId: dbTenant.workosOrgId };
+    } else {
+      // Create in DB
+      const newTenant = await db.tenant.create({
+        data: {
+          name: organizationId,
+          workosOrgId: organizationId,
+        },
+      });
+      tenant = { id: newTenant.id, workosOrgId: newTenant.workosOrgId };
+    }
     tenantStore.set(organizationId, tenant);
   }
 
@@ -101,16 +115,45 @@ export const authMiddleware = createMiddleware(async (c, next) => {
   const userKey = `${tenant.id}:${user.id}`;
   let dbUser = userStore.get(userKey);
   if (!dbUser) {
-    const isFirstUser = !Array.from(userStore.values()).some(
-      (u) => u.tenantId === tenant!.id
-    );
+    // Try database first
+    const existingUser = await db.user.findFirst({
+      where: { tenantId: tenant.id, workosUserId: user.id },
+    });
 
-    dbUser = {
-      id: crypto.randomUUID(),
-      tenantId: tenant.id,
-      workosUserId: user.id,
-      role: isFirstUser ? "ADMIN" : "DEVELOPER",
-    };
+    if (existingUser) {
+      dbUser = {
+        id: existingUser.id,
+        tenantId: existingUser.tenantId,
+        workosUserId: existingUser.workosUserId,
+        role: existingUser.role,
+      };
+    } else {
+      const isFirstUser = !Array.from(userStore.values()).some(
+        (u) => u.tenantId === tenant!.id
+      );
+
+      // Also check DB for existing users in this tenant
+      const userCount = await db.user.count({ where: { tenantId: tenant.id } });
+      const role = (isFirstUser && userCount === 0) ? "ADMIN" : "DEVELOPER";
+
+      const newUser = await db.user.create({
+        data: {
+          tenantId: tenant.id,
+          workosUserId: user.id,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: role as any,
+        },
+      });
+
+      dbUser = {
+        id: newUser.id,
+        tenantId: newUser.tenantId,
+        workosUserId: newUser.workosUserId,
+        role: newUser.role,
+      };
+    }
     userStore.set(userKey, dbUser);
   }
 

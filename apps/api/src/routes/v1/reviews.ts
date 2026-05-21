@@ -76,6 +76,12 @@ reviewRoutes.get("/", async (c) => {
     orderBy: { createdAt: "desc" },
     take: limit + 1, // Fetch one extra to determine hasMore
     include: {
+      event: {
+        select: {
+          source: true,
+          externalId: true,
+        },
+      },
       review: {
         include: {
           _count: {
@@ -98,6 +104,8 @@ reviewRoutes.get("/", async (c) => {
     title: bundle.title,
     summary: bundle.summary,
     findingCount: bundle.review?._count?.findings ?? 0,
+    source: bundle.event.source,
+    externalId: bundle.event.externalId,
     createdAt: bundle.createdAt.toISOString(),
     updatedAt: bundle.updatedAt.toISOString(),
   }));
