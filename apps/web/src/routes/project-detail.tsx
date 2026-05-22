@@ -1,13 +1,15 @@
-import { useParams } from "@tanstack/react-router"
+import { getRouteApi } from "@tanstack/react-router"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useProjectDetail } from "@/queries/projects"
 import { ProjectHeader } from "@/components/projects/detail/project-header"
 import { OverviewTab } from "@/components/projects/detail/overview-tab"
 
+const routeApi = getRouteApi("/projects/$projectId")
+
 // ─── Page ───────────────────────────────────────────────────────────────────
 
 export default function ProjectDetailPage() {
-  const { projectId } = useParams({ strict: false }) as { projectId: string }
+  const { projectId } = routeApi.useParams()
 
   const { data, isPending } = useProjectDetail(projectId)
   const project = data

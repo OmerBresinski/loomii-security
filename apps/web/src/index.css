@@ -4,6 +4,8 @@
 @import "@fontsource-variable/figtree";
 @import "@fontsource-variable/roboto-slab";
 
+@plugin "@tailwindcss/typography";
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

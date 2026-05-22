@@ -163,7 +163,7 @@ const routeTree = rootRoute.addChildren([
   onboardingRoute,
   reviewsRoute,
   projectsRoute,
-  projectNewRoute,
+  projectNewRoute,    // Must precede $projectId to avoid "new" matching as a param
   projectDetailRoute,
   metricsRoute,
   policiesRoute,

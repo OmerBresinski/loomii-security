@@ -96,6 +96,7 @@ export function projectDetailQueryOptions(projectId: string) {
     queryKey: projectKeys.detail(projectId),
     queryFn: ({ signal }) =>
       fetchApi<ProjectDetail>(`/api/v1/projects/${projectId}`, { signal }),
+    enabled: projectId.length > 0,
   })
 }
 

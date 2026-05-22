@@ -21,8 +21,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { useUpdateProject } from "@/mutations/projects"
-import { useDeleteProject } from "@/mutations/projects"
+import { useUpdateProject, useDeleteProject } from "@/mutations/projects"
 import type { ProjectDetail } from "@loomii/shared"
 
 // ─── Icons ──────────────────────────────────────────────────────────────────
@@ -61,6 +60,12 @@ export function ProjectHeader({ project, isPending }: ProjectHeaderProps) {
   const updateMutation = useUpdateProject(project?.id ?? "")
   const deleteMutation = useDeleteProject()
 
+  // Stable references to mutation functions (these don't change between renders)
+  const updateRef = useRef(updateMutation.mutate)
+  updateRef.current = updateMutation.mutate
+  const deleteRef = useRef(deleteMutation.mutate)
+  deleteRef.current = deleteMutation.mutate
+
   // Focus input when entering edit mode
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -84,10 +89,10 @@ export function ProjectHeader({ project, isPending }: ProjectHeaderProps) {
     if (!project) return
     const trimmed = editValue.trim()
     if (trimmed && trimmed !== project.name) {
-      updateMutation.mutate({ name: trimmed })
+      updateRef.current({ name: trimmed })
     }
     setIsEditing(false)
-  }, [project, editValue, updateMutation])
+  }, [project, editValue])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -103,12 +108,12 @@ export function ProjectHeader({ project, isPending }: ProjectHeaderProps) {
 
   const handleDelete = useCallback(() => {
     if (!project) return
-    deleteMutation.mutate(project.id, {
+    deleteRef.current(project.id, {
       onSuccess: () => {
         navigate({ to: "/projects" })
       },
     })
-  }, [project, deleteMutation, navigate])
+  }, [project, navigate])
 
   if (isPending) {
     return (

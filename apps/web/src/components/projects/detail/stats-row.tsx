@@ -62,7 +62,7 @@ export function StatsRow({
     sources?.sources.filter((s) => !s.isArchived).length ?? project.sourceCount
   const totalReviews = reviews?.reviews.length ?? project.reviewCount
 
-  // Count critical/high findings from reviews
+  // Count critical/high-risk reviews
   const criticalHighCount =
     reviews?.reviews.filter(
       (r) => r.riskLevel === "CRITICAL" || r.riskLevel === "HIGH"
@@ -74,7 +74,7 @@ export function StatsRow({
       <StatItem label="Active Sources" value={activeSources} />
       <StatItem label="Total Reviews" value={totalReviews} />
       <StatItem
-        label="Critical / High"
+        label="High Risk Reviews"
         value={criticalHighCount}
         variant={criticalHighCount > 0 ? "warning" : "default"}
       />

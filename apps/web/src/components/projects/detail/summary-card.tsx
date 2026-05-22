@@ -1,3 +1,4 @@
+import Markdown from "react-markdown"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -70,9 +71,9 @@ export function SummaryCard({ project, isPending }: SummaryCardProps) {
       <CardContent>
         {hasSummary ? (
           <div className="flex flex-col gap-2">
-            <p className="text-[13px] leading-relaxed text-foreground/80">
-              {project.summary}
-            </p>
+            <div className="prose prose-sm dark:prose-invert max-w-none text-[13px] leading-relaxed text-foreground/80 [&_h2]:mt-4 [&_h2]:mb-1 [&_h2]:text-xs [&_h2]:font-semibold [&_h2]:uppercase [&_h2]:tracking-wide [&_h2]:text-muted-foreground [&_ul]:my-1 [&_ul]:pl-4 [&_li]:my-0.5">
+              <Markdown>{project.summary}</Markdown>
+            </div>
             {project.summaryUpdatedAt && (
               <p className="text-[11px] text-muted-foreground">
                 Last updated {timeAgo(project.summaryUpdatedAt)}
