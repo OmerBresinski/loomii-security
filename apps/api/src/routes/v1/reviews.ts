@@ -20,6 +20,7 @@ type RiskLevel = (typeof VALID_RISK_LEVELS)[number];
  * Query params:
  *   - status: comma-separated BundleStatus values
  *   - riskLevel: comma-separated RiskLevel values
+ *   - projectId: filter by project ID, or "unassigned" for null-project reviews
  *   - search: keyword match on title/summary (case-insensitive)
  *   - limit: number 1-100 (default 20)
  *   - cursor: opaque pagination cursor (ISO timestamp of last item)
@@ -28,6 +29,7 @@ reviewRoutes.get("/", async (c) => {
   const tenantId = c.get("tenantId");
   const statusParam = c.req.query("status");
   const riskParam = c.req.query("riskLevel");
+  const projectIdParam = c.req.query("projectId");
   const search = c.req.query("search");
   const limitParam = c.req.query("limit");
   const cursor = c.req.query("cursor");
@@ -60,6 +62,13 @@ reviewRoutes.get("/", async (c) => {
     where.riskLevel = { in: riskFilter };
   }
 
+  // Project filter
+  if (projectIdParam === "unassigned") {
+    where.projectId = null;
+  } else if (projectIdParam) {
+    where.projectId = projectIdParam;
+  }
+
   if (search) {
     where.OR = [
       { title: { contains: search, mode: "insensitive" } },
@@ -81,6 +90,12 @@ reviewRoutes.get("/", async (c) => {
         select: {
           source: true,
           externalId: true,
+        },
+      },
+      project: {
+        select: {
+          id: true,
+          name: true,
         },
       },
       review: {
@@ -107,6 +122,7 @@ reviewRoutes.get("/", async (c) => {
     findingCount: bundle.review?._count?.findings ?? 0,
     source: bundle.event.source,
     externalId: bundle.event.externalId,
+    project: bundle.project ? { id: bundle.project.id, name: bundle.project.name } : null,
     createdAt: bundle.createdAt.toISOString(),
     updatedAt: bundle.updatedAt.toISOString(),
   }));
