@@ -39,9 +39,6 @@ export function SourcesList({ sources, isPending }: SourcesListProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-        Linked Sources
-      </h3>
       {activeSources.length === 0 ? (
         <p className="text-xs text-muted-foreground">No sources linked yet.</p>
       ) : (

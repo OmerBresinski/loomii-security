@@ -1,6 +1,4 @@
 import Markdown from "react-markdown"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { SparklesIcon } from "@hugeicons/core-free-icons"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { ProjectDetail } from "@loomii/shared"
 
@@ -33,20 +31,10 @@ export function SummaryCard({ project, isPending }: SummaryCardProps) {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <h2 className="text-sm font-medium">Project Summary</h2>
-        <HugeiconsIcon
-          icon={SparklesIcon}
-          size={16}
-          className="text-muted-foreground"
-        />
-      </div>
-
       {/* Content */}
       {hasSummary ? (
         <div className="flex flex-col gap-2">
-          <div className="prose prose-base max-w-none overflow-hidden leading-relaxed text-foreground/90 dark:prose-invert [&_h2]:mt-6 [&_h2]:mb-2 [&_h2]:text-sm [&_h2]:font-semibold [&_h2]:tracking-wide [&_h2]:text-muted-foreground [&_h2]:uppercase [&_li]:my-1 [&_p]:my-1.5 [&_ul]:my-2 [&_ul]:pl-5">
+          <div className="prose prose-sm max-w-none overflow-hidden text-[14px] leading-relaxed text-foreground/90 dark:prose-invert [&_h2]:mt-6 [&_h2]:mb-2 [&_h2]:font-[family-name:var(--font-heading)] [&_h2]:text-[16px] [&_h2]:font-medium [&_h2]:normal-case [&_h2]:tracking-normal [&_h2]:text-foreground [&_h2:first-child]:mt-0 [&_li]:my-1 [&_p]:my-1.5 [&_ul]:my-2 [&_ul]:pl-5">
             <Markdown>{project.summary}</Markdown>
           </div>
         </div>

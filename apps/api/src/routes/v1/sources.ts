@@ -31,6 +31,7 @@ const KEYWORD_FALLBACK_THRESHOLD = 5;
 interface SourceSearchResult {
   sourceType: "NOTION_PAGE" | "LINEAR_ISSUE";
   sourceId: string;
+  sourceUrl: string | null;
   title: string;
   snippet: string;
   similarity: number;
@@ -111,6 +112,7 @@ sourceRoutes.get("/search", async (c) => {
     let filteredResults: Array<{
       sourceId: string;
       sourceType: "NOTION_PAGE" | "LINEAR_ISSUE";
+      sourceUrl: string | null;
       title: string;
       snippet: string;
       similarity: number;
@@ -131,11 +133,13 @@ sourceRoutes.get("/search", async (c) => {
       if (type === "linear" && sourceType !== "LINEAR_ISSUE") continue;
 
       const title = (event.payload as any)?.title ?? result.documentId;
+      const sourceUrl = (event.payload as any)?.url ?? null;
       const snippet = result.content.slice(0, 200);
 
       filteredResults.push({
         sourceId: result.documentId,
         sourceType,
+        sourceUrl,
         title,
         snippet,
         similarity: result.similarity,
@@ -189,6 +193,7 @@ sourceRoutes.get("/search", async (c) => {
     const results: SourceSearchResult[] = paginatedResults.map((r) => ({
       sourceType: r.sourceType,
       sourceId: r.sourceId,
+      sourceUrl: r.sourceUrl,
       title: r.title,
       snippet: r.snippet,
       similarity: r.similarity,
@@ -224,6 +229,7 @@ async function keywordSearch(
 ): Promise<Array<{
   sourceId: string;
   sourceType: "NOTION_PAGE" | "LINEAR_ISSUE";
+  sourceUrl: string | null;
   title: string;
   snippet: string;
   similarity: number;
@@ -232,13 +238,14 @@ async function keywordSearch(
   const sourceFilter = type === "notion" ? "NOTION" : type === "linear" ? "LINEAR" : null;
 
   const results = await db.$queryRaw<
-    Array<{ external_id: string; source: string; title: string; description: string }>
+    Array<{ external_id: string; source: string; title: string; description: string; url: string | null }>
   >`
     SELECT DISTINCT ON (e.external_id)
       e.external_id,
       e.source,
       COALESCE(e.payload->>'title', e.external_id) as title,
-      COALESCE(e.payload->>'description', '') as description
+      COALESCE(e.payload->>'description', '') as description,
+      e.payload->>'url' as url
     FROM events e
     WHERE e.tenant_id = ${tenantId}
       AND (
@@ -253,6 +260,7 @@ async function keywordSearch(
   return results.map((row) => ({
     sourceId: row.external_id,
     sourceType: row.source === "NOTION" ? "NOTION_PAGE" as const : "LINEAR_ISSUE" as const,
+    sourceUrl: row.url,
     title: row.title || row.external_id,
     snippet: (row.description || row.title).slice(0, 200),
     similarity: 0,

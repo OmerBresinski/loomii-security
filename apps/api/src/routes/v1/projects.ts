@@ -98,6 +98,7 @@ projectRoutes.post("/", async (c) => {
           projectId: newProject.id,
           sourceType: s.sourceType as any,
           sourceId: s.sourceId,
+          sourceUrl: s.sourceUrl ?? null,
           linkedBy: "MANUAL" as any,
           linkedByUserId: userId,
         })),
@@ -160,6 +161,15 @@ projectRoutes.get("/", async (c) => {
       lastActivity,
       createdAt: p.createdAt.toISOString(),
     };
+  });
+
+  // Sort by severity (highest risk first), then alphabetically
+  const riskOrder: Record<string, number> = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3, INFO: 4 };
+  results.sort((a, b) => {
+    const aRisk = a.highestRisk ? (riskOrder[a.highestRisk] ?? 5) : 5;
+    const bRisk = b.highestRisk ? (riskOrder[b.highestRisk] ?? 5) : 5;
+    if (aRisk !== bRisk) return aRisk - bRisk;
+    return a.name.localeCompare(b.name);
   });
 
   return c.json({ projects: results });
@@ -344,6 +354,7 @@ projectRoutes.get("/:id/sources", async (c) => {
       id: true,
       sourceType: true,
       sourceId: true,
+      sourceUrl: true,
       linkedBy: true,
       linkReason: true,
       isArchived: true,
@@ -412,7 +423,7 @@ projectRoutes.post("/:id/sources", async (c) => {
   }
 
   const { sources } = parsed.data;
-  const created: Array<{ id: string; sourceType: string; sourceId: string }> = [];
+  const created: Array<{ id: string; sourceType: string; sourceId: string; sourceUrl: string | null }> = [];
   const existing: string[] = [];
 
   for (const source of sources) {
@@ -422,10 +433,11 @@ projectRoutes.post("/:id/sources", async (c) => {
           projectId,
           sourceType: source.sourceType as any,
           sourceId: source.sourceId,
+          sourceUrl: source.sourceUrl ?? null,
           linkedBy: "MANUAL" as any,
           linkedByUserId: userId,
         },
-        select: { id: true, sourceType: true, sourceId: true },
+        select: { id: true, sourceType: true, sourceId: true, sourceUrl: true },
       });
       created.push(record);
     } catch (err: any) {
@@ -606,7 +618,7 @@ projectRoutes.post("/:id/sources/relink", async (c) => {
   // Find the active source link
   const source = await db.projectSource.findFirst({
     where: { projectId, sourceId, unlinkedAt: null },
-    select: { id: true, sourceType: true },
+    select: { id: true, sourceType: true, sourceUrl: true },
   });
 
   if (!source) {
@@ -631,6 +643,7 @@ projectRoutes.post("/:id/sources/relink", async (c) => {
           projectId: targetProjectId,
           sourceType: source.sourceType as any,
           sourceId,
+          sourceUrl: source.sourceUrl,
           linkedBy: "MANUAL" as any,
           linkedByUserId: userId,
         },

@@ -209,6 +209,18 @@ async function matchProject(params: MatchParams): Promise<string | null> {
   // ─── Step 5: Create ProjectSource records ─────────────────────────────────
   const dbSourceType = sourceType === "linear" ? "LINEAR_ISSUE" : "NOTION_PAGE";
 
+  // Resolve sourceUrl from event payload
+  let sourceUrl: string | null = null;
+  if (eventPayload) {
+    if (sourceType === "notion") {
+      // Notion events store URL in payload.url
+      sourceUrl = (eventPayload.url as string) ?? null;
+    } else if (sourceType === "linear") {
+      // Linear events store URL in payload.url, or construct from sourceId
+      sourceUrl = (eventPayload.url as string) ?? `https://linear.app/loomii/issue/${sourceId}`;
+    }
+  }
+
   for (const match of allMatches) {
     try {
       await db.projectSource.create({
@@ -216,6 +228,7 @@ async function matchProject(params: MatchParams): Promise<string | null> {
           projectId: match.projectId,
           sourceType: dbSourceType as any,
           sourceId,
+          sourceUrl,
           linkedBy: "AUTO",
           linkReason: match.reason as any,
         },

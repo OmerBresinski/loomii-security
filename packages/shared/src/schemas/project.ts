@@ -14,6 +14,7 @@ import { z } from "zod";
 export const ProjectSourceInputSchema = z.object({
   sourceType: z.enum(["NOTION_PAGE", "LINEAR_ISSUE"]),
   sourceId: z.string().min(1),
+  sourceUrl: z.string().url().optional(),
 });
 export type ProjectSourceInput = z.infer<typeof ProjectSourceInputSchema>;
 
