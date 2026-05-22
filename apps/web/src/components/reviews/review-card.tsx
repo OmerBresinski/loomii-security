@@ -3,6 +3,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { ProjectBadge } from "@/components/reviews/project-badge"
 import type { Review } from "@/queries/reviews"
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -244,6 +245,13 @@ export function ReviewRow({ review }: ReviewRowProps) {
           {review.title ?? "Untitled review"}
         </span>
       </div>
+
+      {/* Project Badge */}
+      {review.project && (
+        <div className="flex shrink-0 items-center pr-3">
+          <ProjectBadge project={review.project} />
+        </div>
+      )}
 
       {/* Source */}
       <div
