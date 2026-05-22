@@ -291,6 +291,7 @@ model ProjectSource {
   projectId      String     @map("project_id")
   sourceType     SourceType @map("source_type")
   sourceId       String     @map("source_id")
+  sourceUrl      String?    @map("source_url")
   linkedBy       LinkMethod @map("linked_by")
   linkedByUserId String?    @map("linked_by_user_id")
   linkReason     Json?      @map("link_reason")
