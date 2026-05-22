@@ -10,6 +10,7 @@ import { processThreatModelGeneration } from "./threat-model-generation";
 import { processThreatModelUpdate } from "./threat-model-update";
 import { processReviewGeneration } from "./review-generation";
 import { processSummaryGeneration } from "./summary-generation";
+import { processProjectMatching } from "./project-matching";
 
 /**
  * Processor registry - maps queue names to their job processor functions.
@@ -52,6 +53,7 @@ export const processors: Record<QueueName, Processor> = {
     return processThreatModelUpdate(job);
   }) as Processor,
   [QUEUE_NAMES.SUMMARY_GENERATION]: processSummaryGeneration as Processor,
+  [QUEUE_NAMES.PROJECT_MATCHING]: processProjectMatching as Processor,
   [QUEUE_NAMES.EVENTS]: createPlaceholderProcessor(QUEUE_NAMES.EVENTS),
 };
 
@@ -68,5 +70,6 @@ export const concurrency: Record<QueueName, number> = {
   [QUEUE_NAMES.REVIEW_GENERATION]: 3,
   [QUEUE_NAMES.THREAT_MODEL_UPDATE]: 2,
   [QUEUE_NAMES.SUMMARY_GENERATION]: 2,
+  [QUEUE_NAMES.PROJECT_MATCHING]: 5,
   [QUEUE_NAMES.EVENTS]: 10,
 };

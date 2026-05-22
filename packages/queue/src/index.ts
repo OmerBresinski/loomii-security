@@ -12,6 +12,7 @@ export {
   threatModelQueue,
   eventsQueue,
   summaryGenerationQueue,
+  projectMatchingQueue,
 } from "./queues";
 export type {
   ContextAssemblyPayload,
@@ -22,6 +23,7 @@ export type {
   ReviewGenerationPayload,
   ThreatModelUpdatePayload,
   SummaryGenerationPayload,
+  ProjectMatchingPayload,
   EventsPayload,
   QueuePayloadMap,
 } from "./types";

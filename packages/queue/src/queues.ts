@@ -15,6 +15,7 @@ export const QUEUE_NAMES = {
   REVIEW_GENERATION: "review-generation",
   THREAT_MODEL_UPDATE: "threat-model-update",
   SUMMARY_GENERATION: "summary-generation",
+  PROJECT_MATCHING: "project-matching",
   EVENTS: "events",
 } as const;
 
@@ -81,5 +82,10 @@ export const eventsQueue = new Queue<QueuePayloadMap["events"]>(
 
 export const summaryGenerationQueue = new Queue<QueuePayloadMap["summary-generation"]>(
   QUEUE_NAMES.SUMMARY_GENERATION,
+  { connection: getConnection() }
+);
+
+export const projectMatchingQueue = new Queue<QueuePayloadMap["project-matching"]>(
+  QUEUE_NAMES.PROJECT_MATCHING,
   { connection: getConnection() }
 );

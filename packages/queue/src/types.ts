@@ -8,6 +8,8 @@ export interface ContextAssemblyPayload {
   tenantId: string;
   sourceType: "linear" | "notion";
   sourceId: string;
+  /** Resolved project ID from project-matching worker (null if no match) */
+  projectId?: string | null;
 }
 
 export interface RiskClassificationPayload {
@@ -55,6 +57,15 @@ export interface SummaryGenerationPayload {
   trigger?: string;
 }
 
+export interface ProjectMatchingPayload {
+  eventId: string;
+  tenantId: string;
+  sourceType: "linear" | "notion";
+  sourceId: string;
+  /** Raw text content from the event for embedding similarity */
+  content: string;
+}
+
 export interface EventsPayload {
   tenantId: string;
   eventType: string;
@@ -74,5 +85,6 @@ export interface QueuePayloadMap {
   "review-generation": ReviewGenerationPayload;
   "threat-model-update": ThreatModelUpdatePayload;
   "summary-generation": SummaryGenerationPayload;
+  "project-matching": ProjectMatchingPayload;
   events: EventsPayload;
 }
