@@ -223,7 +223,7 @@ export async function processNotionPolling(
       },
     });
 
-    // Only enqueue context assembly if the event was newly created
+    // Only enqueue project matching if the event was newly created
     // (createdAt === updatedAt indicates a new record, not an update)
     const isNew =
       event.createdAt.getTime() === event.updatedAt.getTime() ||
@@ -235,6 +235,7 @@ export async function processNotionPolling(
         tenantId,
         sourceType: "notion",
         sourceId: page.id,
+        content: page.title ?? "",
       });
       newEventCount++;
     }

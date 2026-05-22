@@ -33,7 +33,7 @@ const OVERALL_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 export async function processContextAssembly(
   job: Job<ContextAssemblyPayload>
 ): Promise<void> {
-  const { eventId, tenantId, sourceType, sourceId } = job.data;
+  const { eventId, tenantId, sourceType, sourceId, projectId } = job.data;
 
   const childLogger = logger.child({
     queue: "context-assembly",
@@ -43,13 +43,14 @@ export async function processContextAssembly(
     eventId,
     sourceType,
     sourceId,
+    projectId: projectId ?? null,
   });
 
   childLogger.info("Starting context assembly");
 
   // Overall 2-minute timeout
   const assemblyResult = await Promise.race([
-    assembleContext({ eventId, tenantId, sourceType, sourceId, childLogger }),
+    assembleContext({ eventId, tenantId, sourceType, sourceId, projectId: projectId ?? null, childLogger }),
     createOverallTimeout(OVERALL_TIMEOUT_MS),
   ]);
 
@@ -77,11 +78,12 @@ interface AssembleParams {
   tenantId: string;
   sourceType: "linear" | "notion";
   sourceId: string;
+  projectId: string | null;
   childLogger: typeof logger;
 }
 
 async function assembleContext(params: AssembleParams): Promise<"DONE"> {
-  const { eventId, tenantId, sourceType, sourceId, childLogger } = params;
+  const { eventId, tenantId, sourceType, sourceId, projectId, childLogger } = params;
 
   // 1. Look up the event
   const event = await db.event.findUnique({
@@ -212,6 +214,7 @@ async function assembleContext(params: AssembleParams): Promise<"DONE"> {
         ...content,
         missingItems,
       },
+      projectId: projectId ?? null,
       updatedAt: new Date(),
     },
     create: {
@@ -223,6 +226,7 @@ async function assembleContext(params: AssembleParams): Promise<"DONE"> {
         ...content,
         missingItems,
       },
+      projectId: projectId ?? null,
     },
   });
 

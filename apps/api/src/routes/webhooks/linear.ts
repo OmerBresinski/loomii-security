@@ -19,7 +19,7 @@
  */
 import { Hono } from "hono";
 import { db } from "@loomii/db";
-import { contextAssemblyQueue } from "@loomii/queue";
+import { projectMatchingQueue } from "@loomii/queue";
 import {
   verifyWebhookSignature,
   findLinearIntegrationByOrgId,
@@ -162,18 +162,19 @@ linearWebhookRoute.post("/", async (c) => {
   const isDuplicate =
     Math.abs(event.createdAt.getTime() - event.updatedAt.getTime()) > 1000;
 
-  // 10. If new event, enqueue context assembly (with debounce via jobId)
+  // 10. If new event, enqueue project matching (with debounce via jobId)
   if (!isDuplicate) {
-    await contextAssemblyQueue.add(
-      "assemble",
+    await projectMatchingQueue.add(
+      "match",
       {
         eventId: event.id,
         tenantId,
         sourceType: "linear",
         sourceId: externalId,
+        content: (data as any)?.description ?? (data as any)?.title ?? "",
       },
       {
-        jobId: `assemble:${tenantId}:${externalId}`,
+        jobId: `match:${tenantId}:${externalId}`,
         delay: 60_000, // 60s debounce - wait for rapid consecutive updates
       }
     );
