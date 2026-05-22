@@ -50,6 +50,11 @@ export interface ThreatModelUpdatePayload {
   bundleCount?: number;
 }
 
+export interface SummaryGenerationPayload {
+  projectId: string;
+  trigger?: string;
+}
+
 export interface EventsPayload {
   tenantId: string;
   eventType: string;
@@ -68,5 +73,6 @@ export interface QueuePayloadMap {
   "integration-health": IntegrationHealthPayload;
   "review-generation": ReviewGenerationPayload;
   "threat-model-update": ThreatModelUpdatePayload;
+  "summary-generation": SummaryGenerationPayload;
   events: EventsPayload;
 }

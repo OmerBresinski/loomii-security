@@ -50,6 +50,8 @@ export type {
   TmThreat,
   TmChange,
   TmGap,
+  Project,
+  ProjectSource,
 } from "@prisma/client";
 export {
   Role,
@@ -67,6 +69,8 @@ export {
   FindingStatus,
   Effort,
   RelationType,
+  SourceType,
+  LinkMethod,
 } from "@prisma/client";
 
 // Export pgvector helpers

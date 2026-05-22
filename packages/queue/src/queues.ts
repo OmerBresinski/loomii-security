@@ -14,6 +14,7 @@ export const QUEUE_NAMES = {
   INTEGRATION_HEALTH: "integration-health",
   REVIEW_GENERATION: "review-generation",
   THREAT_MODEL_UPDATE: "threat-model-update",
+  SUMMARY_GENERATION: "summary-generation",
   EVENTS: "events",
 } as const;
 
@@ -75,5 +76,10 @@ export const threatModelQueue = new Queue<QueuePayloadMap["threat-model-update"]
 
 export const eventsQueue = new Queue<QueuePayloadMap["events"]>(
   QUEUE_NAMES.EVENTS,
+  { connection: getConnection() }
+);
+
+export const summaryGenerationQueue = new Queue<QueuePayloadMap["summary-generation"]>(
+  QUEUE_NAMES.SUMMARY_GENERATION,
   { connection: getConnection() }
 );

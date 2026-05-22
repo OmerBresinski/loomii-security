@@ -11,6 +11,7 @@ export {
   reviewQueue,
   threatModelQueue,
   eventsQueue,
+  summaryGenerationQueue,
 } from "./queues";
 export type {
   ContextAssemblyPayload,
@@ -20,6 +21,7 @@ export type {
   IntegrationHealthPayload,
   ReviewGenerationPayload,
   ThreatModelUpdatePayload,
+  SummaryGenerationPayload,
   EventsPayload,
   QueuePayloadMap,
 } from "./types";

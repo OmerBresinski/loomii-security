@@ -267,7 +267,7 @@ model Project {
   tenantId         String                       @map("tenant_id")
   name             String
   summary          String?                      @db.Text
-  summaryEmbedding Unsupported("vector(1536)")? @map("summary_embedding")
+  summaryEmbedding Unsupported("vector(1024)")? @map("summary_embedding")
   summaryUpdatedAt DateTime?                    @map("summary_updated_at")
   createdById      String?                      @map("created_by_id")
   createdAt        DateTime                     @default(now()) @map("created_at")
