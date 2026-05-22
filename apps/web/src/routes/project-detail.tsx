@@ -1,8 +1,9 @@
-import { getRouteApi } from "@tanstack/react-router"
+import { getRouteApi, useNavigate } from "@tanstack/react-router"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useProjectDetail } from "@/queries/projects"
 import { ProjectHeader } from "@/components/projects/detail/project-header"
 import { OverviewTab } from "@/components/projects/detail/overview-tab"
+import { ReviewsTab } from "@/components/projects/detail/reviews-tab"
 
 const routeApi = getRouteApi("/projects/$projectId")
 
@@ -10,9 +11,18 @@ const routeApi = getRouteApi("/projects/$projectId")
 
 export default function ProjectDetailPage() {
   const { projectId } = routeApi.useParams()
+  const { tab } = routeApi.useSearch()
+  const navigate = useNavigate()
 
   const { data, isPending } = useProjectDetail(projectId)
   const project = data
+
+  function handleTabChange(value: string) {
+    navigate({
+      search: { tab: value === "overview" ? undefined : value },
+      replace: true,
+    })
+  }
 
   return (
     <div className="flex h-full flex-col overflow-hidden p-6">
@@ -22,7 +32,7 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="overview" className="flex min-h-0 flex-1 flex-col">
+      <Tabs value={tab} onValueChange={handleTabChange} className="flex min-h-0 flex-1 flex-col">
         <TabsList variant="line">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="sources">Sources</TabsTrigger>
@@ -45,12 +55,7 @@ export default function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="reviews" className="min-h-0 flex-1 overflow-y-auto pt-6">
-          <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-            <p className="text-sm font-medium">Reviews</p>
-            <p className="text-xs text-muted-foreground">
-              Project reviews coming soon.
-            </p>
-          </div>
+          <ReviewsTab projectId={projectId} />
         </TabsContent>
 
         <TabsContent value="activity" className="min-h-0 flex-1 overflow-y-auto pt-6">

@@ -133,6 +133,17 @@ async function main() {
   let createdReviews = 0;
   let createdFindings = 0;
 
+  // Fetch existing projects to assign to context bundles
+  const projects = await db.project.findMany({
+    where: { tenantId: tenant.id },
+    select: { id: true },
+  });
+  if (projects.length === 0) {
+    console.error("No projects found! Run seed-projects.ts first.");
+    process.exit(1);
+  }
+  console.log(`Found ${projects.length} projects to distribute reviews across`);
+
   for (let i = 0; i < 35; i++) {
     const eventDate = new Date(baseDate.getTime() - i * 2 * 3_600_000); // 2 hours apart
     const source = sources[i % sources.length];
@@ -168,6 +179,7 @@ async function main() {
     });
 
     // Context Bundle
+    const projectId = projects[i % projects.length].id;
     const bundle = await db.contextBundle.upsert({
       where: { eventId: event.id },
       update: {
@@ -175,10 +187,12 @@ async function main() {
         riskLevel,
         title,
         summary,
+        projectId,
       },
       create: {
         tenantId: tenant.id,
         eventId: event.id,
+        projectId,
         status: bundleStatus,
         riskLevel,
         title,

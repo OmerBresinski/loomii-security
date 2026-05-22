@@ -1,4 +1,4 @@
-import { queryOptions, useQuery } from "@tanstack/react-query"
+import { queryOptions, useQuery, keepPreviousData } from "@tanstack/react-query"
 import { fetchApi } from "@/lib/api-client"
 import type {
   ProjectListResponse,
@@ -140,6 +140,7 @@ export function projectReviewsQueryOptions(
     staleTime: 5_000,
     refetchInterval: 5_000,
     refetchIntervalInBackground: false,
+    placeholderData: keepPreviousData,
   })
 }
 

@@ -146,6 +146,9 @@ const projectDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/projects/$projectId",
   beforeLoad: requireAuth,
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: (search.tab as string) || "overview",
+  }),
   loader: ({ params }) => {
     // Prefetch detail and sources in parallel
     queryClient.prefetchQuery(projectDetailQueryOptions(params.projectId))

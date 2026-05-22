@@ -698,18 +698,13 @@ projectRoutes.get("/:id/reviews", async (c) => {
     bundleWhere.createdAt = { lt: new Date(cursor) };
   }
 
-  const reviewWhere: any = {};
   if (statusParam) {
     const statuses = statusParam.split(",");
-    reviewWhere.status = { in: statuses };
+    bundleWhere.status = { in: statuses };
   }
   if (riskParam) {
     const risks = riskParam.split(",");
-    reviewWhere.severity = { in: risks };
-  }
-
-  if (Object.keys(reviewWhere).length > 0) {
-    bundleWhere.review = { ...bundleWhere.review, ...reviewWhere };
+    bundleWhere.riskLevel = { in: risks };
   }
 
   const bundles = await db.contextBundle.findMany({
@@ -743,7 +738,8 @@ projectRoutes.get("/:id/reviews", async (c) => {
     .map((bundle) => ({
       id: bundle.review!.id,
       contextBundleId: bundle.id,
-      status: bundle.review!.status,
+      status: bundle.status,
+      riskLevel: bundle.riskLevel,
       severity: bundle.review!.severity,
       summary: bundle.review!.summary,
       confidence: bundle.review!.confidence,

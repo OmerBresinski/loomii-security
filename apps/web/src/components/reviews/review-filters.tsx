@@ -161,16 +161,14 @@ export function ReviewFiltersBar({ filters, onFiltersChange }: ReviewFiltersProp
         }
         onOptionHover={prefetchStatus}
       />
-      {hasActiveFilters && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 text-xs text-muted-foreground"
-          onClick={() => onFiltersChange({ ...filters, riskLevel: [], status: [] })}
-        >
-          Clear
-        </Button>
-      )}
+      <Button
+        variant="ghost"
+        size="sm"
+        className={`h-8 text-xs text-muted-foreground transition-none ${hasActiveFilters ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        onClick={() => onFiltersChange({ ...filters, riskLevel: [], status: [] })}
+      >
+        Clear
+      </Button>
     </div>
   )
 }
