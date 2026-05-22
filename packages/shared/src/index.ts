@@ -29,6 +29,16 @@ export {
   ListEventsQuerySchema,
   EventListResponseSchema,
   LinearWebhookPayloadSchema,
+  // Projects
+  ProjectSourceInputSchema,
+  CreateProjectRequestSchema,
+  UpdateProjectRequestSchema,
+  LinkSourcesRequestSchema,
+  ArchiveSourceRequestSchema,
+  RelinkSourceRequestSchema,
+  ProjectListItemSchema,
+  ProjectListResponseSchema,
+  ProjectDetailSchema,
 } from "./schemas";
 
 // Types (inferred from Zod schemas)
@@ -45,6 +55,15 @@ export type {
   ListEventsQuery,
   EventListResponse,
   LinearWebhookPayload,
+  ProjectSourceInput,
+  CreateProjectRequest,
+  UpdateProjectRequest,
+  LinkSourcesRequest,
+  ArchiveSourceRequest,
+  RelinkSourceRequest,
+  ProjectListItem,
+  ProjectListResponse,
+  ProjectDetail,
 } from "./schemas";
 
 // Utilities

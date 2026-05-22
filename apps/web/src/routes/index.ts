@@ -9,6 +9,11 @@ import { RootLayout } from "@/components/root-layout"
 import { getSessionToken, getStoredRole } from "@/lib/api-client"
 import { queryClient } from "@/lib/query-client"
 import { reviewsInfiniteQueryOptions } from "@/queries/reviews"
+import {
+  projectsQueryOptions,
+  projectDetailQueryOptions,
+  projectSourcesQueryOptions,
+} from "@/queries/projects"
 
 // ─── Auth Guard ─────────────────────────────────────────────────────────────
 
@@ -124,6 +129,9 @@ const projectsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/projects",
   beforeLoad: requireAuth,
+  loader: () => {
+    queryClient.prefetchQuery(projectsQueryOptions())
+  },
   component: lazyRouteComponent(() => import("@/routes/projects")),
 })
 
@@ -138,6 +146,11 @@ const projectDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/projects/$projectId",
   beforeLoad: requireAuth,
+  loader: ({ params }) => {
+    // Prefetch detail and sources in parallel
+    queryClient.prefetchQuery(projectDetailQueryOptions(params.projectId))
+    queryClient.prefetchQuery(projectSourcesQueryOptions(params.projectId))
+  },
   component: lazyRouteComponent(() => import("@/routes/project-detail")),
 })
 
