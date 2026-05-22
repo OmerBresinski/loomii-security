@@ -23,7 +23,7 @@
  */
 import type { Job } from "bullmq";
 import { db } from "@loomii/db";
-import { type ReviewGenerationPayload } from "@loomii/queue";
+import { type ReviewGenerationPayload, summaryGenerationQueue } from "@loomii/queue";
 import { type ReviewOutput } from "@loomii/shared/schemas";
 import { routeReview, type RiskLevel } from "../lib/review-router";
 import { saveReviewAtomically, markReviewError } from "../lib/review-saver";
@@ -188,6 +188,19 @@ export async function processReviewGeneration(
           publishedVia: "autonomous",
           durationMs,
         });
+
+        // Trigger immediate summary regeneration for autonomous approvals
+        const bundle = await db.contextBundle.findUnique({
+          where: { id: contextId },
+          select: { projectId: true },
+        });
+        if (bundle?.projectId) {
+          await summaryGenerationQueue.add(
+            "regenerate",
+            { projectId: bundle.projectId, trigger: "review_approved" },
+            { removeOnComplete: true }
+          );
+        }
       } else {
         await publishReviewPendingApproval({
           tenantId,
