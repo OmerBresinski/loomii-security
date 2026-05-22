@@ -24,13 +24,13 @@ export function OverviewTab({ projectId, project, isPending }: OverviewTabProps)
         reviews={reviews}
         isPending={isPending}
       />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[45%_1fr]">
-        {/* Left column: Summary (50%) */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[45%_15%]">
+        {/* Left column: Summary */}
         <div className="flex min-w-0 flex-col">
           <SummaryCard project={project} isPending={isPending} />
         </div>
 
-        {/* Right column: Sources (50%) */}
+        {/* Right column: Sources (15%) */}
         <div className="flex flex-col gap-4">
           <SourcesList sources={sources} isPending={sourcesPending} />
         </div>

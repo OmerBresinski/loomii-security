@@ -116,7 +116,7 @@ export function ProjectRow({ project }: ProjectRowProps) {
       to="/projects/$projectId"
       params={{ projectId: project.id }}
       preload="intent"
-      className="flex h-12 items-center px-2 hover:bg-accent dark:hover:bg-[#25262A]"
+      className="flex h-12 items-center px-4 hover:bg-accent dark:hover:bg-[#25262A]"
     >
       {/* Risk */}
       <Tooltip>
@@ -135,12 +135,20 @@ export function ProjectRow({ project }: ProjectRowProps) {
       </Tooltip>
 
       {/* Project Icon */}
-      <IconPicker projectId={project.id} icon={project.icon} color={project.color}>
+      <IconPicker
+        projectId={project.id}
+        icon={project.icon}
+        color={project.color}
+      >
         <button
           onClick={(e) => e.preventDefault()}
           className="flex shrink-0 items-center justify-center rounded-sm px-[2px] py-[2px] transition-colors duration-100 hover:bg-white/5"
         >
-          <ProjectIconDisplay icon={project.icon} color={project.color} size={16} />
+          <ProjectIconDisplay
+            icon={project.icon}
+            color={project.color}
+            size={16}
+          />
         </button>
       </IconPicker>
 

@@ -11,6 +11,7 @@ export interface ProjectSource {
   id: string
   sourceType: "NOTION_PAGE" | "LINEAR_ISSUE"
   sourceId: string
+  sourceUrl: string | null
   title: string | null
   isArchived: boolean
   linkedAt: string

@@ -1,6 +1,9 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import type { ProjectDetail } from "@loomii/shared"
-import type { ProjectSourcesResponse, ProjectReviewsResponse } from "@/queries/projects"
+import type {
+  ProjectSourcesResponse,
+  ProjectReviewsResponse,
+} from "@/queries/projects"
 
 // ─── Stat Item ──────────────────────────────────────────────────────────────
 
@@ -13,15 +16,15 @@ interface StatItemProps {
 function StatItem({ label, value, variant = "default" }: StatItemProps) {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-[11px] text-muted-foreground uppercase tracking-wide">
-        {label}
-      </span>
       <span
         className={`text-lg font-semibold tabular-nums ${
           variant === "warning" ? "text-destructive" : "text-foreground"
         }`}
       >
         {value}
+      </span>
+      <span className="text-[11px] tracking-wide text-muted-foreground uppercase">
+        {label}
       </span>
     </div>
   )
@@ -44,9 +47,9 @@ export function StatsRow({
 }: StatsRowProps) {
   if (isPending) {
     return (
-      <div className="flex items-center gap-8 rounded-lg border border-border/50 px-6 py-4">
+      <div className="flex items-center divide-x divide-border/50 py-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex flex-col gap-0.5">
+          <div key={i} className="flex flex-col gap-0.5 px-6 first:pl-0">
             <Skeleton className="h-[11px] w-20" />
             <Skeleton className="h-7 w-8" />
           </div>
@@ -69,15 +72,23 @@ export function StatsRow({
     ).length ?? 0
 
   return (
-    <div className="flex items-center gap-8 rounded-lg border border-border/50 px-6 py-4">
-      <StatItem label="Total Sources" value={totalSources} />
-      <StatItem label="Active Sources" value={activeSources} />
-      <StatItem
-        label="High Risk Reviews"
-        value={criticalHighCount}
-        variant={criticalHighCount > 0 ? "warning" : "default"}
-      />
-      <StatItem label="Total Reviews" value={totalReviews} />
+    <div className="flex items-center divide-x divide-border/50 py-4">
+      <div className="px-6 first:pl-0">
+        <StatItem label="Total Sources" value={totalSources} />
+      </div>
+      <div className="px-6">
+        <StatItem label="Active Sources" value={activeSources} />
+      </div>
+      <div className="px-6">
+        <StatItem
+          label="High Risk Reviews"
+          value={criticalHighCount}
+          variant={criticalHighCount > 0 ? "warning" : "default"}
+        />
+      </div>
+      <div className="px-6">
+        <StatItem label="Total Reviews" value={totalReviews} />
+      </div>
     </div>
   )
 }
