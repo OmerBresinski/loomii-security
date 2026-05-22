@@ -46,9 +46,9 @@ export function StatsRow({
     return (
       <div className="flex items-center gap-8 rounded-lg border border-border/50 px-6 py-4">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="flex flex-col gap-1">
-            <Skeleton className="h-3 w-16" />
-            <Skeleton className="h-6 w-10" />
+          <div key={i} className="flex flex-col gap-0.5">
+            <Skeleton className="h-[11px] w-20" />
+            <Skeleton className="h-7 w-8" />
           </div>
         ))}
       </div>
@@ -72,12 +72,12 @@ export function StatsRow({
     <div className="flex items-center gap-8 rounded-lg border border-border/50 px-6 py-4">
       <StatItem label="Total Sources" value={totalSources} />
       <StatItem label="Active Sources" value={activeSources} />
-      <StatItem label="Total Reviews" value={totalReviews} />
       <StatItem
         label="High Risk Reviews"
         value={criticalHighCount}
         variant={criticalHighCount > 0 ? "warning" : "default"}
       />
+      <StatItem label="Total Reviews" value={totalReviews} />
     </div>
   )
 }

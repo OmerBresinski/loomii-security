@@ -311,6 +311,42 @@ projectRoutes.delete("/:id", async (c) => {
 // Source Linking Sub-Routes
 // ===========================================
 
+// ===========================================
+// GET /:id/sources — List sources for a project
+// ===========================================
+projectRoutes.get("/:id/sources", async (c) => {
+  const tenantId = c.get("tenantId");
+  const requestId = c.get("requestId");
+  const projectId = c.req.param("id");
+
+  const project = await verifyProjectOwnership(projectId, tenantId);
+  if (!project) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Project not found", requestId } },
+      404
+    );
+  }
+
+  const sources = await db.projectSource.findMany({
+    where: { projectId },
+    orderBy: { linkedAt: "desc" },
+    select: {
+      id: true,
+      sourceType: true,
+      sourceId: true,
+      linkedBy: true,
+      linkReason: true,
+      isArchived: true,
+      archivedAt: true,
+      archivedReason: true,
+      linkedAt: true,
+      unlinkedAt: true,
+    },
+  });
+
+  return c.json({ sources });
+});
+
 /**
  * Helper: trigger debounced summary regeneration for a project.
  */

@@ -86,6 +86,7 @@ export function projectsQueryOptions() {
     queryKey: projectKeys.all,
     queryFn: ({ signal }) =>
       fetchApi<ProjectListResponse>("/api/v1/projects", { signal }),
+    staleTime: 30_000,
     refetchInterval: 30_000,
   })
 }
@@ -97,6 +98,7 @@ export function projectDetailQueryOptions(projectId: string) {
     queryFn: ({ signal }) =>
       fetchApi<ProjectDetail>(`/api/v1/projects/${projectId}`, { signal }),
     enabled: projectId.length > 0,
+    staleTime: 10_000,
   })
 }
 
@@ -110,6 +112,7 @@ export function projectSourcesQueryOptions(projectId: string) {
         { signal }
       ),
     enabled: projectId.length > 0,
+    staleTime: 10_000,
   })
 }
 
@@ -133,6 +136,7 @@ export function projectReviewsQueryOptions(
     queryFn: ({ signal }) =>
       fetchApi<ProjectReviewsResponse>(path, { signal }),
     enabled: projectId.length > 0,
+    staleTime: 5_000,
     refetchInterval: 5_000,
     refetchIntervalInBackground: false,
   })

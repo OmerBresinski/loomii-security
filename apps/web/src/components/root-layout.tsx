@@ -1,5 +1,6 @@
 import React, { useMemo } from "react"
 import { Outlet, Link, useRouterState, useNavigate } from "@tanstack/react-router"
+import { useQueryClient } from "@tanstack/react-query"
 import {
   Sidebar,
   SidebarContent,
@@ -72,6 +73,7 @@ const segmentLabels: Record<string, string> = {
 
 function AppBreadcrumb() {
   const currentPath = useRouterState({ select: (s) => s.location.pathname })
+  const queryClient = useQueryClient()
 
   // Split path into segments, filter out empty strings
   const segments = currentPath.split("/").filter(Boolean)
@@ -84,9 +86,18 @@ function AppBreadcrumb() {
         {segments.map((segment, index) => {
           const isLast = index === segments.length - 1
           const href = "/" + segments.slice(0, index + 1).join("/")
-          const label =
-            segmentLabels[segment] ??
-            segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ")
+
+          // Resolve dynamic segment labels from cache
+          let label: string
+          if (segments[index - 1] === "projects" && segment !== "new") {
+            // This is a projectId segment — look up the name from cache
+            const cached = queryClient.getQueryData<{ name: string }>(["projects", segment])
+            label = cached?.name ?? segment
+          } else {
+            label =
+              segmentLabels[segment] ??
+              segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ")
+          }
 
           return (
             <React.Fragment key={href}>
