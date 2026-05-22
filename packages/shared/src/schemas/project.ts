@@ -30,6 +30,25 @@ export const UpdateProjectRequestSchema = z.object({
 });
 export type UpdateProjectRequest = z.infer<typeof UpdateProjectRequestSchema>;
 
+/** POST /api/v1/projects/:id/sources */
+export const LinkSourcesRequestSchema = z.object({
+  sources: z.array(ProjectSourceInputSchema).min(1),
+});
+export type LinkSourcesRequest = z.infer<typeof LinkSourcesRequestSchema>;
+
+/** PATCH /api/v1/projects/:id/sources/:sourceId */
+export const ArchiveSourceRequestSchema = z.object({
+  isArchived: z.boolean(),
+});
+export type ArchiveSourceRequest = z.infer<typeof ArchiveSourceRequestSchema>;
+
+/** POST /api/v1/projects/:id/sources/relink */
+export const RelinkSourceRequestSchema = z.object({
+  sourceId: z.string().min(1),
+  targetProjectId: z.string().min(1),
+});
+export type RelinkSourceRequest = z.infer<typeof RelinkSourceRequestSchema>;
+
 // ===========================================
 // Response Schemas
 // ===========================================

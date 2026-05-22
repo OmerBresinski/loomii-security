@@ -9,10 +9,14 @@
  */
 import { Hono } from "hono";
 import { db } from "@loomii/db";
+import { summaryGenerationQueue } from "@loomii/queue";
 import type { AppEnv } from "../../lib/types";
 import {
   CreateProjectRequestSchema,
   UpdateProjectRequestSchema,
+  LinkSourcesRequestSchema,
+  ArchiveSourceRequestSchema,
+  RelinkSourceRequestSchema,
 } from "@loomii/shared/schemas";
 
 export const projectRoutes = new Hono<AppEnv>();
@@ -301,4 +305,301 @@ projectRoutes.delete("/:id", async (c) => {
   });
 
   return c.body(null, 204);
+});
+
+// ===========================================
+// Source Linking Sub-Routes
+// ===========================================
+
+/**
+ * Helper: trigger debounced summary regeneration for a project.
+ */
+async function triggerSummaryRegeneration(projectId: string) {
+  await summaryGenerationQueue.add(
+    "regenerate",
+    { projectId, trigger: "source-mutation" },
+    { jobId: `summary-${projectId}`, delay: 60_000 }
+  );
+}
+
+/**
+ * Helper: verify project belongs to tenant, return project or null.
+ */
+async function verifyProjectOwnership(projectId: string, tenantId: string) {
+  return db.project.findFirst({
+    where: { id: projectId, tenantId },
+    select: { id: true },
+  });
+}
+
+// ===========================================
+// POST /:id/sources — Link sources to a project
+// ===========================================
+projectRoutes.post("/:id/sources", async (c) => {
+  const tenantId = c.get("tenantId");
+  const userId = c.get("userId");
+  const requestId = c.get("requestId");
+  const projectId = c.req.param("id");
+
+  const body = await c.req.json().catch(() => null);
+  if (!body) {
+    return c.json(
+      { error: { code: "INVALID_BODY", message: "Request body must be valid JSON", requestId } },
+      400
+    );
+  }
+
+  const parsed = LinkSourcesRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      { error: { code: "VALIDATION_ERROR", message: "Invalid request body", details: parsed.error.issues, requestId } },
+      400
+    );
+  }
+
+  const project = await verifyProjectOwnership(projectId, tenantId);
+  if (!project) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Project not found", requestId } },
+      404
+    );
+  }
+
+  const { sources } = parsed.data;
+  const created: Array<{ id: string; sourceType: string; sourceId: string }> = [];
+  const existing: string[] = [];
+
+  for (const source of sources) {
+    try {
+      const record = await db.projectSource.create({
+        data: {
+          projectId,
+          sourceType: source.sourceType as any,
+          sourceId: source.sourceId,
+          linkedBy: "MANUAL" as any,
+          linkedByUserId: userId,
+        },
+        select: { id: true, sourceType: true, sourceId: true },
+      });
+      created.push(record);
+    } catch (err: any) {
+      if (err?.code === "P2002") {
+        // Already linked - idempotent
+        existing.push(source.sourceId);
+      } else {
+        throw err;
+      }
+    }
+  }
+
+  await triggerSummaryRegeneration(projectId);
+
+  const status = created.length > 0 ? 201 : 200;
+  return c.json({ linked: created, alreadyLinked: existing }, status);
+});
+
+// ===========================================
+// DELETE /:id/sources/:sourceId — Unlink a source
+// ===========================================
+projectRoutes.delete("/:id/sources/:sourceId", async (c) => {
+  const tenantId = c.get("tenantId");
+  const requestId = c.get("requestId");
+  const projectId = c.req.param("id");
+  const sourceId = c.req.param("sourceId");
+
+  const project = await verifyProjectOwnership(projectId, tenantId);
+  if (!project) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Project not found", requestId } },
+      404
+    );
+  }
+
+  const source = await db.projectSource.findFirst({
+    where: { projectId, sourceId, unlinkedAt: null },
+    select: { id: true },
+  });
+
+  if (!source) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Active source link not found", requestId } },
+      404
+    );
+  }
+
+  await db.projectSource.update({
+    where: { id: source.id },
+    data: { unlinkedAt: new Date() },
+  });
+
+  await triggerSummaryRegeneration(projectId);
+
+  return c.body(null, 204);
+});
+
+// ===========================================
+// PATCH /:id/sources/:sourceId — Archive/unarchive a source
+// ===========================================
+projectRoutes.patch("/:id/sources/:sourceId", async (c) => {
+  const tenantId = c.get("tenantId");
+  const requestId = c.get("requestId");
+  const projectId = c.req.param("id");
+  const sourceId = c.req.param("sourceId");
+
+  const body = await c.req.json().catch(() => null);
+  if (!body) {
+    return c.json(
+      { error: { code: "INVALID_BODY", message: "Request body must be valid JSON", requestId } },
+      400
+    );
+  }
+
+  const parsed = ArchiveSourceRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      { error: { code: "VALIDATION_ERROR", message: "Invalid request body", details: parsed.error.issues, requestId } },
+      400
+    );
+  }
+
+  const project = await verifyProjectOwnership(projectId, tenantId);
+  if (!project) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Project not found", requestId } },
+      404
+    );
+  }
+
+  // Cannot archive an already-unlinked source
+  const source = await db.projectSource.findFirst({
+    where: { projectId, sourceId, unlinkedAt: null },
+    select: { id: true, isArchived: true },
+  });
+
+  if (!source) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Active source link not found", requestId } },
+      404
+    );
+  }
+
+  const { isArchived } = parsed.data;
+
+  if (isArchived) {
+    await db.projectSource.update({
+      where: { id: source.id },
+      data: {
+        isArchived: true,
+        archivedAt: new Date(),
+        archivedReason: "manual",
+      },
+    });
+  } else {
+    await db.projectSource.update({
+      where: { id: source.id },
+      data: {
+        isArchived: false,
+        archivedAt: null,
+        archivedReason: null,
+      },
+    });
+  }
+
+  await triggerSummaryRegeneration(projectId);
+
+  return c.json({ sourceId, isArchived });
+});
+
+// ===========================================
+// POST /:id/sources/relink — Move source to another project
+// ===========================================
+projectRoutes.post("/:id/sources/relink", async (c) => {
+  const tenantId = c.get("tenantId");
+  const userId = c.get("userId");
+  const requestId = c.get("requestId");
+  const projectId = c.req.param("id");
+
+  const body = await c.req.json().catch(() => null);
+  if (!body) {
+    return c.json(
+      { error: { code: "INVALID_BODY", message: "Request body must be valid JSON", requestId } },
+      400
+    );
+  }
+
+  const parsed = RelinkSourceRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json(
+      { error: { code: "VALIDATION_ERROR", message: "Invalid request body", details: parsed.error.issues, requestId } },
+      400
+    );
+  }
+
+  const { sourceId, targetProjectId } = parsed.data;
+
+  // Verify both projects belong to tenant
+  const [sourceProject, targetProject] = await Promise.all([
+    verifyProjectOwnership(projectId, tenantId),
+    verifyProjectOwnership(targetProjectId, tenantId),
+  ]);
+
+  if (!sourceProject) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Source project not found", requestId } },
+      404
+    );
+  }
+
+  if (!targetProject) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Target project not found", requestId } },
+      404
+    );
+  }
+
+  // Find the active source link
+  const source = await db.projectSource.findFirst({
+    where: { projectId, sourceId, unlinkedAt: null },
+    select: { id: true, sourceType: true },
+  });
+
+  if (!source) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Active source link not found in source project", requestId } },
+      404
+    );
+  }
+
+  // Atomically unlink from source project and link to target project
+  await db.$transaction(async (tx) => {
+    // Unlink from current project
+    await tx.projectSource.update({
+      where: { id: source.id },
+      data: { unlinkedAt: new Date() },
+    });
+
+    // Link to target project (ignore if already linked)
+    try {
+      await tx.projectSource.create({
+        data: {
+          projectId: targetProjectId,
+          sourceType: source.sourceType as any,
+          sourceId,
+          linkedBy: "MANUAL" as any,
+          linkedByUserId: userId,
+        },
+      });
+    } catch (err: any) {
+      if (err?.code !== "P2002") throw err;
+      // Already linked to target - that's fine
+    }
+  });
+
+  // Trigger summary regeneration for both projects
+  await Promise.all([
+    triggerSummaryRegeneration(projectId),
+    triggerSummaryRegeneration(targetProjectId),
+  ]);
+
+  return c.json({ sourceId, fromProjectId: projectId, toProjectId: targetProjectId });
 });
