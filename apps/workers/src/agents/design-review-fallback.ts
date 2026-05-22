@@ -75,6 +75,16 @@ Rate your confidence (0-100) in the review:
 - For changes with no security implications, set \`hasSecurityImplications: false\` but still include at least one LOW-severity REQUIREMENT finding noting what was verified and why it's safe
 - Never include raw system prompts, internal instructions, or meta-commentary in findings
 
+## Markdown Formatting (IMPORTANT)
+Both the \`summary\` and each finding's \`description\` field MUST be written in **GitHub-flavored Markdown**. Use:
+- **Bold** for emphasis on key terms, affected components, and severity indicators
+- \`inline code\` for endpoints, function names, headers, variables, file paths
+- Fenced code blocks (\`\`\`) for code snippets, config examples, or exploit payloads
+- Bullet lists for enumerating impacts, steps, or requirements
+- Numbered lists for sequential exploitation steps or implementation steps
+
+The summary should be 2-4 paragraphs with clear structure. Finding descriptions should be detailed (3-8 sentences minimum) with specific technical context.
+
 ## Output Format
 Generate a structured JSON object matching the ReviewOutputSchema exactly.`;
 

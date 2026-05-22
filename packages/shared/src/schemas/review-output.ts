@@ -67,8 +67,8 @@ export type ReviewFinding = z.infer<typeof ReviewFindingSchema>;
 // ─── Review Output Schema ────────────────────────────────────────────────────
 
 export const ReviewOutputSchema = z.object({
-  /** Executive summary of the security review */
-  summary: z.string().min(10).max(500),
+  /** Executive summary of the security review (markdown) */
+  summary: z.string().min(10).max(4000),
 
   /**
    * Whether this change has security implications.

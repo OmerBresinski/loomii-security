@@ -1,11 +1,11 @@
 import { useQueryClient } from "@tanstack/react-query"
+import Markdown from "react-markdown"
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { FindingRow } from "@/components/reviews/finding-row"
@@ -75,21 +75,25 @@ function RiskBadge({ level }: { level: string | null }) {
   )
 }
 
-// ─── Status Badge ───────────────────────────────────────────────────────────
+// ─── Review Status Indicator (shown when already triaged) ───────────────────
 
-function StatusBadge({ status }: { status: string }) {
-  const labels: Record<string, string> = {
-    ASSEMBLING: "Assembling",
-    READY: "Todo",
-    REVIEWING: "In Review",
-    COMPLETED: "Done",
-    FAILED: "Failed",
+function ReviewStatusIndicator({ status }: { status: string | null }) {
+  if (!status) return null
+
+  const config: Record<string, { label: string; className: string }> = {
+    APPROVED: { label: "Approved", className: "text-green-500 bg-green-500/10" },
+    PUBLISHED: { label: "Published", className: "text-green-500 bg-green-500/10" },
+    REJECTED: { label: "Rejected", className: "text-red-400 bg-red-500/10" },
+    PENDING: { label: "Pending", className: "text-muted-foreground bg-muted" },
+    GENERATING: { label: "Generating", className: "text-muted-foreground bg-muted" },
   }
 
+  const c = config[status] ?? { label: status, className: "text-muted-foreground bg-muted" }
+
   return (
-    <Badge variant="outline" className="h-5 text-[10px]">
-      {labels[status] ?? status}
-    </Badge>
+    <span className={`rounded-md px-2 py-0.5 text-[10px] font-medium ${c.className}`}>
+      {c.label}
+    </span>
   )
 }
 
@@ -161,7 +165,6 @@ export function ReviewSheet({
                 )}
               </SheetTitle>
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                {review && <StatusBadge status={review.status} />}
                 {review && <RiskBadge level={review.riskLevel} />}
                 {review?.externalId && (
                   <span className="text-[10px] text-muted-foreground uppercase">
@@ -175,26 +178,25 @@ export function ReviewSheet({
           {/* Review-level actions */}
           {review?.reviewId && (
             <div className="mt-3 flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="default"
-                onClick={handleApprove}
-                disabled={reviewStatusMutation.isPending}
-              >
-                Approve
-              </Button>
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={handleReject}
-                disabled={reviewStatusMutation.isPending}
-              >
-                Reject
-              </Button>
-              {review.reviewStatus && (
-                <span className="ml-auto text-[10px] text-muted-foreground">
-                  Review: {review.reviewStatus}
-                </span>
+              {review.reviewStatus === "DRAFT" || review.reviewStatus === "IN_REVIEW" ? (
+                <>
+                  <button
+                    onClick={handleApprove}
+                    disabled={reviewStatusMutation.isPending}
+                    className="rounded-md border border-border bg-transparent px-2.5 py-1 text-[11px] font-medium text-foreground/80 transition-colors hover:border-green-500/40 hover:text-green-500 disabled:opacity-50"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    onClick={handleReject}
+                    disabled={reviewStatusMutation.isPending}
+                    className="rounded-md border border-border bg-transparent px-2.5 py-1 text-[11px] font-medium text-foreground/80 transition-colors hover:border-red-500/40 hover:text-red-500 disabled:opacity-50"
+                  >
+                    Reject
+                  </button>
+                </>
+              ) : (
+                <ReviewStatusIndicator status={review.reviewStatus} />
               )}
             </div>
           )}
@@ -208,9 +210,9 @@ export function ReviewSheet({
               <h4 className="mb-2 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
                 Summary
               </h4>
-              <p className="text-[13px] leading-relaxed text-foreground/90">
-                {review.summary}
-              </p>
+              <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none text-[13px] leading-relaxed text-foreground/90 prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:text-[12px] prose-pre:bg-muted prose-pre:rounded-md prose-pre:text-[12px] prose-headings:text-sm prose-headings:font-medium">
+                <Markdown>{review.summary}</Markdown>
+              </div>
             </div>
           )}
 

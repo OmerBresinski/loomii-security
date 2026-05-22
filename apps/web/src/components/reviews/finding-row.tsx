@@ -1,4 +1,5 @@
 import { useState } from "react"
+import Markdown from "react-markdown"
 import { Badge } from "@/components/ui/badge"
 import {
   Select,
@@ -126,9 +127,9 @@ export function FindingRow({ finding, onStatusChange, isUpdating }: FindingRowPr
         <div className="space-y-3 border-t border-border/30 bg-muted/30 px-4 py-3">
           {/* Description */}
           {finding.description && (
-            <p className="text-[12px] leading-relaxed text-muted-foreground">
-              {finding.description}
-            </p>
+            <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none text-[12px] leading-relaxed text-muted-foreground prose-p:my-1.5 prose-ul:my-1.5 prose-ol:my-1.5 prose-li:my-0.5 prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:text-[11px] prose-pre:bg-muted prose-pre:rounded-md prose-pre:text-[11px] prose-headings:text-xs prose-headings:font-medium prose-strong:text-foreground/80">
+              <Markdown>{finding.description}</Markdown>
+            </div>
           )}
 
           {/* Meta row */}
