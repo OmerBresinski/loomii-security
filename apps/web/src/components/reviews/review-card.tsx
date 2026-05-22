@@ -220,8 +220,8 @@ export function ReviewRow({ review }: ReviewRowProps) {
       </Tooltip>
 
       {/* External ID */}
-      <div className="flex w-16 shrink-0 items-center pr-1 tabular-nums">
-        <span className="text-[11px] text-muted-foreground uppercase">
+      <div className="flex w-16 shrink-0 items-center overflow-hidden pr-1 tabular-nums">
+        <span className="truncate text-[11px] text-muted-foreground uppercase">
           {review.externalId}
         </span>
       </div>

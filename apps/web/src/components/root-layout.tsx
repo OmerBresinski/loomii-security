@@ -45,6 +45,7 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { title: "Reviews", href: "/reviews" },
+  { title: "Projects", href: "/projects" },
   { title: "Threat Models", href: "/threats" },
   { title: "Policies", href: "/policies", roles: ["ADMIN", "SECURITY_LEAD"] },
   { title: "Metrics", href: "/metrics", roles: ["ADMIN", "SECURITY_LEAD"] },
@@ -54,6 +55,8 @@ const navItems: NavItem[] = [
 /** Map route paths to display labels */
 const routeLabels: Record<string, string> = {
   "/reviews": "Reviews",
+  "/projects": "Projects",
+  "/projects/new": "New Project",
   "/threats": "Threat Models",
   "/policies": "Policies",
   "/metrics": "Metrics",
@@ -153,7 +156,7 @@ function AppSidebar() {
                 <SidebarMenuItem key={item.href}>
                   <SidebarMenuButton
                     render={<Link to={item.href} preload="intent" />}
-                    isActive={currentPath === item.href}
+                    isActive={currentPath === item.href || currentPath.startsWith(item.href + "/")}
                   >
                     {item.title}
                   </SidebarMenuButton>

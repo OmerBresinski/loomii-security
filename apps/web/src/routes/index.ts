@@ -118,6 +118,29 @@ const onboardingRoute = createRoute({
   component: lazyRouteComponent(() => import("@/routes/onboarding")),
 })
 
+// ─── Projects Routes ────────────────────────────────────────────────────────
+
+const projectsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/projects",
+  beforeLoad: requireAuth,
+  component: lazyRouteComponent(() => import("@/routes/projects")),
+})
+
+const projectNewRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/projects/new",
+  beforeLoad: requireAuth,
+  component: lazyRouteComponent(() => import("@/routes/projects-new")),
+})
+
+const projectDetailRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/projects/$projectId",
+  beforeLoad: requireAuth,
+  component: lazyRouteComponent(() => import("@/routes/project-detail")),
+})
+
 // ─── Route Tree ─────────────────────────────────────────────────────────────
 
 const routeTree = rootRoute.addChildren([
@@ -126,6 +149,9 @@ const routeTree = rootRoute.addChildren([
   authCallbackRoute,
   onboardingRoute,
   reviewsRoute,
+  projectsRoute,
+  projectNewRoute,
+  projectDetailRoute,
   metricsRoute,
   policiesRoute,
   threatsRoute,
