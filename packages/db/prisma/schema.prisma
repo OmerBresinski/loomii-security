@@ -266,6 +266,8 @@ model Project {
   id               String                       @id @default(cuid())
   tenantId         String                       @map("tenant_id")
   name             String
+  icon             String                       @default("Shield01Icon")
+  color            String                       @default("#67E8F9")
   summary          String?                      @db.Text
   summaryEmbedding Unsupported("vector(1024)")? @map("summary_embedding")
   summaryUpdatedAt DateTime?                    @map("summary_updated_at")

@@ -20,6 +20,8 @@ export type ProjectSourceInput = z.infer<typeof ProjectSourceInputSchema>;
 /** POST /api/v1/projects */
 export const CreateProjectRequestSchema = z.object({
   name: z.string().min(1).max(255),
+  icon: z.string().optional(),
+  color: z.string().optional(),
   sources: z.array(ProjectSourceInputSchema).optional(),
 });
 export type CreateProjectRequest = z.infer<typeof CreateProjectRequestSchema>;
@@ -27,6 +29,8 @@ export type CreateProjectRequest = z.infer<typeof CreateProjectRequestSchema>;
 /** PATCH /api/v1/projects/:id */
 export const UpdateProjectRequestSchema = z.object({
   name: z.string().min(1).max(255).optional(),
+  icon: z.string().optional(),
+  color: z.string().optional(),
 });
 export type UpdateProjectRequest = z.infer<typeof UpdateProjectRequestSchema>;
 
@@ -57,6 +61,8 @@ export type RelinkSourceRequest = z.infer<typeof RelinkSourceRequestSchema>;
 export const ProjectListItemSchema = z.object({
   id: z.string(),
   name: z.string(),
+  icon: z.string(),
+  color: z.string(),
   sourceCount: z.number(),
   reviewCount: z.number(),
   highestRisk: z.string().nullable(),
@@ -75,6 +81,8 @@ export type ProjectListResponse = z.infer<typeof ProjectListResponseSchema>;
 export const ProjectDetailSchema = z.object({
   id: z.string(),
   name: z.string(),
+  icon: z.string(),
+  color: z.string(),
   summary: z.string().nullable(),
   summaryUpdatedAt: z.string().nullable(),
   sourceCount: z.number(),

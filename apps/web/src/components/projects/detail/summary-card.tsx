@@ -3,26 +3,6 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { ProjectDetail } from "@loomii/shared"
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function timeAgo(dateStr: string): string {
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diff = now - then
-
-  const minutes = Math.floor(diff / 60_000)
-  if (minutes < 1) return "just now"
-  if (minutes < 60) return `${minutes}m ago`
-
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-
-  const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}d ago`
-
-  return new Date(dateStr).toLocaleDateString()
-}
-
 // ─── Component ──────────────────────────────────────────────────────────────
 
 interface SummaryCardProps {
@@ -69,11 +49,6 @@ export function SummaryCard({ project, isPending }: SummaryCardProps) {
           <div className="prose prose-sm dark:prose-invert max-w-none overflow-hidden text-sm leading-relaxed text-foreground/90 [&_h2]:mt-5 [&_h2]:mb-1.5 [&_h2]:text-xs [&_h2]:font-semibold [&_h2]:uppercase [&_h2]:tracking-wide [&_h2]:text-muted-foreground [&_ul]:my-1.5 [&_ul]:pl-4 [&_li]:my-0.5 [&_p]:my-1">
             <Markdown>{project.summary}</Markdown>
           </div>
-          {project.summaryUpdatedAt && (
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              Last updated {timeAgo(project.summaryUpdatedAt)}
-            </p>
-          )}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed border-border py-8 text-center">

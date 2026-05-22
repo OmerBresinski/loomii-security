@@ -4,6 +4,10 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  ProjectIconDisplay,
+  IconPicker,
+} from "@/components/projects/icon-picker"
 import type { ProjectListItem } from "@loomii/shared"
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -118,7 +122,9 @@ export function ProjectRow({ project }: ProjectRowProps) {
       <Tooltip>
         <TooltipTrigger>
           <div className="flex w-8 shrink-0 items-center justify-center">
-            {project.highestRisk ? <RiskIcon level={project.highestRisk} /> : null}
+            {project.highestRisk ? (
+              <RiskIcon level={project.highestRisk} />
+            ) : null}
           </div>
         </TooltipTrigger>
         {project.highestRisk && (
@@ -128,11 +134,19 @@ export function ProjectRow({ project }: ProjectRowProps) {
         )}
       </Tooltip>
 
+      {/* Project Icon */}
+      <IconPicker projectId={project.id} icon={project.icon} color={project.color}>
+        <button
+          onClick={(e) => e.preventDefault()}
+          className="flex shrink-0 items-center justify-center rounded-sm px-[2px] py-[2px] transition-colors duration-100 hover:bg-white/5"
+        >
+          <ProjectIconDisplay icon={project.icon} color={project.color} size={16} />
+        </button>
+      </IconPicker>
+
       {/* Name */}
       <div className="flex min-w-0 flex-1 items-center pr-4 pl-2">
-        <span className="truncate text-[13px]">
-          {project.name}
-        </span>
+        <span className="truncate text-[13px]">{project.name}</span>
       </div>
 
       {/* Sources */}

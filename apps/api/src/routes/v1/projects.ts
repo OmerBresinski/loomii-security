@@ -77,7 +77,7 @@ projectRoutes.post("/", async (c) => {
     );
   }
 
-  const { name, sources } = parsed.data;
+  const { name, icon, color, sources } = parsed.data;
 
   // Create project + sources in a transaction
   const project = await db.$transaction(async (tx) => {
@@ -85,6 +85,8 @@ projectRoutes.post("/", async (c) => {
       data: {
         tenantId,
         name,
+        icon: icon ?? "Shield01Icon",
+        color: color ?? "#67E8F9",
         createdById: userId,
       },
     });
@@ -110,6 +112,8 @@ projectRoutes.post("/", async (c) => {
     {
       id: project.id,
       name: project.name,
+      icon: project.icon,
+      color: project.color,
       createdAt: project.createdAt.toISOString(),
     },
     201
@@ -148,6 +152,8 @@ projectRoutes.get("/", async (c) => {
     return {
       id: p.id,
       name: p.name,
+      icon: p.icon,
+      color: p.color,
       sourceCount,
       reviewCount,
       highestRisk,
@@ -198,6 +204,8 @@ projectRoutes.get("/:id", async (c) => {
   return c.json({
     id: project.id,
     name: project.name,
+    icon: project.icon,
+    color: project.color,
     summary: project.summary ?? null,
     summaryUpdatedAt: project.summaryUpdatedAt?.toISOString() ?? null,
     sourceCount,
@@ -254,6 +262,8 @@ projectRoutes.patch("/:id", async (c) => {
   return c.json({
     id: updated.id,
     name: updated.name,
+    icon: updated.icon,
+    color: updated.color,
     updatedAt: updated.updatedAt.toISOString(),
   });
 });
