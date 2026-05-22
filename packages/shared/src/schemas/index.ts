@@ -87,3 +87,20 @@ export type {
   NewThreat,
   ModifiedThreat,
 } from "./threat-model-update";
+
+export {
+  ProjectSourceInputSchema,
+  CreateProjectRequestSchema,
+  UpdateProjectRequestSchema,
+  ProjectListItemSchema,
+  ProjectListResponseSchema,
+  ProjectDetailSchema,
+} from "./project";
+export type {
+  ProjectSourceInput,
+  CreateProjectRequest,
+  UpdateProjectRequest,
+  ProjectListItem,
+  ProjectListResponse,
+  ProjectDetail,
+} from "./project";
