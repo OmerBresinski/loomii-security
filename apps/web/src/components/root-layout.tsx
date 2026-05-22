@@ -1,3 +1,4 @@
+import React, { useMemo } from "react"
 import { Outlet, Link, useRouterState, useNavigate } from "@tanstack/react-router"
 import {
   Sidebar,
@@ -15,8 +16,10 @@ import {
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
+  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
 import {
   DropdownMenu,
@@ -52,32 +55,54 @@ const navItems: NavItem[] = [
   { title: "Settings", href: "/settings" },
 ]
 
-/** Map route paths to display labels */
-const routeLabels: Record<string, string> = {
-  "/reviews": "Reviews",
-  "/projects": "Projects",
-  "/projects/new": "New Project",
-  "/threats": "Threat Models",
-  "/policies": "Policies",
-  "/metrics": "Metrics",
-  "/notifications": "Notifications",
-  "/settings": "Settings",
-  "/onboarding": "Onboarding",
+/** Map route segments to display labels */
+const segmentLabels: Record<string, string> = {
+  reviews: "Reviews",
+  projects: "Projects",
+  new: "New",
+  threats: "Threat Models",
+  policies: "Policies",
+  metrics: "Metrics",
+  notifications: "Notifications",
+  settings: "Settings",
+  onboarding: "Onboarding",
 }
 
 // ─── Breadcrumb ─────────────────────────────────────────────────────────────
 
 function AppBreadcrumb() {
-  const routerState = useRouterState()
-  const currentPath = routerState.location.pathname
-  const label = routeLabels[currentPath] ?? currentPath.replace("/", "")
+  const currentPath = useRouterState({ select: (s) => s.location.pathname })
+
+  // Split path into segments, filter out empty strings
+  const segments = currentPath.split("/").filter(Boolean)
+
+  if (segments.length === 0) return null
 
   return (
     <Breadcrumb>
       <BreadcrumbList>
-        <BreadcrumbItem>
-          <BreadcrumbPage>{label}</BreadcrumbPage>
-        </BreadcrumbItem>
+        {segments.map((segment, index) => {
+          const isLast = index === segments.length - 1
+          const href = "/" + segments.slice(0, index + 1).join("/")
+          const label =
+            segmentLabels[segment] ??
+            segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ")
+
+          return (
+            <React.Fragment key={href}>
+              {index > 0 && <BreadcrumbSeparator />}
+              <BreadcrumbItem>
+                {isLast ? (
+                  <BreadcrumbPage>{label}</BreadcrumbPage>
+                ) : (
+                  <BreadcrumbLink render={<Link to={href} />}>
+                    {label}
+                  </BreadcrumbLink>
+                )}
+              </BreadcrumbItem>
+            </React.Fragment>
+          )
+        })}
       </BreadcrumbList>
     </Breadcrumb>
   )
@@ -100,6 +125,13 @@ function getInitials(firstName?: string | null, lastName?: string | null, email?
 
 // ─── Notification Bell ──────────────────────────────────────────────────────
 
+const BellIcon = (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+    <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+  </svg>
+)
+
 function NotificationBell() {
   const unreadCount = useNotificationsStore((s) => s.unreadCount)
 
@@ -110,10 +142,7 @@ function NotificationBell() {
       className="relative flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
       aria-label="Notifications"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
-        <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
-      </svg>
+      {BellIcon}
       {unreadCount > 0 && (
         <Badge
           variant="destructive"
@@ -129,17 +158,19 @@ function NotificationBell() {
 // ─── Sidebar ────────────────────────────────────────────────────────────────
 
 function AppSidebar() {
-  const routerState = useRouterState()
-  const currentPath = routerState.location.pathname
+  const currentPath = useRouterState({ select: (s) => s.location.pathname })
   const navigate = useNavigate()
   const { user, role, logout } = useAuth()
 
   // Filter nav items by role
-  const visibleNavItems = navItems.filter((item) => {
-    if (!item.roles) return true
-    if (!role) return false
-    return item.roles.includes(role)
-  })
+  const visibleNavItems = useMemo(
+    () => navItems.filter((item) => {
+      if (!item.roles) return true
+      if (!role) return false
+      return item.roles.includes(role)
+    }),
+    [role]
+  )
 
   return (
     <Sidebar>
@@ -237,8 +268,7 @@ function AppSidebar() {
 const PUBLIC_ROUTES = ["/login", "/auth/callback"]
 
 export function RootLayout() {
-  const routerState = useRouterState()
-  const currentPath = routerState.location.pathname
+  const currentPath = useRouterState({ select: (s) => s.location.pathname })
 
   const isPublicRoute = PUBLIC_ROUTES.some((route) =>
     currentPath.startsWith(route)
