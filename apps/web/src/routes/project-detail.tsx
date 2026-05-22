@@ -1,6 +1,7 @@
 import { getRouteApi, useNavigate } from "@tanstack/react-router"
+import { useQueryClient } from "@tanstack/react-query"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useProjectDetail } from "@/queries/projects"
+import { useProjectDetail, projectReviewsQueryOptions } from "@/queries/projects"
 import { ProjectHeader } from "@/components/projects/detail/project-header"
 import { OverviewTab } from "@/components/projects/detail/overview-tab"
 import { ReviewsTab } from "@/components/projects/detail/reviews-tab"
@@ -13,6 +14,7 @@ export default function ProjectDetailPage() {
   const { projectId } = routeApi.useParams()
   const { tab } = routeApi.useSearch()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   const { data, isPending } = useProjectDetail(projectId)
   const project = data
@@ -22,6 +24,12 @@ export default function ProjectDetailPage() {
       search: { tab: value === "overview" ? undefined : value },
       replace: true,
     })
+  }
+
+  function prefetchReviews() {
+    queryClient.prefetchQuery(
+      projectReviewsQueryOptions(projectId, {})
+    )
   }
 
   return (
@@ -36,7 +44,9 @@ export default function ProjectDetailPage() {
         <TabsList variant="line">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="sources">Sources</TabsTrigger>
-          <TabsTrigger value="reviews">Reviews</TabsTrigger>
+          <div onMouseEnter={prefetchReviews}>
+            <TabsTrigger value="reviews">Reviews</TabsTrigger>
+          </div>
           <TabsTrigger value="activity">Activity</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
