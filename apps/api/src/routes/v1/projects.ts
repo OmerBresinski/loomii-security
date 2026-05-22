@@ -603,3 +603,244 @@ projectRoutes.post("/:id/sources/relink", async (c) => {
 
   return c.json({ sourceId, fromProjectId: projectId, toProjectId: targetProjectId });
 });
+
+// ===========================================
+// GET /:id/reviews — Project-scoped reviews
+// ===========================================
+projectRoutes.get("/:id/reviews", async (c) => {
+  const tenantId = c.get("tenantId");
+  const requestId = c.get("requestId");
+  const projectId = c.req.param("id");
+
+  const project = await verifyProjectOwnership(projectId, tenantId);
+  if (!project) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Project not found", requestId } },
+      404
+    );
+  }
+
+  // Parse filters
+  const statusParam = c.req.query("status");
+  const riskParam = c.req.query("riskLevel");
+  const limitParam = c.req.query("limit");
+  const cursor = c.req.query("cursor");
+
+  const limit = Math.min(Math.max(parseInt(limitParam || "20", 10) || 20, 1), 50);
+
+  // Build where clause for reviews through context bundles
+  const bundleWhere: any = {
+    tenantId,
+    projectId,
+    review: { isNot: null },
+  };
+
+  if (cursor) {
+    bundleWhere.createdAt = { lt: new Date(cursor) };
+  }
+
+  const reviewWhere: any = {};
+  if (statusParam) {
+    const statuses = statusParam.split(",");
+    reviewWhere.status = { in: statuses };
+  }
+  if (riskParam) {
+    const risks = riskParam.split(",");
+    reviewWhere.severity = { in: risks };
+  }
+
+  if (Object.keys(reviewWhere).length > 0) {
+    bundleWhere.review = { ...bundleWhere.review, ...reviewWhere };
+  }
+
+  const bundles = await db.contextBundle.findMany({
+    where: bundleWhere,
+    orderBy: { createdAt: "desc" },
+    take: limit + 1,
+    include: {
+      event: {
+        select: { source: true, externalId: true },
+      },
+      review: {
+        select: {
+          id: true,
+          status: true,
+          severity: true,
+          summary: true,
+          confidence: true,
+          createdAt: true,
+          _count: { select: { findings: true } },
+        },
+      },
+    },
+  });
+
+  const hasMore = bundles.length > limit;
+  const page = hasMore ? bundles.slice(0, limit) : bundles;
+  const nextCursor = hasMore ? page[page.length - 1].createdAt.toISOString() : null;
+
+  const reviews = page
+    .filter((b) => b.review)
+    .map((bundle) => ({
+      id: bundle.review!.id,
+      contextBundleId: bundle.id,
+      status: bundle.review!.status,
+      severity: bundle.review!.severity,
+      summary: bundle.review!.summary,
+      confidence: bundle.review!.confidence,
+      findingCount: bundle.review!._count?.findings ?? 0,
+      title: bundle.title,
+      source: bundle.event.source,
+      externalId: bundle.event.externalId,
+      createdAt: bundle.review!.createdAt.toISOString(),
+    }));
+
+  return c.json({ reviews, nextCursor });
+});
+
+// ===========================================
+// GET /:id/activity — Project activity timeline
+// ===========================================
+
+interface ActivityEvent {
+  type: "source_linked" | "source_unlinked" | "source_archived" | "review_generated" | "summary_updated";
+  timestamp: string;
+  data: Record<string, unknown>;
+}
+
+projectRoutes.get("/:id/activity", async (c) => {
+  const tenantId = c.get("tenantId");
+  const requestId = c.get("requestId");
+  const projectId = c.req.param("id");
+
+  const project = await db.project.findFirst({
+    where: { id: projectId, tenantId },
+    select: { id: true, summaryUpdatedAt: true },
+  });
+
+  if (!project) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Project not found", requestId } },
+      404
+    );
+  }
+
+  const limitParam = c.req.query("limit");
+  const cursor = c.req.query("cursor");
+  const limit = Math.min(Math.max(parseInt(limitParam || "50", 10) || 50, 1), 50);
+  const cursorDate = cursor ? new Date(cursor) : null;
+
+  // Gather activity events from multiple sources in parallel
+  const [sources, reviews] = await Promise.all([
+    // All ProjectSource records (linked, unlinked, archived events)
+    db.projectSource.findMany({
+      where: { projectId },
+      select: {
+        sourceType: true,
+        sourceId: true,
+        linkedBy: true,
+        linkReason: true,
+        linkedByUserId: true,
+        linkedAt: true,
+        unlinkedAt: true,
+        isArchived: true,
+        archivedAt: true,
+        archivedReason: true,
+      },
+    }),
+    // Reviews via context bundles
+    db.review.findMany({
+      where: {
+        tenantId,
+        contextBundle: { projectId },
+      },
+      select: {
+        id: true,
+        severity: true,
+        createdAt: true,
+        contextBundle: { select: { title: true } },
+      },
+    }),
+  ]);
+
+  // Build unified timeline
+  const events: ActivityEvent[] = [];
+
+  // Source linked events
+  for (const source of sources) {
+    events.push({
+      type: "source_linked",
+      timestamp: source.linkedAt.toISOString(),
+      data: {
+        sourceType: source.sourceType,
+        sourceId: source.sourceId,
+        linkedBy: source.linkedBy,
+        linkReason: source.linkReason,
+        linkedByUserId: source.linkedByUserId,
+      },
+    });
+
+    // Source unlinked events
+    if (source.unlinkedAt) {
+      events.push({
+        type: "source_unlinked",
+        timestamp: source.unlinkedAt.toISOString(),
+        data: {
+          sourceType: source.sourceType,
+          sourceId: source.sourceId,
+        },
+      });
+    }
+
+    // Source archived events
+    if (source.isArchived && source.archivedAt) {
+      events.push({
+        type: "source_archived",
+        timestamp: source.archivedAt.toISOString(),
+        data: {
+          sourceType: source.sourceType,
+          sourceId: source.sourceId,
+          reason: source.archivedReason,
+        },
+      });
+    }
+  }
+
+  // Review generated events
+  for (const review of reviews) {
+    events.push({
+      type: "review_generated",
+      timestamp: review.createdAt.toISOString(),
+      data: {
+        reviewId: review.id,
+        title: review.contextBundle?.title ?? null,
+        severity: review.severity,
+      },
+    });
+  }
+
+  // Summary updated event (single entry from latest update)
+  if (project.summaryUpdatedAt) {
+    events.push({
+      type: "summary_updated",
+      timestamp: project.summaryUpdatedAt.toISOString(),
+      data: { trigger: "latest" },
+    });
+  }
+
+  // Sort newest first
+  events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+  // Apply cursor filter
+  let filtered = events;
+  if (cursorDate) {
+    filtered = events.filter((e) => new Date(e.timestamp) < cursorDate);
+  }
+
+  // Paginate
+  const page = filtered.slice(0, limit);
+  const hasMore = filtered.length > limit;
+  const nextCursor = hasMore ? page[page.length - 1].timestamp : null;
+
+  return c.json({ events: page, nextCursor });
+});
