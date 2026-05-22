@@ -67,6 +67,12 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   beforeLoad: requireAuth,
+  validateSearch: (search: Record<string, unknown>) => ({
+    status: search.status as string | undefined,
+    riskLevel: search.riskLevel as string | undefined,
+    q: search.q as string | undefined,
+    review: search.review as string | undefined,
+  }),
   component: lazyRouteComponent(() => import("@/routes/reviews")),
 })
 
@@ -74,6 +80,12 @@ const reviewsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/reviews",
   beforeLoad: requireAuth,
+  validateSearch: (search: Record<string, unknown>) => ({
+    status: search.status as string | undefined,
+    riskLevel: search.riskLevel as string | undefined,
+    q: search.q as string | undefined,
+    review: search.review as string | undefined,
+  }),
   loader: () => {
     // Prefetch the first page of reviews with no filters (default view)
     queryClient.prefetchInfiniteQuery(reviewsInfiniteQueryOptions({}))
@@ -148,6 +160,7 @@ const projectDetailRoute = createRoute({
   beforeLoad: requireAuth,
   validateSearch: (search: Record<string, unknown>) => ({
     tab: (search.tab as string) || "overview",
+    review: search.review as string | undefined,
   }),
   loader: ({ params }) => {
     // Prefetch detail and sources in parallel

@@ -134,6 +134,62 @@ reviewRoutes.get("/", async (c) => {
   });
 });
 
+// ─── GET /:id — Fetch single review with findings ──────────────────────────
+
+reviewRoutes.get("/:id", async (c) => {
+  const tenantId = c.get("tenantId");
+  const requestId = c.get("requestId");
+  const id = c.req.param("id");
+
+  const bundle = await db.contextBundle.findUnique({
+    where: { id },
+    include: {
+      event: {
+        select: { source: true, externalId: true },
+      },
+      review: {
+        include: {
+          findings: {
+            orderBy: { createdAt: "asc" },
+            select: {
+              id: true,
+              type: true,
+              title: true,
+              description: true,
+              severity: true,
+              strideCategory: true,
+              effortEstimate: true,
+              status: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!bundle || bundle.tenantId !== tenantId) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Review not found", requestId } },
+      404
+    );
+  }
+
+  return c.json({
+    id: bundle.id,
+    status: bundle.status,
+    riskLevel: bundle.riskLevel,
+    title: bundle.title,
+    summary: bundle.summary,
+    confidence: bundle.review?.confidence ?? null,
+    source: bundle.event.source,
+    externalId: bundle.event.externalId,
+    reviewId: bundle.review?.id ?? null,
+    reviewStatus: bundle.review?.status ?? null,
+    createdAt: bundle.createdAt.toISOString(),
+    findings: bundle.review?.findings ?? [],
+  });
+});
+
 // ─── PATCH /:id — Update review status (approve/reject) ────────────────────
 
 const VALID_REVIEW_STATUSES = [

@@ -1,4 +1,6 @@
-import { useState } from "react"
+import { useState, useCallback, useMemo } from "react"
+import { useNavigate, useSearch } from "@tanstack/react-router"
+import { useQueryClient } from "@tanstack/react-query"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   Tooltip,
@@ -10,7 +12,9 @@ import {
   type ProjectReview,
   type ReviewFilters,
 } from "@/queries/projects"
+import { reviewDetailQueryOptions, type Review } from "@/queries/reviews"
 import { ReviewFiltersBar } from "@/components/reviews/review-filters"
+import { ReviewSheet } from "@/components/reviews/review-sheet"
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -207,11 +211,17 @@ const sourceLabels: Record<string, string> = {
 
 interface ProjectReviewRowProps {
   review: ProjectReview
+  onClick?: () => void
+  onMouseEnter?: () => void
 }
 
-function ProjectReviewRow({ review }: ProjectReviewRowProps) {
+function ProjectReviewRow({ review, onClick, onMouseEnter }: ProjectReviewRowProps) {
   return (
-    <div className="flex h-12 cursor-pointer items-center px-4 hover:bg-accent dark:hover:bg-[#25262A]">
+    <div
+      className="flex h-12 cursor-pointer items-center px-4 hover:bg-accent dark:hover:bg-[#25262A]"
+      onClick={onClick}
+      onMouseEnter={onMouseEnter}
+    >
       {/* Risk */}
       <Tooltip>
         <TooltipTrigger>
@@ -290,8 +300,65 @@ interface ReviewsTabProps {
 export function ReviewsTab({ projectId }: ReviewsTabProps) {
   const [filters, setFilters] = useState<ReviewFilters>({})
   const { data, isPending } = useProjectReviews(projectId, filters)
+  const queryClient = useQueryClient()
+  const search = useSearch({ strict: false }) as Record<string, string | undefined>
+  const navigate = useNavigate()
 
   const reviews = data?.reviews ?? []
+
+  // Active review from URL
+  const activeReviewId = search.review ?? null
+
+  // Find active review from list (for placeholder data)
+  const activeListReview = useMemo(() => {
+    if (!activeReviewId) return null
+    const found = reviews.find((r) => r.id === activeReviewId)
+    if (!found) return null
+    // Convert ProjectReview to Review shape for the sheet placeholder
+    return {
+      id: found.id,
+      eventId: "",
+      status: found.status,
+      riskLevel: found.riskLevel,
+      title: found.title,
+      summary: found.summary,
+      findingCount: found.findingCount,
+      source: found.source,
+      externalId: found.externalId,
+      project: { id: projectId, name: "" },
+      createdAt: found.createdAt,
+      updatedAt: found.createdAt,
+    } as Review
+  }, [reviews, activeReviewId, projectId])
+
+  const openSheet = useCallback(
+    (reviewId: string) => {
+      const nextReviewId = reviewId === activeReviewId ? undefined : reviewId
+      navigate({
+        search: {
+          ...search,
+          review: nextReviewId,
+        } as any,
+        replace: true,
+      })
+    },
+    [navigate, search, activeReviewId]
+  )
+
+  const closeSheet = useCallback(() => {
+    const { review: _, ...rest } = search
+    navigate({
+      search: rest as any,
+      replace: true,
+    })
+  }, [navigate, search])
+
+  const prefetchReview = useCallback(
+    (reviewId: string) => {
+      queryClient.prefetchQuery(reviewDetailQueryOptions(reviewId))
+    },
+    [queryClient]
+  )
 
   return (
     <div className="flex flex-col">
@@ -324,10 +391,22 @@ export function ReviewsTab({ projectId }: ReviewsTabProps) {
       ) : (
         <div className="flex min-h-0 flex-col">
           {reviews.map((review) => (
-            <ProjectReviewRow key={review.id} review={review} />
+            <ProjectReviewRow
+              key={review.id}
+              review={review}
+              onClick={() => openSheet(review.id)}
+              onMouseEnter={() => prefetchReview(review.id)}
+            />
           ))}
         </div>
       )}
+
+      {/* Review Side Sheet */}
+      <ReviewSheet
+        reviewId={activeReviewId}
+        listReview={activeListReview}
+        onClose={closeSheet}
+      />
     </div>
   )
 }

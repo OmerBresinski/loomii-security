@@ -1,17 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef } from "react"
 import { useSearch, useNavigate } from "@tanstack/react-router"
+import { useQueryClient } from "@tanstack/react-query"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ReviewRow } from "@/components/reviews/review-card"
 import { ReviewFiltersBar } from "@/components/reviews/review-filters"
 import { ReviewSearch } from "@/components/reviews/review-search"
-import { useReviews, type ReviewFilters } from "@/queries/reviews"
+import { ReviewSheet } from "@/components/reviews/review-sheet"
+import {
+  useReviews,
+  reviewDetailQueryOptions,
+  type ReviewFilters,
+} from "@/queries/reviews"
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 
 export default function ReviewsPage() {
   const search = useSearch({ strict: false }) as Record<string, string | undefined>
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   // Parse URL search params into filters
   const filters: ReviewFilters = useMemo(() => ({
@@ -20,14 +27,23 @@ export default function ReviewsPage() {
     search: search.q || undefined,
   }), [search.status, search.riskLevel, search.q])
 
-  // Update URL when filters change
+  // Active review ID from URL
+  const activeReviewId = search.review ?? null
+
+  // Use ref for current search state to avoid stale closures in callbacks
+  const searchRef = useRef(search)
+  searchRef.current = search
+
+  // Update URL when filters change (preserves review param)
   const setFilters = useCallback(
     (next: ReviewFilters) => {
+      const current = searchRef.current
       navigate({
         search: {
           ...(next.status && next.status.length > 0 ? { status: next.status.join(",") } : {}),
           ...(next.riskLevel && next.riskLevel.length > 0 ? { riskLevel: next.riskLevel.join(",") } : {}),
           ...(next.search ? { q: next.search } : {}),
+          ...(current.review ? { review: current.review } : {}),
         } as any,
         replace: true,
       })
@@ -37,9 +53,56 @@ export default function ReviewsPage() {
 
   const setSearch = useCallback(
     (q: string) => {
-      setFilters({ ...filters, search: q || undefined })
+      const current = searchRef.current
+      navigate({
+        search: {
+          ...(current.status ? { status: current.status } : {}),
+          ...(current.riskLevel ? { riskLevel: current.riskLevel } : {}),
+          ...(q ? { q } : {}),
+          ...(current.review ? { review: current.review } : {}),
+        } as any,
+        replace: true,
+      })
     },
-    [filters, setFilters]
+    [navigate]
+  )
+
+  // Open/close sheet via URL — stable callbacks using ref
+  const openSheet = useCallback(
+    (reviewId: string) => {
+      const current = searchRef.current
+      const nextReviewId = reviewId === current.review ? undefined : reviewId
+      navigate({
+        search: {
+          ...(current.status ? { status: current.status } : {}),
+          ...(current.riskLevel ? { riskLevel: current.riskLevel } : {}),
+          ...(current.q ? { q: current.q } : {}),
+          ...(nextReviewId ? { review: nextReviewId } : {}),
+        } as any,
+        replace: true,
+      })
+    },
+    [navigate]
+  )
+
+  const closeSheet = useCallback(() => {
+    const current = searchRef.current
+    navigate({
+      search: {
+        ...(current.status ? { status: current.status } : {}),
+        ...(current.riskLevel ? { riskLevel: current.riskLevel } : {}),
+        ...(current.q ? { q: current.q } : {}),
+      } as any,
+      replace: true,
+    })
+  }, [navigate])
+
+  // Prefetch review detail on hover
+  const prefetchReview = useCallback(
+    (reviewId: string) => {
+      queryClient.prefetchQuery(reviewDetailQueryOptions(reviewId))
+    },
+    [queryClient]
   )
 
   // Query
@@ -55,6 +118,12 @@ export default function ReviewsPage() {
   const allReviews = useMemo(
     () => data?.pages.flatMap((page) => page.data) ?? [],
     [data]
+  )
+
+  // Find the active review from list data (for cache seeding)
+  const activeListReview = useMemo(
+    () => (activeReviewId ? allReviews.find((r) => r.id === activeReviewId) ?? null : null),
+    [allReviews, activeReviewId]
   )
 
   // Virtualizer
@@ -79,7 +148,6 @@ export default function ReviewsPage() {
     function onScroll() {
       if (!scrollEl || !hasNextPage || isFetchingNextPage) return
       const { scrollTop, scrollHeight, clientHeight } = scrollEl
-      // Trigger when within 200px of the bottom
       if (scrollHeight - scrollTop - clientHeight < 200) {
         fetchNextPage()
       }
@@ -125,18 +193,23 @@ export default function ReviewsPage() {
               className="relative w-full"
               style={{ height: `${virtualizer.getTotalSize()}px` }}
             >
-              {virtualItems.map((virtualRow) => (
-                <div
-                  key={virtualRow.key}
-                  className="absolute left-0 top-0 w-full"
-                  style={{
-                    height: `${virtualRow.size}px`,
-                    transform: `translateY(${virtualRow.start}px)`,
-                  }}
-                >
-                  <ReviewRow review={allReviews[virtualRow.index]} />
-                </div>
-              ))}
+              {virtualItems.map((virtualRow) => {
+                const review = allReviews[virtualRow.index]
+                return (
+                  <div
+                    key={virtualRow.key}
+                    className="absolute left-0 top-0 w-full"
+                    style={{
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                    onClick={() => openSheet(review.id)}
+                    onMouseEnter={() => prefetchReview(review.id)}
+                  >
+                    <ReviewRow review={review} />
+                  </div>
+                )
+              })}
             </div>
             {isFetchingNextPage && (
               <div className="flex h-12 items-center justify-center text-xs text-muted-foreground">
@@ -146,6 +219,13 @@ export default function ReviewsPage() {
           </div>
         </div>
       )}
+
+      {/* Review Side Sheet */}
+      <ReviewSheet
+        reviewId={activeReviewId}
+        listReview={activeListReview}
+        onClose={closeSheet}
+      />
     </div>
   )
 }

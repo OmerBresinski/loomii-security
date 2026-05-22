@@ -736,8 +736,8 @@ projectRoutes.get("/:id/reviews", async (c) => {
   const reviews = page
     .filter((b) => b.review)
     .map((bundle) => ({
-      id: bundle.review!.id,
-      contextBundleId: bundle.id,
+      id: bundle.id,
+      reviewId: bundle.review!.id,
       status: bundle.status,
       riskLevel: bundle.riskLevel,
       severity: bundle.review!.severity,
