@@ -26,6 +26,7 @@ import { decrypt } from "@loomii/shared";
 import { fetchLinearContext } from "../lib/linear-fetcher";
 import { fetchNotionContext } from "../lib/notion-fetcher";
 import { resolveCrossReferences } from "../lib/cross-reference";
+import { fetchProjectContext } from "../lib/project-context";
 import { logger } from "../lib/logger";
 
 const OVERALL_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
@@ -199,7 +200,31 @@ async function assembleContext(params: AssembleParams): Promise<"DONE"> {
     };
   }
 
-  // 5. Save ContextBundle
+  // 5. Enrich with project context (if projectId provided)
+  let projectContextData: Awaited<ReturnType<typeof fetchProjectContext>> = null;
+
+  if (projectId) {
+    try {
+      const eventText = title ?? JSON.stringify(content).slice(0, 5000);
+      projectContextData = await fetchProjectContext(projectId, sourceId, eventText);
+
+      if (projectContextData) {
+        childLogger.info(
+          { relatedSourceCount: projectContextData.relatedSources.length },
+          "Project context enrichment completed"
+        );
+      }
+    } catch (err) {
+      // Project enrichment failure should not block assembly
+      const error = err instanceof Error ? err : new Error(String(err));
+      childLogger.warn(
+        { error: error.message },
+        "Project context enrichment failed, proceeding without"
+      );
+    }
+  }
+
+  // 6. Save ContextBundle
   childLogger.info(
     { missingCount: missingItems.length },
     "Saving context bundle"
@@ -213,6 +238,7 @@ async function assembleContext(params: AssembleParams): Promise<"DONE"> {
       content: {
         ...content,
         missingItems,
+        ...(projectContextData ? { projectContext: projectContextData.formatted } : {}),
       },
       projectId: projectId ?? null,
       updatedAt: new Date(),
@@ -225,6 +251,7 @@ async function assembleContext(params: AssembleParams): Promise<"DONE"> {
       content: {
         ...content,
         missingItems,
+        ...(projectContextData ? { projectContext: projectContextData.formatted } : {}),
       },
       projectId: projectId ?? null,
     },
