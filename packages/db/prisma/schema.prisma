@@ -121,26 +121,37 @@ enum RelationType {
   RELATED
 }
 
+enum SourceType {
+  NOTION_PAGE
+  LINEAR_ISSUE
+}
+
+enum LinkMethod {
+  AUTO
+  MANUAL
+}
+
 // ===========================================
 // Models
 // ===========================================
 
 model Tenant {
-  id         String   @id @default(cuid())
-  name       String
-  workosOrgId String  @unique @map("workos_org_id")
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(cuid())
+  name        String
+  workosOrgId String   @unique @map("workos_org_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   // Relations
-  users          User[]
-  integrations   Integration[]
-  events         Event[]
-  contextBundles ContextBundle[]
-  embeddings     Embedding[]
-  threatModel    ThreatModel?
-  reviews        Review[]
-  policies       Policy[]
+  users           User[]
+  integrations    Integration[]
+  events          Event[]
+  contextBundles  ContextBundle[]
+  embeddings      Embedding[]
+  projects        Project[]
+  threatModel     ThreatModel?
+  reviews         Review[]
+  policies        Policy[]
   policyOverrides PolicyOverride[]
 
   @@map("tenants")
@@ -158,7 +169,9 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdProjects Project[]       @relation("ProjectCreatedBy")
+  linkedSources   ProjectSource[] @relation("ProjectSourceLinkedBy")
 
   @@unique([tenantId, workosUserId])
   @@unique([tenantId, email])
@@ -167,19 +180,19 @@ model User {
 }
 
 model Integration {
-  id              String             @id @default(cuid())
-  tenantId        String             @map("tenant_id")
-  provider        IntegrationProvider
-  status          IntegrationStatus  @default(PENDING)
-  externalId      String?            @map("external_id")
-  accessToken     String?            @map("access_token")   // Encrypted
-  refreshToken    String?            @map("refresh_token")  // Encrypted
-  tokenExpiresAt  DateTime?          @map("token_expires_at")
-  metadata        Json?
-  lastSyncAt      DateTime?          @map("last_sync_at")
-  lastSyncCursor  String?            @map("last_sync_cursor")
-  createdAt       DateTime           @default(now()) @map("created_at")
-  updatedAt       DateTime           @updatedAt @map("updated_at")
+  id             String              @id @default(cuid())
+  tenantId       String              @map("tenant_id")
+  provider       IntegrationProvider
+  status         IntegrationStatus   @default(PENDING)
+  externalId     String?             @map("external_id")
+  accessToken    String?             @map("access_token") // Encrypted
+  refreshToken   String?             @map("refresh_token") // Encrypted
+  tokenExpiresAt DateTime?           @map("token_expires_at")
+  metadata       Json?
+  lastSyncAt     DateTime?           @map("last_sync_at")
+  lastSyncCursor String?             @map("last_sync_cursor")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
 
   // Relations
   tenant Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -192,22 +205,22 @@ model Integration {
 }
 
 model Event {
-  id             String      @id @default(cuid())
-  tenantId       String      @map("tenant_id")
-  integrationId  String      @map("integration_id")
-  source         IntegrationProvider
-  externalId     String      @map("external_id")
-  type           String      // e.g., "issue.created", "page.updated"
-  status         EventStatus @default(PENDING)
-  payload        Json
-  processedAt    DateTime?   @map("processed_at")
-  errorMessage   String?     @map("error_message")
-  createdAt      DateTime    @default(now()) @map("created_at")
-  updatedAt      DateTime    @updatedAt @map("updated_at")
+  id            String              @id @default(cuid())
+  tenantId      String              @map("tenant_id")
+  integrationId String              @map("integration_id")
+  source        IntegrationProvider
+  externalId    String              @map("external_id")
+  type          String // e.g., "issue.created", "page.updated"
+  status        EventStatus         @default(PENDING)
+  payload       Json
+  processedAt   DateTime?           @map("processed_at")
+  errorMessage  String?             @map("error_message")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
 
   // Relations
-  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  integration   Integration   @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  integration   Integration    @relation(fields: [integrationId], references: [id], onDelete: Cascade)
   contextBundle ContextBundle?
 
   @@unique([tenantId, source, externalId, type])
@@ -221,37 +234,90 @@ model ContextBundle {
   id           String       @id @default(cuid())
   tenantId     String       @map("tenant_id")
   eventId      String       @unique @map("event_id")
+  projectId    String?      @map("project_id")
   status       BundleStatus @default(ASSEMBLING)
   riskLevel    RiskLevel?   @map("risk_level")
   title        String?
   summary      String?
-  content      Json?        // Assembled context for LLM review
+  content      Json? // Assembled context for LLM review
   reviewOutput Json?        @map("review_output")
   createdAt    DateTime     @default(now()) @map("created_at")
   updatedAt    DateTime     @updatedAt @map("updated_at")
 
   // Relations
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  event  Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  review Review?
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  event   Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  review  Review?
 
   @@index([tenantId])
   @@index([status])
   @@index([riskLevel])
   @@index([createdAt])
+  @@index([projectId])
   @@map("context_bundles")
 }
 
+// ===========================================
+// Projects
+// ===========================================
+
+model Project {
+  id               String                       @id @default(cuid())
+  tenantId         String                       @map("tenant_id")
+  name             String
+  summary          String?                      @db.Text
+  summaryEmbedding Unsupported("vector(1536)")? @map("summary_embedding")
+  summaryUpdatedAt DateTime?                    @map("summary_updated_at")
+  createdById      String?                      @map("created_by_id")
+  createdAt        DateTime                     @default(now()) @map("created_at")
+  updatedAt        DateTime                     @updatedAt @map("updated_at")
+
+  // Relations
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdBy      User?           @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  sources        ProjectSource[]
+  contextBundles ContextBundle[]
+
+  @@index([tenantId])
+  @@index([tenantId, name])
+  @@map("projects")
+}
+
+model ProjectSource {
+  id             String     @id @default(cuid())
+  projectId      String     @map("project_id")
+  sourceType     SourceType @map("source_type")
+  sourceId       String     @map("source_id")
+  linkedBy       LinkMethod @map("linked_by")
+  linkedByUserId String?    @map("linked_by_user_id")
+  linkReason     Json?      @map("link_reason")
+  isArchived     Boolean    @default(false) @map("is_archived")
+  archivedAt     DateTime?  @map("archived_at")
+  archivedReason String?    @map("archived_reason")
+  linkedAt       DateTime   @default(now()) @map("linked_at")
+  unlinkedAt     DateTime?  @map("unlinked_at")
+
+  // Relations
+  project      Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  linkedByUser User?   @relation("ProjectSourceLinkedBy", fields: [linkedByUserId], references: [id], onDelete: SetNull)
+
+  @@unique([projectId, sourceType, sourceId])
+  @@index([sourceType, sourceId])
+  @@index([projectId, isArchived])
+  @@map("project_sources")
+}
+
 model Embedding {
-  id         String   @id @default(cuid())
-  tenantId   String   @map("tenant_id")
-  documentId String   @map("document_id")
-  chunk      Int      @default(0)
-  content    String   // Original text content
+  id         String                      @id @default(cuid())
+  tenantId   String                      @map("tenant_id")
+  documentId String                      @map("document_id")
+  chunk      Int                         @default(0)
+  content    String // Original text content
   vector     Unsupported("vector(1024)")
   metadata   Json?
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  createdAt  DateTime                    @default(now()) @map("created_at")
+  updatedAt  DateTime                    @updatedAt @map("updated_at")
 
   // Relations
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -266,20 +332,20 @@ model Embedding {
 // ===========================================
 
 model Policy {
-  id          String   @id @default(cuid())
-  tenantId    String?  @map("tenant_id")
-  name        String
-  framework   String   // "OWASP_TOP_10_2021", "OWASP_LLM_TOP_10", "CUSTOM"
-  identifier  String   @unique // e.g., "A01", "LLM01", "custom_<cuid>"
-  content     String   // Full policy text (markdown)
-  keywords    String[] // Trigger keywords for mandatory inclusion
-  isBuiltIn   Boolean  @default(false) @map("is_built_in")
-  isEnabled   Boolean  @default(true) @map("is_enabled")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id         String   @id @default(cuid())
+  tenantId   String?  @map("tenant_id")
+  name       String
+  framework  String // "OWASP_TOP_10_2021", "OWASP_LLM_TOP_10", "CUSTOM"
+  identifier String   @unique // e.g., "A01", "LLM01", "custom_<cuid>"
+  content    String // Full policy text (markdown)
+  keywords   String[] // Trigger keywords for mandatory inclusion
+  isBuiltIn  Boolean  @default(false) @map("is_built_in")
+  isEnabled  Boolean  @default(true) @map("is_enabled")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   // Relations
-  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant    Tenant?          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   overrides PolicyOverride[]
 
   @@index([tenantId])
@@ -310,25 +376,25 @@ model PolicyOverride {
 // ===========================================
 
 model Review {
-  id               String       @id @default(cuid())
-  tenantId         String       @map("tenant_id")
-  contextBundleId  String       @unique @map("context_bundle_id")
-  status           ReviewStatus @default(PENDING)
-  mode             ReviewMode   @default(AUTOMATED)
-  severity         Severity?
-  confidence       Float?       // 0-1 confidence score
-  summary          String?
-  modelUsed        String?      @map("model_used")
-  currentVersion   Int          @default(1) @map("current_version")
-  errorMessage     String?      @map("error_message")
-  createdAt        DateTime     @default(now()) @map("created_at")
-  updatedAt        DateTime     @updatedAt @map("updated_at")
+  id              String       @id @default(cuid())
+  tenantId        String       @map("tenant_id")
+  contextBundleId String       @unique @map("context_bundle_id")
+  status          ReviewStatus @default(PENDING)
+  mode            ReviewMode   @default(AUTOMATED)
+  severity        Severity?
+  confidence      Float? // 0-1 confidence score
+  summary         String?
+  modelUsed       String?      @map("model_used")
+  currentVersion  Int          @default(1) @map("current_version")
+  errorMessage    String?      @map("error_message")
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
 
   // Relations
-  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  contextBundle  ContextBundle   @relation(fields: [contextBundleId], references: [id], onDelete: Cascade)
-  versions       ReviewVersion[]
-  findings       Finding[]
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  contextBundle ContextBundle   @relation(fields: [contextBundleId], references: [id], onDelete: Cascade)
+  versions      ReviewVersion[]
+  findings      Finding[]
 
   @@index([tenantId])
   @@index([status])
@@ -341,9 +407,9 @@ model ReviewVersion {
   id         String   @id @default(cuid())
   reviewId   String   @map("review_id")
   version    Int
-  content    Json     // Full review content snapshot
+  content    Json // Full review content snapshot
   editorType String   @map("editor_type") // "agent" | "human"
-  editorId   String?  @map("editor_id")   // User ID if human edit
+  editorId   String?  @map("editor_id") // User ID if human edit
   editReason String?  @map("edit_reason")
   createdAt  DateTime @default(now()) @map("created_at")
 
@@ -356,27 +422,27 @@ model ReviewVersion {
 }
 
 model Finding {
-  id              String          @id @default(cuid())
-  reviewId        String          @map("review_id")
-  type            FindingType
-  title           String
-  description     String?
-  severity        Severity
-  confidence      Float?          // 0-1 confidence score
-  strideCategory  StrideCategory? @map("stride_category")
-  policyId        String?         @map("policy_id")
-  policyName      String?         @map("policy_name")
-  effortEstimate  Effort?         @map("effort_estimate")
-  status          FindingStatus   @default(OPEN)
-  resolvedBy      String?         @map("resolved_by")
-  resolvedAt      DateTime?       @map("resolved_at")
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @updatedAt @map("updated_at")
+  id             String          @id @default(cuid())
+  reviewId       String          @map("review_id")
+  type           FindingType
+  title          String
+  description    String?
+  severity       Severity
+  confidence     Float? // 0-1 confidence score
+  strideCategory StrideCategory? @map("stride_category")
+  policyId       String?         @map("policy_id")
+  policyName     String?         @map("policy_name")
+  effortEstimate Effort?         @map("effort_estimate")
+  status         FindingStatus   @default(OPEN)
+  resolvedBy     String?         @map("resolved_by")
+  resolvedAt     DateTime?       @map("resolved_at")
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
 
   // Relations
   review            Review            @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  outgoingRelations FindingRelation[]  @relation("FromFinding")
-  incomingRelations FindingRelation[]  @relation("ToFinding")
+  outgoingRelations FindingRelation[] @relation("FromFinding")
+  incomingRelations FindingRelation[] @relation("ToFinding")
 
   @@index([reviewId])
   @@index([type])
@@ -417,29 +483,29 @@ model ThreatModel {
   createdAt     DateTime          @default(now()) @map("created_at")
 
   // Relations
-  tenant         Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  components     TmComponent[]
-  dataFlows      TmDataFlow[]
+  tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  components      TmComponent[]
+  dataFlows       TmDataFlow[]
   trustBoundaries TmTrustBoundary[]
-  entryPoints    TmEntryPoint[]
-  assets         TmAsset[]
-  threats        TmThreat[]
-  changes        TmChange[]
-  gaps           TmGap[]
+  entryPoints     TmEntryPoint[]
+  assets          TmAsset[]
+  threats         TmThreat[]
+  changes         TmChange[]
+  gaps            TmGap[]
 
   @@index([status])
   @@map("threat_models")
 }
 
 model TmComponent {
-  id             String      @id @default(cuid())
-  threatModelId  String      @map("threat_model_id")
-  name           String
-  type           String
-  description    String?
-  isDeprecated   Boolean     @default(false) @map("is_deprecated")
-  createdAt      DateTime    @default(now()) @map("created_at")
-  updatedAt      DateTime    @updatedAt @map("updated_at")
+  id            String   @id @default(cuid())
+  threatModelId String   @map("threat_model_id")
+  name          String
+  type          String
+  description   String?
+  isDeprecated  Boolean  @default(false) @map("is_deprecated")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
   threatModel       ThreatModel  @relation(fields: [threatModelId], references: [id], onDelete: Cascade)
@@ -477,15 +543,15 @@ model TmDataFlow {
 }
 
 model TmTrustBoundary {
-  id           String   @id @default(cuid())
-  threatModelId String  @map("threat_model_id")
-  name         String
-  description  String?
-  fromZone     String?  @map("from_zone")
-  toZone       String?  @map("to_zone")
-  isDeprecated Boolean  @default(false) @map("is_deprecated")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(cuid())
+  threatModelId String   @map("threat_model_id")
+  name          String
+  description   String?
+  fromZone      String?  @map("from_zone")
+  toZone        String?  @map("to_zone")
+  isDeprecated  Boolean  @default(false) @map("is_deprecated")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
   threatModel ThreatModel @relation(fields: [threatModelId], references: [id], onDelete: Cascade)
@@ -495,17 +561,17 @@ model TmTrustBoundary {
 }
 
 model TmEntryPoint {
-  id           String   @id @default(cuid())
-  threatModelId String  @map("threat_model_id")
-  name         String
-  type         String
-  description  String?
-  authRequired Boolean  @default(false) @map("auth_required")
-  authType     String?  @map("auth_type")
-  rateLimited  Boolean  @default(false) @map("rate_limited")
-  isDeprecated Boolean  @default(false) @map("is_deprecated")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(cuid())
+  threatModelId String   @map("threat_model_id")
+  name          String
+  type          String
+  description   String?
+  authRequired  Boolean  @default(false) @map("auth_required")
+  authType      String?  @map("auth_type")
+  rateLimited   Boolean  @default(false) @map("rate_limited")
+  isDeprecated  Boolean  @default(false) @map("is_deprecated")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
   threatModel ThreatModel @relation(fields: [threatModelId], references: [id], onDelete: Cascade)
@@ -516,15 +582,15 @@ model TmEntryPoint {
 }
 
 model TmAsset {
-  id           String   @id @default(cuid())
-  threatModelId String  @map("threat_model_id")
-  name         String
-  type         String
-  sensitivity  String?
-  description  String?
-  isDeprecated Boolean  @default(false) @map("is_deprecated")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(cuid())
+  threatModelId String   @map("threat_model_id")
+  name          String
+  type          String
+  sensitivity   String?
+  description   String?
+  isDeprecated  Boolean  @default(false) @map("is_deprecated")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   // Relations
   threatModel ThreatModel @relation(fields: [threatModelId], references: [id], onDelete: Cascade)
@@ -551,9 +617,9 @@ model TmThreat {
   updatedAt        DateTime       @updatedAt @map("updated_at")
 
   // Relations
-  threatModel ThreatModel  @relation(fields: [threatModelId], references: [id], onDelete: Cascade)
-  component   TmComponent? @relation(fields: [componentId], references: [id], onDelete: SetNull)
-  dataFlow    TmDataFlow?  @relation(fields: [dataFlowId], references: [id], onDelete: SetNull)
+  threatModel ThreatModel   @relation(fields: [threatModelId], references: [id], onDelete: Cascade)
+  component   TmComponent?  @relation(fields: [componentId], references: [id], onDelete: SetNull)
+  dataFlow    TmDataFlow?   @relation(fields: [dataFlowId], references: [id], onDelete: SetNull)
   entryPoint  TmEntryPoint? @relation(fields: [entryPointId], references: [id], onDelete: SetNull)
 
   @@index([threatModelId])
