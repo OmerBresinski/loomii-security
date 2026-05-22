@@ -108,6 +108,7 @@ export function projectSourcesQueryOptions(projectId: string) {
         `/api/v1/projects/${projectId}/sources`,
         { signal }
       ),
+    enabled: projectId.length > 0,
   })
 }
 
@@ -130,6 +131,7 @@ export function projectReviewsQueryOptions(
     queryKey: projectKeys.reviews(projectId, filters),
     queryFn: ({ signal }) =>
       fetchApi<ProjectReviewsResponse>(path, { signal }),
+    enabled: projectId.length > 0,
     refetchInterval: 5_000,
     refetchIntervalInBackground: false,
   })
