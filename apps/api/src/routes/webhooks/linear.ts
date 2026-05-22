@@ -19,7 +19,7 @@
  */
 import { Hono } from "hono";
 import { db } from "@loomii/db";
-import { projectMatchingQueue } from "@loomii/queue";
+import { projectMatchingQueue, summaryGenerationQueue } from "@loomii/queue";
 import {
   verifyWebhookSignature,
   findLinearIntegrationByOrgId,
@@ -178,6 +178,50 @@ linearWebhookRoute.post("/", async (c) => {
         delay: 60_000, // 60s debounce - wait for rapid consecutive updates
       }
     );
+  }
+
+  // 11. Auto-archive ProjectSources when Linear issue is Done or Cancelled
+  const stateType = (data as any)?.state?.type as string | undefined;
+
+  if (stateType === "completed" || stateType === "canceled") {
+    const archivedReason = stateType === "completed" ? "linear_done" : "linear_cancelled";
+
+    // Find active, non-archived, non-unlinked sources for this issue
+    const sourcesToArchive = await db.projectSource.findMany({
+      where: {
+        sourceId: externalId,
+        sourceType: "LINEAR_ISSUE",
+        isArchived: false,
+        unlinkedAt: null,
+      },
+      select: { id: true, projectId: true },
+    });
+
+    if (sourcesToArchive.length > 0) {
+      // Archive all matching sources
+      await db.projectSource.updateMany({
+        where: {
+          id: { in: sourcesToArchive.map((s) => s.id) },
+        },
+        data: {
+          isArchived: true,
+          archivedAt: new Date(),
+          archivedReason,
+        },
+      });
+
+      // Trigger debounced summary regeneration for each affected project
+      const projectIds = [...new Set(sourcesToArchive.map((s) => s.projectId))];
+      await Promise.all(
+        projectIds.map((projectId) =>
+          summaryGenerationQueue.add(
+            "regenerate",
+            { projectId, trigger: `auto_archive_${archivedReason}` },
+            { jobId: `summary-${projectId}`, delay: 60_000 }
+          )
+        )
+      );
+    }
   }
 
   return c.json({ ok: true }, 200);
