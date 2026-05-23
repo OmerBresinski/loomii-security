@@ -49,7 +49,7 @@ function generateNotifications(): NotificationSeed[] {
   const notifications: NotificationSeed[] = [];
   let hoursAgo = 0.3;
 
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < 500; i++) {
     const type = NOTIFICATION_TYPES[i % NOTIFICATION_TYPES.length];
     const projectId = PROJECT_IDS[i % PROJECT_IDS.length];
     const projectName = PROJECT_NAMES[projectId];
