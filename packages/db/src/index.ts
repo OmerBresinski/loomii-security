@@ -53,6 +53,7 @@ export type {
   Project,
   ProjectSource,
   NotificationPreference,
+  Notification,
 } from "@prisma/client";
 export {
   Role,

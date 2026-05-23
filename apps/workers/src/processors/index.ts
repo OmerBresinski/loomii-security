@@ -11,6 +11,7 @@ import { processThreatModelUpdate } from "./threat-model-update";
 import { processReviewGeneration } from "./review-generation";
 import { processSummaryGeneration } from "./summary-generation";
 import { processProjectMatching } from "./project-matching";
+import { processEvents } from "./events";
 
 /**
  * Processor registry - maps queue names to their job processor functions.
@@ -54,7 +55,7 @@ export const processors: Record<QueueName, Processor> = {
   }) as Processor,
   [QUEUE_NAMES.SUMMARY_GENERATION]: processSummaryGeneration as Processor,
   [QUEUE_NAMES.PROJECT_MATCHING]: processProjectMatching as Processor,
-  [QUEUE_NAMES.EVENTS]: createPlaceholderProcessor(QUEUE_NAMES.EVENTS),
+  [QUEUE_NAMES.EVENTS]: processEvents as Processor,
 };
 
 /**

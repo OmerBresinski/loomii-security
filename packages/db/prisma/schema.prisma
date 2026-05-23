@@ -154,6 +154,7 @@ model Tenant {
   policies                Policy[]
   policyOverrides         PolicyOverride[]
   notificationPreferences NotificationPreference[]
+  notifications           Notification[]
 
   @@map("tenants")
 }
@@ -174,6 +175,7 @@ model User {
   createdProjects         Project[]                @relation("ProjectCreatedBy")
   linkedSources           ProjectSource[]          @relation("ProjectSourceLinkedBy")
   notificationPreferences NotificationPreference[]
+  notifications           Notification[]
 
   @@unique([tenantId, workosUserId])
   @@unique([tenantId, email])
@@ -282,6 +284,7 @@ model Project {
   createdBy      User?           @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   sources        ProjectSource[]
   contextBundles ContextBundle[]
+  notifications  Notification[]
 
   @@index([tenantId])
   @@index([tenantId, name])
@@ -695,4 +698,33 @@ model NotificationPreference {
   @@index([userId])
   @@index([tenantId])
   @@map("notification_preferences")
+}
+
+// ===========================================
+// Notifications
+// ===========================================
+
+model Notification {
+  id            String    @id @default(cuid())
+  userId        String    @map("user_id")
+  tenantId      String    @map("tenant_id")
+  type          String    // "review_completed", "high_risk_detected", etc.
+  title         String    // "Security review completed"
+  body          String    // "Review for 'Auth Flow' found 3 high-severity findings"
+  linkUrl       String?   @map("link_url") // "/reviews/clxyz123"
+  projectId     String?   @map("project_id") // For project-scoped filtering
+  sourceEventId String?   @map("source_event_id") // Deduplication key
+  readAt        DateTime? @map("read_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  // Relations
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, sourceEventId]) // Dedup: PostgreSQL ignores NULLs in unique
+  @@index([userId, readAt]) // "Show me unread" query
+  @@index([userId, createdAt]) // Paginated history
+  @@index([tenantId])
+  @@map("notifications")
 }
