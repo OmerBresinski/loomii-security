@@ -129,6 +129,9 @@ const notificationsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/notifications",
   beforeLoad: requireAuth,
+  validateSearch: (search: Record<string, unknown>) => ({
+    filter: (search.filter as string) || undefined,
+  }),
   component: lazyRouteComponent(() => import("@/routes/notifications")),
 })
 

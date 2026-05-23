@@ -3,6 +3,7 @@ import {
   useQuery,
   infiniteQueryOptions,
   useInfiniteQuery,
+  keepPreviousData,
 } from "@tanstack/react-query"
 import { fetchApi } from "@/lib/api-client"
 
@@ -77,6 +78,8 @@ export function notificationsInfiniteQueryOptions(
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     refetchOnWindowFocus: true,
+    staleTime: 5_000,
+    placeholderData: keepPreviousData,
   })
 }
 

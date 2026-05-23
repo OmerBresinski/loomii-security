@@ -53,7 +53,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/hooks/use-auth"
 import { useUnreadCount } from "@/queries/notifications"
@@ -198,7 +197,6 @@ const BellIcon = (
 function NotificationBell() {
   const { data } = useUnreadCount()
   const unreadCount = data?.count ?? 0
-  const hasCritical = (data?.byType?.high_risk_detected ?? 0) > 0
 
   return (
     <Link
@@ -209,12 +207,11 @@ function NotificationBell() {
     >
       {BellIcon}
       {unreadCount > 0 && (
-        <Badge
-          variant={hasCritical ? "destructive" : "default"}
-          className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full p-0 text-[9px]"
+        <span
+          className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-[#717CE1] text-[9px] font-medium tabular-nums text-white"
         >
           {unreadCount > 9 ? "9+" : unreadCount}
-        </Badge>
+        </span>
       )}
     </Link>
   )

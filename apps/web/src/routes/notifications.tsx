@@ -1,10 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { useNavigate } from "@tanstack/react-router"
+import { useCallback, useEffect, useMemo, useRef } from "react"
+import { useNavigate, useSearch } from "@tanstack/react-router"
+import { useQueryClient } from "@tanstack/react-query"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   useNotifications,
+  notificationsInfiniteQueryOptions,
   type NotificationFilters,
   type NotificationItem,
 } from "@/queries/notifications"
@@ -44,7 +47,7 @@ const NOTIFICATION_TYPE_META: Record<
 }
 
 const FILTER_OPTIONS = [
-  { value: undefined, label: "All" },
+  { value: "all", label: "All" },
   { value: "unread", label: "Unread" },
   { value: "review_completed", label: "Reviews" },
   { value: "high_risk_detected", label: "Critical" },
@@ -82,16 +85,49 @@ function formatRelativeTime(dateStr: string): string {
 
 export default function NotificationsPage() {
   const navigate = useNavigate()
-  const [activeFilter, setActiveFilter] = useState<string | undefined>(
-    undefined
+  const queryClient = useQueryClient()
+
+  // Read filter from URL search params (reactive)
+  const search = useSearch({ strict: false }) as { filter?: string }
+  const activeTab = search.filter ?? "all"
+
+  // Build query filters from active tab
+  const filters: NotificationFilters = useMemo(() => {
+    if (activeTab === "unread") return { unread: true }
+    if (activeTab && activeTab !== "all") return { type: activeTab }
+    return {}
+  }, [activeTab])
+
+  // Tab change updates URL
+  const handleTabChange = useCallback(
+    (value: string) => {
+      navigate({
+        search: { filter: value === "all" ? undefined : value } as Record<
+          string,
+          string | undefined
+        >,
+        replace: true,
+      })
+    },
+    [navigate]
   )
 
-  // Build query filters from active filter chip
-  const filters: NotificationFilters = useMemo(() => {
-    if (activeFilter === "unread") return { unread: true }
-    if (activeFilter) return { type: activeFilter }
-    return {}
-  }, [activeFilter])
+  // Prefetch on hover (30s stale time prevents excessive refetches)
+  const prefetchFilter = useCallback(
+    (filterValue: string) => {
+      const f: NotificationFilters =
+        filterValue === "unread"
+          ? { unread: true }
+          : filterValue !== "all"
+            ? { type: filterValue }
+            : {}
+      queryClient.prefetchInfiniteQuery({
+        ...notificationsInfiniteQueryOptions(f),
+        staleTime: 30_000,
+      })
+    },
+    [queryClient]
+  )
 
   // Infinite query
   const { data, isPending, isFetchingNextPage, hasNextPage, fetchNextPage } =
@@ -151,19 +187,24 @@ export default function NotificationsPage() {
     <div className="flex h-full flex-col overflow-hidden p-6">
       {/* Toolbar */}
       <div className="flex items-center gap-3 pb-4">
-        <div className="flex flex-1 items-center gap-2">
-          {FILTER_OPTIONS.map((option) => (
-            <Button
-              key={option.label}
-              variant={activeFilter === option.value ? "secondary" : "outline"}
-              size="sm"
-              className="h-8 text-xs"
-              onClick={() => setActiveFilter(option.value)}
-            >
-              {option.label}
-            </Button>
-          ))}
-        </div>
+        <Tabs
+          value={activeTab}
+          onValueChange={handleTabChange}
+          className="flex-1"
+        >
+          <TabsList variant="line">
+            {FILTER_OPTIONS.map((option) => (
+              <div
+                key={option.label}
+                onMouseEnter={() => prefetchFilter(option.value)}
+              >
+                <TabsTrigger value={option.value ?? "all"}>
+                  {option.label}
+                </TabsTrigger>
+              </div>
+            ))}
+          </TabsList>
+        </Tabs>
         {allNotifications.length > 0 && (
           <Button
             variant="ghost"
@@ -196,7 +237,7 @@ export default function NotificationsPage() {
             No notifications yet
           </p>
           <p className="text-xs text-muted-foreground">
-            {activeFilter
+            {activeTab !== "all"
               ? "No notifications match this filter."
               : "You'll receive notifications when security reviews are completed or risks are detected."}
           </p>
