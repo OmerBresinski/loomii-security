@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { fetchApi } from "@/lib/api-client"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   useNotifications,
   notificationKeys,
@@ -161,31 +162,31 @@ export default function NotificationsPage() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden p-6">
-      {/* Filter Chips + Mark All Read */}
-      <div className="flex items-center justify-between pb-4">
-        <div className="flex flex-wrap gap-1.5">
+      {/* Toolbar */}
+      <div className="flex items-center gap-3 pb-4">
+        <div className="flex flex-1 items-center gap-2">
           {FILTER_OPTIONS.map((option) => (
-            <button
+            <Button
               key={option.label}
+              variant={activeFilter === option.value ? "secondary" : "outline"}
+              size="sm"
+              className="h-8 text-xs"
               onClick={() => setActiveFilter(option.value)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                activeFilter === option.value
-                  ? "border-foreground/20 bg-foreground/5 text-foreground"
-                  : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
-              }`}
             >
               {option.label}
-            </button>
+            </Button>
           ))}
         </div>
         {allNotifications.length > 0 && (
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 text-xs text-muted-foreground"
             onClick={() => markAllRead.mutate()}
             disabled={markAllRead.isPending}
-            className="shrink-0 rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
           >
             {markAllRead.isPending ? "Marking..." : "Mark all as read"}
-          </button>
+          </Button>
         )}
       </div>
 
