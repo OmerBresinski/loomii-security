@@ -388,7 +388,7 @@ export function RootLayout() {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset className="h-svh overflow-hidden">
-        <header className="flex h-12 shrink-0 items-center border-b px-6">
+        <header className="flex h-12 shrink-0 items-center border-b border-border/50 px-6">
           <AppBreadcrumb />
         </header>
         <main className="min-h-0 flex-1">
