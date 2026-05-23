@@ -143,16 +143,17 @@ model Tenant {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   // Relations
-  users           User[]
-  integrations    Integration[]
-  events          Event[]
-  contextBundles  ContextBundle[]
-  embeddings      Embedding[]
-  projects        Project[]
-  threatModel     ThreatModel?
-  reviews         Review[]
-  policies        Policy[]
-  policyOverrides PolicyOverride[]
+  users                   User[]
+  integrations            Integration[]
+  events                  Event[]
+  contextBundles          ContextBundle[]
+  embeddings              Embedding[]
+  projects                Project[]
+  threatModel             ThreatModel?
+  reviews                 Review[]
+  policies                Policy[]
+  policyOverrides         PolicyOverride[]
+  notificationPreferences NotificationPreference[]
 
   @@map("tenants")
 }
@@ -169,9 +170,10 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // Relations
-  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdProjects Project[]       @relation("ProjectCreatedBy")
-  linkedSources   ProjectSource[] @relation("ProjectSourceLinkedBy")
+  tenant                  Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdProjects         Project[]                @relation("ProjectCreatedBy")
+  linkedSources           ProjectSource[]          @relation("ProjectSourceLinkedBy")
+  notificationPreferences NotificationPreference[]
 
   @@unique([tenantId, workosUserId])
   @@unique([tenantId, email])
@@ -670,4 +672,27 @@ model TmGap {
   @@index([severity])
   @@index([isResolved])
   @@map("tm_gaps")
+}
+
+// ===========================================
+// Notification Preferences
+// ===========================================
+
+model NotificationPreference {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  tenantId  String   @map("tenant_id")
+  type      String   // e.g. "review_completed", "high_risk_detected"
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+  @@index([userId])
+  @@index([tenantId])
+  @@map("notification_preferences")
 }

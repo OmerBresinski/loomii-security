@@ -52,6 +52,7 @@ export type {
   TmGap,
   Project,
   ProjectSource,
+  NotificationPreference,
 } from "@prisma/client";
 export {
   Role,
