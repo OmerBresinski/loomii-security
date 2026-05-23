@@ -119,6 +119,9 @@ const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
   beforeLoad: requireAuth,
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: (search.tab as string) || undefined,
+  }),
   component: lazyRouteComponent(() => import("@/routes/settings")),
 })
 
