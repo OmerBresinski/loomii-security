@@ -79,6 +79,8 @@ describe("Review Events", () => {
         findingCount: 3,
         publishedVia: "autonomous",
         durationMs: 12000,
+        projectId: "proj_1",
+        projectName: "Auth Service",
       });
 
       expect(mockEventsQueueAdd).toHaveBeenCalledTimes(1);
@@ -105,6 +107,8 @@ describe("Review Events", () => {
         confidence: 85,
         findingCount: 5,
         publishedVia: "manual_approval",
+        projectId: null,
+        projectName: null,
       });
 
       const [, payload] = mockEventsQueueAdd.mock.calls[0] as any;
@@ -154,6 +158,8 @@ describe("Review Events", () => {
           requirements: 1,
           mitigations: 1,
         },
+        projectId: "proj_1",
+        projectName: "Auth Service",
       });
 
       // Should publish to threat model queue
@@ -191,6 +197,8 @@ describe("Review Events", () => {
           requirements: 2,
           mitigations: 1,
         },
+        projectId: null,
+        projectName: null,
       });
 
       // Threat model queue ALWAYS receives the event
@@ -212,6 +220,8 @@ describe("Review Events", () => {
         mode: "AUTONOMOUS",
         findingCount: 2,
         findingSummary: { threats: 1, requirements: 1, mitigations: 0 },
+        projectId: null,
+        projectName: null,
       });
 
       // Events queue should still have been called successfully
@@ -231,6 +241,8 @@ describe("Review Events", () => {
         mode: "ASSISTED",
         findingCount: 3,
         findingSummary: { threats: 2, requirements: 1, mitigations: 0 },
+        projectId: null,
+        projectName: null,
       });
 
       // Threat model queue should still have been called successfully
@@ -252,6 +264,8 @@ describe("Review Events", () => {
           mode: "ASSISTED",
           findingCount: 5,
           findingSummary: { threats: 3, requirements: 1, mitigations: 1 },
+          projectId: null,
+          projectName: null,
         })
       ).rejects.toThrow("Failed to publish review.completed to both queues");
     });
@@ -367,6 +381,8 @@ describe("Review Events", () => {
         confidence: 60,
         findingCount: 1,
         publishedVia: "autonomous",
+        projectId: null,
+        projectName: null,
       });
 
       const [, payload] = mockEventsQueueAdd.mock.calls[0] as any;
@@ -390,6 +406,8 @@ describe("Review Events", () => {
         mode: "AUTONOMOUS",
         findingCount: 0,
         findingSummary: { threats: 0, requirements: 0, mitigations: 0 },
+        projectId: null,
+        projectName: null,
       });
 
       const [, payload] = mockEventsQueueAdd.mock.calls[0] as any;

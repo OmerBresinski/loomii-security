@@ -175,6 +175,14 @@ export async function processReviewGeneration(
       mitigations: reviewOutput.findings.filter((f) => f.type === "MITIGATION").length,
     };
 
+    // Resolve project context for notification enrichment
+    const bundle = await db.contextBundle.findUnique({
+      where: { id: contextId },
+      select: { projectId: true, project: { select: { name: true } } },
+    });
+    const projectId = bundle?.projectId ?? null;
+    const projectName = bundle?.project?.name ?? null;
+
     // 7a. Publish routing-specific event (non-critical - swallow errors)
     try {
       if (routing.mode === "AUTONOMOUS") {
@@ -187,17 +195,15 @@ export async function processReviewGeneration(
           findingCount: saveResult.findingCount,
           publishedVia: "autonomous",
           durationMs,
+          projectId,
+          projectName,
         });
 
         // Trigger immediate summary regeneration for autonomous approvals
-        const bundle = await db.contextBundle.findUnique({
-          where: { id: contextId },
-          select: { projectId: true },
-        });
-        if (bundle?.projectId) {
+        if (projectId) {
           await summaryGenerationQueue.add(
             "regenerate",
-            { projectId: bundle.projectId, trigger: "review_approved" },
+            { projectId, trigger: "review_approved" },
             { removeOnComplete: true }
           );
         }
@@ -230,6 +236,8 @@ export async function processReviewGeneration(
         mode: routing.mode,
         findingCount: saveResult.findingCount,
         findingSummary,
+        projectId,
+        projectName,
       });
     } catch (err: any) {
       // Log as error (not warn) since the Threat Model Agent may miss this

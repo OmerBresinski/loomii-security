@@ -33,6 +33,9 @@ export interface ReviewPublishedEvent {
   publishedVia: "autonomous" | "manual_approval";
   /** Duration of generation in ms (only for autonomous) */
   durationMs?: number;
+  /** Project association (null if review has no project) */
+  projectId: string | null;
+  projectName: string | null;
 }
 
 export interface ReviewPendingApprovalEvent {
@@ -60,6 +63,9 @@ export interface ReviewCompletedEvent {
     requirements: number;
     mitigations: number;
   };
+  /** Project association (null if review has no project) */
+  projectId: string | null;
+  projectName: string | null;
 }
 
 export interface ReviewFailedEvent {
@@ -122,6 +128,8 @@ export async function publishReviewPublished(
       findingCount: event.findingCount,
       publishedVia: event.publishedVia,
       durationMs: event.durationMs ?? null,
+      projectId: event.projectId,
+      projectName: event.projectName,
     },
     timestamp: new Date().toISOString(),
   });
@@ -208,6 +216,8 @@ export async function publishReviewCompleted(
         mode: event.mode,
         findingCount: event.findingCount,
         findingSummary: event.findingSummary,
+        projectId: event.projectId,
+        projectName: event.projectName,
       },
       timestamp: new Date().toISOString(),
     }),
