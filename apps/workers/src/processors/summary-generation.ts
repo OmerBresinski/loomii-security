@@ -21,7 +21,7 @@
 import type { Job } from "bullmq";
 import { generateText } from "ai";
 import { db } from "@loomii/db";
-import type { SummaryGenerationPayload } from "@loomii/queue";
+import { type SummaryGenerationPayload, eventsQueue } from "@loomii/queue";
 import { bedrock } from "../lib/bedrock";
 import { generateQueryEmbedding } from "../lib/embeddings";
 import { SUMMARY_SYSTEM_PROMPT } from "../prompts/summary-system";
@@ -75,6 +75,28 @@ export async function processSummaryGeneration(
 
     const durationMs = Date.now() - startTime;
     childLogger.info({ durationMs }, "Summary generation completed");
+
+    // Publish summary.updated event for notifications (non-blocking)
+    try {
+      const project = await db.project.findUnique({
+        where: { id: projectId },
+        select: { id: true, name: true, tenantId: true },
+      });
+      if (project) {
+        await eventsQueue.add("summary.updated", {
+          tenantId: project.tenantId,
+          eventType: "summary.updated",
+          data: {
+            projectId: project.id,
+            projectName: project.name,
+            trigger: trigger ?? null,
+          },
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch {
+      childLogger.warn("Failed to publish summary.updated event");
+    }
   } catch (err) {
     // On failure: preserve existing summary, log error
     const error = err instanceof Error ? err : new Error(String(err));
@@ -198,6 +220,7 @@ async function generateAndStoreSummary(params: GenerateParams): Promise<"DONE"> 
   `;
 
   childLogger.info("Summary and embedding stored in project record");
+
   return "DONE";
 }
 

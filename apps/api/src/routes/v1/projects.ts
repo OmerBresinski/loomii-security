@@ -9,7 +9,7 @@
  */
 import { Hono } from "hono";
 import { db } from "@loomii/db";
-import { summaryGenerationQueue } from "@loomii/queue";
+import { summaryGenerationQueue, eventsQueue } from "@loomii/queue";
 import type { AppEnv } from "../../lib/types";
 import {
   CreateProjectRequestSchema,
@@ -399,7 +399,7 @@ async function triggerSummaryRegeneration(projectId: string) {
 async function verifyProjectOwnership(projectId: string, tenantId: string) {
   return db.project.findFirst({
     where: { id: projectId, tenantId },
-    select: { id: true },
+    select: { id: true, name: true },
   });
 }
 
@@ -465,6 +465,30 @@ projectRoutes.post("/:id/sources", async (c) => {
   }
 
   await triggerSummaryRegeneration(projectId);
+
+  // Publish source.linked events for notifications (non-blocking)
+  if (created.length > 0) {
+    try {
+      await Promise.all(
+        created.map((source) =>
+          eventsQueue.add("source.linked", {
+            tenantId,
+            eventType: "source.linked",
+            data: {
+              projectId,
+              projectName: project.name,
+              sourceType: source.sourceType,
+              sourceId: source.sourceId,
+              linkedByUserId: userId,
+            },
+            timestamp: new Date().toISOString(),
+          })
+        )
+      );
+    } catch {
+      // Event publishing failure should not fail the user's request
+    }
+  }
 
   const status = created.length > 0 ? 201 : 200;
   return c.json({ linked: created, alreadyLinked: existing }, status);
@@ -545,7 +569,7 @@ projectRoutes.patch("/:id/sources/:sourceId", async (c) => {
   // Cannot archive an already-unlinked source
   const source = await db.projectSource.findFirst({
     where: { projectId, sourceId, unlinkedAt: null },
-    select: { id: true, isArchived: true },
+    select: { id: true, isArchived: true, sourceType: true, sourceId: true },
   });
 
   if (!source) {
@@ -578,6 +602,26 @@ projectRoutes.patch("/:id/sources/:sourceId", async (c) => {
   }
 
   await triggerSummaryRegeneration(projectId);
+
+  // Publish source.archived event for notifications (non-blocking)
+  if (isArchived) {
+    try {
+      await eventsQueue.add("source.archived", {
+        tenantId,
+        eventType: "source.archived",
+        data: {
+          projectId,
+          projectName: project.name,
+          sourceType: source.sourceType,
+          sourceId: source.sourceId,
+          reason: "manual",
+        },
+        timestamp: new Date().toISOString(),
+      });
+    } catch {
+      // Event publishing failure should not fail the user's request
+    }
+  }
 
   return c.json({ sourceId, isArchived });
 });
