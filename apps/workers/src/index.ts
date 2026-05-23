@@ -1,10 +1,18 @@
-import { Worker } from "bullmq";
-import { createRedisConnection, ALL_QUEUE_NAMES, type QueueName, integrationHealthQueue } from "@loomii/queue";
+import { Worker, type WorkerOptions } from "bullmq";
+import { createRedisConnection, ALL_QUEUE_NAMES, QUEUE_NAMES, type QueueName, integrationHealthQueue } from "@loomii/queue";
 import { logger } from "./lib/logger";
 import { processors, concurrency } from "./processors/index";
 
 const workers: Worker[] = [];
 let isShuttingDown = false;
+
+/**
+ * Per-queue worker options overrides.
+ * Only queues that need non-default settings are listed here.
+ */
+const workerOptions: Partial<Record<QueueName, Partial<WorkerOptions>>> = {
+  [QUEUE_NAMES.EVENTS]: { lockDuration: 30000 },
+};
 
 async function startWorkers(): Promise<void> {
   const connection = createRedisConnection();
@@ -13,6 +21,7 @@ async function startWorkers(): Promise<void> {
     const worker = new Worker(queueName, processors[queueName], {
       connection,
       concurrency: concurrency[queueName],
+      ...workerOptions[queueName],
     });
 
     // Error handling per worker

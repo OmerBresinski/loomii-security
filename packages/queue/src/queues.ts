@@ -77,7 +77,18 @@ export const threatModelQueue = new Queue<QueuePayloadMap["threat-model-update"]
 
 export const eventsQueue = new Queue<QueuePayloadMap["events"]>(
   QUEUE_NAMES.EVENTS,
-  { connection: getConnection() }
+  {
+    connection: getConnection(),
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: {
+        type: "exponential",
+        delay: 1000,
+      },
+      removeOnComplete: { count: 1000 },
+      removeOnFail: { count: 5000 },
+    },
+  }
 );
 
 export const summaryGenerationQueue = new Queue<QueuePayloadMap["summary-generation"]>(
