@@ -48,7 +48,7 @@ export function TeamTab() {
 
   if (isPending) {
     return (
-      <div className="max-w-2xl rounded-lg border border-border/50 bg-[#2C2D30] p-5">
+      <div className="max-w-2xl rounded-lg border border-border/50 bg-muted/50 dark:bg-[#2C2D30] p-5">
         <div className="flex flex-col gap-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="flex items-center justify-between">
@@ -67,7 +67,7 @@ export function TeamTab() {
   return (
     <div className="max-w-2xl">
       {/* Members list */}
-      <div className="rounded-lg border border-border/50 bg-[#2C2D30]">
+      <div className="rounded-lg border border-border/50 bg-muted/50 dark:bg-[#2C2D30]">
         {members.length === 0 ? (
           <div className="px-5 py-8">
             <p className="text-center text-sm text-muted-foreground">

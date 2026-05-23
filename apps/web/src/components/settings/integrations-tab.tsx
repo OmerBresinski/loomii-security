@@ -53,7 +53,7 @@ export function IntegrationsTab() {
 
   if (isPending) {
     return (
-      <div className="max-w-2xl rounded-lg border border-border/50 bg-[#2C2D30] p-5">
+      <div className="max-w-2xl rounded-lg border border-border/50 bg-muted/50 dark:bg-[#2C2D30] p-5">
         <div className="flex flex-col gap-5">
           {Array.from({ length: 2 }).map((_, i) => (
             <div key={i} className="flex items-center justify-between">
@@ -76,7 +76,7 @@ export function IntegrationsTab() {
 
   if (integrations.length === 0) {
     return (
-      <div className="max-w-2xl rounded-lg border border-border/50 bg-[#2C2D30] px-5 py-8">
+      <div className="max-w-2xl rounded-lg border border-border/50 bg-muted/50 dark:bg-[#2C2D30] px-5 py-8">
         <p className="text-center text-sm text-muted-foreground">
           No integrations connected yet.
         </p>
@@ -86,7 +86,7 @@ export function IntegrationsTab() {
 
   return (
     <>
-      <div className="max-w-2xl rounded-lg border border-border/50 bg-[#2C2D30]">
+      <div className="max-w-2xl rounded-lg border border-border/50 bg-muted/50 dark:bg-[#2C2D30]">
         {integrations.map((integration, i) => (
           <div key={integration.id}>
             {i > 0 && <Separator className="opacity-50" />}

@@ -10,7 +10,7 @@ export function ProfileTab() {
 
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-border/50 bg-[#2C2D30] p-6">
+      <div className="rounded-lg border border-border/50 bg-muted/50 dark:bg-[#2C2D30] p-6">
         <div className="flex flex-col gap-5">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="flex items-center justify-between">
@@ -25,7 +25,7 @@ export function ProfileTab() {
 
   return (
     <div className="max-w-2xl">
-      <div className="rounded-lg border border-border/50 bg-[#2C2D30]">
+      <div className="rounded-lg border border-border/50 bg-muted/50 dark:bg-[#2C2D30]">
         <SettingsRow label="Name" value={formatName(user?.firstName, user?.lastName)} />
         <Separator className="opacity-50" />
         <SettingsRow label="Email" value={user?.email ?? "—"} />
