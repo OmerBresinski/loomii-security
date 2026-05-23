@@ -1,10 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef } from "react"
 import { useNavigate, useSearch } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
+import { useVirtualizer } from "@tanstack/react-virtual"
+import { HugeiconsIcon } from "@hugeicons/react"
+import {
+  Shield01Icon,
+  Alert01Icon,
+  LinkSquare02Icon,
+  Folder01Icon,
+  FileCodeIcon,
+} from "@hugeicons/core-free-icons"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import {
   useNotifications,
   notificationsInfiniteQueryOptions,
@@ -15,35 +28,12 @@ import { useMarkAsRead, useMarkAllAsRead } from "@/mutations/notifications"
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-const NOTIFICATION_TYPE_META: Record<
-  string,
-  { label: string; color: string; borderColor: string }
-> = {
-  review_completed: {
-    label: "Review",
-    color: "text-sky-700 dark:text-sky-400",
-    borderColor: "border-l-sky-500",
-  },
-  high_risk_detected: {
-    label: "Critical",
-    color: "text-red-700 dark:text-red-400",
-    borderColor: "border-l-red-500",
-  },
-  source_linked: {
-    label: "Source",
-    color: "text-emerald-700 dark:text-emerald-400",
-    borderColor: "border-l-emerald-500",
-  },
-  source_archived: {
-    label: "Archive",
-    color: "text-amber-700 dark:text-amber-400",
-    borderColor: "border-l-amber-500",
-  },
-  summary_updated: {
-    label: "Summary",
-    color: "text-violet-700 dark:text-violet-400",
-    borderColor: "border-l-violet-500",
-  },
+const NOTIFICATION_TYPE_META: Record<string, { label: string }> = {
+  review_completed: { label: "Review" },
+  high_risk_detected: { label: "Critical" },
+  source_linked: { label: "Source" },
+  source_archived: { label: "Archive" },
+  summary_updated: { label: "Summary" },
 }
 
 const FILTER_OPTIONS = [
@@ -57,28 +47,45 @@ const FILTER_OPTIONS = [
 
 // ─── Relative Time ──────────────────────────────────────────────────────────
 
-function formatRelativeTime(dateStr: string): string {
+function timeAgo(dateStr: string): string {
   const now = Date.now()
   const then = new Date(dateStr).getTime()
-  const diffMs = now - then
+  const diff = now - then
 
-  const seconds = Math.floor(diffMs / 1000)
-  if (seconds < 60) return "just now"
-
-  const minutes = Math.floor(seconds / 60)
+  const minutes = Math.floor(diff / 60_000)
+  if (minutes < 1) return "just now"
   if (minutes < 60) return `${minutes}m ago`
 
   const hours = Math.floor(minutes / 60)
   if (hours < 24) return `${hours}h ago`
 
   const days = Math.floor(hours / 24)
-  if (days === 1) return "yesterday"
-  if (days < 7) return `${days}d ago`
+  if (days < 30) return `${days}d ago`
 
-  return new Date(dateStr).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  })
+  return new Date(dateStr).toLocaleDateString()
+}
+
+// ─── Type Icon ──────────────────────────────────────────────────────────────
+
+const TYPE_ICONS: Record<string, { icon: typeof Shield01Icon; color: string }> = {
+  review_completed: { icon: Shield01Icon, color: "#67E8F9" },
+  high_risk_detected: { icon: Alert01Icon, color: "#F87171" },
+  source_linked: { icon: LinkSquare02Icon, color: "#6EE7B7" },
+  source_archived: { icon: Folder01Icon, color: "#FCD34D" },
+  summary_updated: { icon: FileCodeIcon, color: "#A78BFA" },
+}
+
+function TypeIcon({ type }: { type: string }) {
+  const config = TYPE_ICONS[type]
+  if (!config) return null
+
+  return (
+    <HugeiconsIcon
+      icon={config.icon}
+      size={16}
+      color={config.color}
+    />
+  )
 }
 
 // ─── Page ───────────────────────────────────────────────────────────────────
@@ -145,8 +152,20 @@ export default function NotificationsPage() {
   // Mark single as read mutation
   const markAsRead = useMarkAsRead()
 
-  // Infinite scroll sentinel
+  // Virtualizer
   const parentRef = useRef<HTMLDivElement>(null)
+  const rowCount = allNotifications.length
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const virtualizer = useVirtualizer({
+    count: rowCount,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 48,
+    overscan: 5,
+  })
+
+  const virtualItems = virtualizer.getVirtualItems()
+
+  // Infinite scroll sentinel
   const sentinelRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -218,24 +237,18 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {/* List */}
+      {/* Table */}
       {isPending ? (
-        <div className="flex flex-col gap-2">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div
-              key={i}
-              className="flex flex-col gap-2 rounded-lg border border-border/50 p-4"
-            >
-              <Skeleton className="h-4 w-48" />
-              <Skeleton className="h-3 w-full max-w-sm" />
+        <div className="flex flex-col rounded-md">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="flex h-12 items-center px-4">
+              <Skeleton className="h-4 w-full max-w-md" />
             </div>
           ))}
         </div>
       ) : allNotifications.length === 0 ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-lg p-8 text-center">
-          <p className="text-sm font-medium text-foreground">
-            No notifications yet
-          </p>
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-md p-6 text-center">
+          <p className="text-sm font-medium">No notifications yet</p>
           <p className="text-xs text-muted-foreground">
             {activeTab !== "all"
               ? "No notifications match this filter."
@@ -243,26 +256,38 @@ export default function NotificationsPage() {
           </p>
         </div>
       ) : (
-        <div
-          ref={parentRef}
-          className="min-h-0 flex-1 overflow-y-auto rounded-lg"
-        >
-          <div className="flex flex-col gap-1">
-            {allNotifications.map((notification) => (
-              <NotificationRow
-                key={notification.id}
-                notification={notification}
-                onClick={handleClick}
-              />
-            ))}
-          </div>
-
-          {isFetchingNextPage && (
-            <div className="flex h-12 items-center justify-center text-xs text-muted-foreground">
-              Loading more...
+        <div className="flex min-h-0 flex-1 flex-col rounded-md">
+          {/* Scrollable rows */}
+          <div ref={parentRef} className="min-h-0 flex-1 overflow-y-auto">
+            <div
+              className="relative w-full"
+              style={{ height: `${virtualizer.getTotalSize()}px` }}
+            >
+              {virtualItems.map((virtualRow) => {
+                const notification = allNotifications[virtualRow.index]
+                return (
+                  <div
+                    key={virtualRow.key}
+                    className="absolute left-0 top-0 w-full"
+                    style={{
+                      height: `${virtualRow.size}px`,
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                    onClick={() => handleClick(notification)}
+                  >
+                    <NotificationRow notification={notification} />
+                  </div>
+                )
+              })}
             </div>
-          )}
-          <div ref={sentinelRef} aria-hidden className="h-px" />
+            {isFetchingNextPage && (
+              <div className="flex h-12 items-center justify-center text-xs text-muted-foreground">
+                Loading more...
+              </div>
+            )}
+            {/* Sentinel element for IntersectionObserver infinite scroll */}
+            <div ref={sentinelRef} aria-hidden className="h-px" />
+          </div>
         </div>
       )}
     </div>
@@ -273,58 +298,51 @@ export default function NotificationsPage() {
 
 function NotificationRow({
   notification,
-  onClick,
 }: {
   notification: NotificationItem
-  onClick: (notification: NotificationItem) => void
 }) {
   const meta = NOTIFICATION_TYPE_META[notification.type]
-  const borderColor = meta?.borderColor ?? "border-l-border"
 
   return (
-    <button
-      onClick={() => onClick(notification)}
-      className={`group flex w-full items-start gap-3 rounded-lg border border-l-[3px] border-border/50 ${borderColor} bg-card p-4 text-left transition-colors hover:bg-accent/50 ${
-        !notification.read ? "bg-accent/20" : ""
+    <div
+      className={`flex h-12 cursor-pointer items-center px-4 hover:bg-accent dark:hover:bg-[#25262A] ${
+        !notification.read ? "bg-accent/30" : ""
       }`}
     >
-      {/* Unread dot */}
-      <div className="flex shrink-0 pt-1.5">
-        <div
-          className={`size-2 rounded-full ${
-            !notification.read ? "bg-primary" : "bg-transparent"
+      {/* Type icon */}
+      <Tooltip>
+        <TooltipTrigger>
+          <div className="flex w-8 shrink-0 items-center justify-center">
+            <TypeIcon type={notification.type} />
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="text-xs">
+          {meta?.label ?? notification.type}
+        </TooltipContent>
+      </Tooltip>
+
+      {/* Title */}
+      <div className="flex w-56 shrink-0 items-center pr-4 lg:w-72">
+        <span
+          className={`truncate text-[13px] ${
+            !notification.read ? "font-medium text-foreground" : "text-foreground"
           }`}
-        />
+        >
+          {notification.title}
+        </span>
       </div>
 
-      {/* Content */}
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <div className="flex items-center gap-2">
-          <span
-            className={`text-sm leading-tight font-medium ${
-              !notification.read ? "text-foreground" : "text-muted-foreground"
-            }`}
-          >
-            {notification.title}
-          </span>
-          {meta && (
-            <Badge
-              variant="outline"
-              className={`shrink-0 text-[10px] ${meta.color}`}
-            >
-              {meta.label}
-            </Badge>
-          )}
-        </div>
-        <p className="truncate text-xs text-muted-foreground">
+      {/* Body / description preview */}
+      <div className="flex min-w-0 flex-1 items-center pr-4">
+        <span className="truncate text-[13px] text-muted-foreground">
           {notification.body}
-        </p>
+        </span>
       </div>
 
-      {/* Timestamp */}
-      <span className="shrink-0 text-[11px] text-muted-foreground/70">
-        {formatRelativeTime(notification.createdAt)}
-      </span>
-    </button>
+      {/* Time */}
+      <div className="flex w-16 shrink-0 items-center justify-end text-[11px] text-muted-foreground">
+        {timeAgo(notification.createdAt)}
+      </div>
+    </div>
   )
 }
