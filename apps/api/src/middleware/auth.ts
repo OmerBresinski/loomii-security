@@ -159,7 +159,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
 
   // Set context for downstream handlers
   c.set("user", user);
-  c.set("userId", user.id);
+  c.set("userId", dbUser.id);
   c.set("tenantId", tenant.id);
   c.set("role", dbUser.role);
 
