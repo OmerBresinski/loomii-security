@@ -1,3 +1,4 @@
+import type { IconSvgElement } from "@hugeicons/react"
 import {
   Shield01Icon,
   CheckListIcon,
@@ -48,7 +49,7 @@ export const findingTypeLabels: Record<string, string> = {
   OBSERVATION: "Observation",
 }
 
-export const findingTypeIcons: Record<string, any> = {
+export const findingTypeIcons: Record<string, IconSvgElement> = {
   THREAT: Shield01Icon,
   REQUIREMENT: CheckListIcon,
   MITIGATION: Wrench01Icon,

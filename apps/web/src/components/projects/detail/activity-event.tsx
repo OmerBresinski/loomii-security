@@ -1,4 +1,4 @@
-import { HugeiconsIcon } from "@hugeicons/react"
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import {
   Link01Icon,
   Unlink01Icon,
@@ -11,7 +11,7 @@ import type { ProjectActivity } from "@/queries/projects"
 // ─── Event Type Config ──────────────────────────────────────────────────────
 
 interface EventConfig {
-  icon: any
+  icon: IconSvgElement
   color: string
   label: (data: Record<string, unknown>) => string
 }

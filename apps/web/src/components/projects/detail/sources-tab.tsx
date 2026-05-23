@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { useProjectSources } from "@/queries/projects"
 import {
   useArchiveSource,
@@ -13,14 +12,13 @@ interface SourcesTabProps {
 }
 
 export function SourcesTab({ projectId }: SourcesTabProps) {
-  const [showArchived, setShowArchived] = useState(false)
+  const showArchived = false
 
   const { data: sourcesData, isPending } = useProjectSources(projectId)
   const archiveMutation = useArchiveSource(projectId)
   const unlinkMutation = useUnlinkSource(projectId)
 
   const sources = sourcesData?.sources ?? []
-  const archivedCount = sources.filter((s) => s.isArchived).length
 
   function handleArchive(sourceId: string, isArchived: boolean) {
     archiveMutation.mutate({ sourceId, isArchived })

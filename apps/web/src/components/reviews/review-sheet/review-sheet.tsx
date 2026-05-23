@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import {
   useReviewDetail,
@@ -31,10 +31,12 @@ export function ReviewSheet({
 
   // Reset finding view when review changes
   const prevReviewId = useRef(reviewId)
-  if (prevReviewId.current !== reviewId) {
-    prevReviewId.current = reviewId
-    setActiveFindingId(null)
-  }
+  useEffect(() => {
+    if (prevReviewId.current !== reviewId) {
+      prevReviewId.current = reviewId
+      setActiveFindingId(null)
+    }
+  }, [reviewId])
 
   const { data: review, isPending } = useReviewDetail(
     reviewId ?? "",

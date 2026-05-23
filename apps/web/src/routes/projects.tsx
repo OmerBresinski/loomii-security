@@ -18,7 +18,7 @@ export interface ProjectFilterState {
 
 export default function ProjectsPage() {
   const { data, isPending } = useProjects()
-  const projects = data?.projects ?? []
+  const projects = useMemo(() => data?.projects ?? [], [data?.projects])
 
   const [filters, setFilters] = useState<ProjectFilterState>({
     search: "",

@@ -1,7 +1,7 @@
 import Markdown from "react-markdown"
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { ReviewDetail, Finding } from "@/queries/reviews"
+import type { ReviewDetail } from "@/queries/reviews"
 import { RiskIcon } from "./risk-icon"
 import { ReviewStepper } from "./review-stepper"
 import { FindingListItem } from "./finding-list-item"

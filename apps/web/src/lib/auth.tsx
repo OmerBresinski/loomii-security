@@ -42,6 +42,7 @@ const defaultState: AuthState = {
 
 // ─── Context ────────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext<AuthState>(defaultState)
 
 // ─── Provider ───────────────────────────────────────────────────────────────
@@ -139,6 +140,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
  * Complete the auth flow by exchanging the one-time code for a session.
  * Returns user info on success, null on failure.
  */
+// eslint-disable-next-line react-refresh/only-export-components
 export async function completeAuthExchange(
   exchangeId: string
 ): Promise<{ user: AuthUser; organizationId: string | null } | null> {

@@ -206,13 +206,13 @@ interface ReviewsTabProps {
 }
 
 export function ReviewsTab({ projectId }: ReviewsTabProps) {
-  const [filters, setFilters] = useState<ReviewFilters>({})
+  const [filters] = useState<ReviewFilters>({})
   const { data, isPending } = useProjectReviews(projectId, filters)
   const queryClient = useQueryClient()
   const search = useSearch({ strict: false }) as Record<string, string | undefined>
   const navigate = useNavigate()
 
-  const reviews = data?.reviews ?? []
+  const reviews = useMemo(() => data?.reviews ?? [], [data?.reviews])
 
   // Active review from URL
   const activeReviewId = search.review ?? null
@@ -246,7 +246,7 @@ export function ReviewsTab({ projectId }: ReviewsTabProps) {
         search: {
           ...search,
           review: nextReviewId,
-        } as any,
+        } as Record<string, string | undefined>,
         replace: true,
       })
     },
@@ -254,9 +254,11 @@ export function ReviewsTab({ projectId }: ReviewsTabProps) {
   )
 
   const closeSheet = useCallback(() => {
-    const { review: _, ...rest } = search
+    const rest = Object.fromEntries(
+      Object.entries(search).filter(([key]) => key !== "review")
+    )
     navigate({
-      search: rest as any,
+      search: rest as Record<string, string | undefined>,
       replace: true,
     })
   }, [navigate, search])

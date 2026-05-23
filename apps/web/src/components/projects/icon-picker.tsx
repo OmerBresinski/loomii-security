@@ -57,7 +57,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { useUpdateProjectIcon, type ProjectIcon } from "@/stores/project-icons"
+import { useUpdateProjectIcon } from "@/stores/project-icons"
 
 // ─── Available Icons ────────────────────────────────────────────────────────
 
@@ -117,6 +117,7 @@ const ICON_OPTIONS = [
 ]
 
 // Build a lookup map for rendering by name
+// eslint-disable-next-line react-refresh/only-export-components
 export const ICON_MAP: Record<string, typeof Shield01Icon> = Object.fromEntries(
   ICON_OPTIONS.map((o) => [o.name, o.icon])
 )

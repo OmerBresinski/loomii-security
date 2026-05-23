@@ -11,7 +11,8 @@ export function ProjectSearch({ value, onChange }: ProjectSearchProps) {
 
   // Sync external changes
   useEffect(() => {
-    setLocalValue(value)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLocalValue((prev) => (prev !== value ? value : prev))
   }, [value])
 
   // Debounce: emit onChange 300ms after user stops typing

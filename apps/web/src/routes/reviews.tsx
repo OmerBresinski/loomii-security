@@ -44,7 +44,7 @@ export default function ReviewsPage() {
           ...(next.riskLevel && next.riskLevel.length > 0 ? { riskLevel: next.riskLevel.join(",") } : {}),
           ...(next.search ? { q: next.search } : {}),
           ...(current.review ? { review: current.review } : {}),
-        } as any,
+        } as Record<string, string | undefined>,
         replace: true,
       })
     },
@@ -60,7 +60,7 @@ export default function ReviewsPage() {
           ...(current.riskLevel ? { riskLevel: current.riskLevel } : {}),
           ...(q ? { q } : {}),
           ...(current.review ? { review: current.review } : {}),
-        } as any,
+        } as Record<string, string | undefined>,
         replace: true,
       })
     },
@@ -78,7 +78,7 @@ export default function ReviewsPage() {
           ...(current.riskLevel ? { riskLevel: current.riskLevel } : {}),
           ...(current.q ? { q: current.q } : {}),
           ...(nextReviewId ? { review: nextReviewId } : {}),
-        } as any,
+        } as Record<string, string | undefined>,
         replace: true,
       })
     },
@@ -92,7 +92,7 @@ export default function ReviewsPage() {
         ...(current.status ? { status: current.status } : {}),
         ...(current.riskLevel ? { riskLevel: current.riskLevel } : {}),
         ...(current.q ? { q: current.q } : {}),
-      } as any,
+      } as Record<string, string | undefined>,
       replace: true,
     })
   }, [navigate])
@@ -129,6 +129,7 @@ export default function ReviewsPage() {
   // Virtualizer
   const parentRef = useRef<HTMLDivElement>(null)
   const rowCount = allReviews.length
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: rowCount,
     getScrollElement: () => parentRef.current,
