@@ -54,15 +54,14 @@ export interface ReviewFilters {
 }
 
 export interface ProjectActivity {
-  id: string
-  type: string
-  description: string
-  createdAt: string
-  actor: string | null
+  type: "source_linked" | "source_unlinked" | "source_archived" | "review_generated" | "summary_updated"
+  timestamp: string
+  data: Record<string, unknown>
 }
 
 export interface ProjectActivityResponse {
-  activity: ProjectActivity[]
+  events: ProjectActivity[]
+  nextCursor: string | null
 }
 
 export interface SourceSearchResult {
@@ -155,15 +154,18 @@ export function projectReviewsQueryOptions(
   })
 }
 
-/** Activity feed for a project */
-export function projectActivityQueryOptions(projectId: string) {
+/** Activity feed for a project (cursor-paginated) */
+export function projectActivityQueryOptions(projectId: string, cursor?: string) {
+  const params = new URLSearchParams()
+  if (cursor) params.set("cursor", cursor)
+  const qs = params.toString()
+  const path = `/api/v1/projects/${projectId}/activity${qs ? `?${qs}` : ""}`
+
   return queryOptions({
-    queryKey: projectKeys.activity(projectId),
+    queryKey: [...projectKeys.activity(projectId), cursor] as const,
     queryFn: ({ signal }) =>
-      fetchApi<ProjectActivityResponse>(
-        `/api/v1/projects/${projectId}/activity`,
-        { signal }
-      ),
+      fetchApi<ProjectActivityResponse>(path, { signal }),
+    enabled: projectId.length > 0,
   })
 }
 
@@ -200,8 +202,8 @@ export function useProjectReviews(projectId: string, filters?: ReviewFilters) {
   return useQuery(projectReviewsQueryOptions(projectId, filters))
 }
 
-export function useProjectActivity(projectId: string) {
-  return useQuery(projectActivityQueryOptions(projectId))
+export function useProjectActivity(projectId: string, cursor?: string) {
+  return useQuery(projectActivityQueryOptions(projectId, cursor))
 }
 
 export function useSourceSearch(query: string, type?: string) {

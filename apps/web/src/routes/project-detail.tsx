@@ -6,6 +6,7 @@ import { ProjectHeader } from "@/components/projects/detail/project-header"
 import { OverviewTab } from "@/components/projects/detail/overview-tab"
 import { ReviewsTab } from "@/components/projects/detail/reviews-tab"
 import { SourcesTab } from "@/components/projects/detail/sources-tab"
+import { ActivityTab } from "@/components/projects/detail/activity-tab"
 
 const routeApi = getRouteApi("/projects/$projectId")
 
@@ -64,12 +65,7 @@ export default function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="activity" className="min-h-0 flex-1 overflow-y-auto pt-6">
-          <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-            <p className="text-sm font-medium">Activity</p>
-            <p className="text-xs text-muted-foreground">
-              Activity feed coming soon.
-            </p>
-          </div>
+          <ActivityTab projectId={projectId} />
         </TabsContent>
       </Tabs>
     </div>
