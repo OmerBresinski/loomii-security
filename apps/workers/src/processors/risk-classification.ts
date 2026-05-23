@@ -180,7 +180,7 @@ function createTimeout(ms: number): Promise<"TIMEOUT"> {
 
 /**
  * Publishes events based on classification result.
- * - CRITICAL -> review-generation queue + critical-alert event
+ * - CRITICAL -> review-generation queue + critical-alert event (with project data)
  * - HIGH/MEDIUM -> review-generation queue
  * - LOW -> dashboard event only (no review triggered)
  */
@@ -193,6 +193,14 @@ async function publishRiskEvents(
   const eventPromises: Promise<unknown>[] = [];
 
   if (classification.level === "CRITICAL") {
+    // Resolve project context for notification enrichment
+    const bundle = await db.contextBundle.findUnique({
+      where: { id: contextId },
+      select: { projectId: true, project: { select: { name: true } } },
+    });
+    const projectId = bundle?.projectId ?? null;
+    const projectName = bundle?.project?.name ?? null;
+
     // Trigger review + critical alert
     eventPromises.push(
       reviewQueue.add("review", {
@@ -203,11 +211,18 @@ async function publishRiskEvents(
       eventsQueue.add("critical-alert", {
         tenantId,
         eventType: "risk.critical",
-        data: { contextId, reasoning: classification.reasoning },
+        data: {
+          contextBundleId: contextId,
+          reasoning: classification.reasoning,
+          severity: classification.level,
+          reviewId: null, // Review hasn't been created yet at classification time
+          projectId,
+          projectName,
+        },
         timestamp: new Date().toISOString(),
       })
     );
-    childLogger.info("Enqueued review-generation + critical-alert");
+    childLogger.info({ projectId }, "Enqueued review-generation + critical-alert");
   } else if (
     classification.level === "HIGH" ||
     classification.level === "MEDIUM"

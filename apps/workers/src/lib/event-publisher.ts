@@ -49,6 +49,12 @@ export interface RiskEventPayload {
   sourceId?: string;
   /** The source type (linear_ticket, notion_page, etc.) */
   sourceType?: string;
+  /** The review ID (may be null if review hasn't been created yet) */
+  reviewId?: string | null;
+  /** Project association for notification enrichment */
+  projectId?: string | null;
+  /** Project name for notification templates */
+  projectName?: string | null;
 }
 
 export interface PublishResult {
@@ -100,6 +106,11 @@ export async function publishRiskEvents(
           reasoning: reasoning ?? null,
           sourceId: sourceId ?? null,
           sourceType: sourceType ?? null,
+          reviewId: payload.reviewId ?? null,
+          projectId: payload.projectId ?? null,
+          projectName: payload.projectName ?? null,
+          severity: riskLevel,
+          contextBundleId: bundleId,
         },
         timestamp,
       }),
