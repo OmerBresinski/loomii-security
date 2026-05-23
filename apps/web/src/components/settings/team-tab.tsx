@@ -46,20 +46,6 @@ export function TeamTab() {
     updateRoleMutation.mutate({ memberId, role: newRole })
   }
 
-  function handleInvite() {
-    if (!inviteEmail.trim()) return
-    inviteMutation.mutate(
-      { email: inviteEmail.trim(), role: inviteRole },
-      {
-        onSuccess: () => {
-          setInviteOpen(false)
-          setInviteEmail("")
-          setInviteRole("DEVELOPER")
-        },
-      }
-    )
-  }
-
   if (isPending) {
     return (
       <div className="max-w-2xl rounded-lg border border-border/50 bg-[#2C2D30] p-5">
@@ -79,96 +65,30 @@ export function TeamTab() {
   }
 
   return (
-    <>
-      <div className="max-w-2xl">
-        {/* Invite button row */}
-        <div className="mb-3 flex justify-end">
-          <Button size="sm" onClick={() => setInviteOpen(true)}>
-            Invite member
-          </Button>
-        </div>
-
-        {/* Members list */}
-        <div className="rounded-lg border border-border/50 bg-[#2C2D30]">
-          {members.length === 0 ? (
-            <div className="px-5 py-8">
-              <p className="text-center text-sm text-muted-foreground">
-                No team members found.
-              </p>
-            </div>
-          ) : (
-            members.map((member, i) => (
-              <div key={member.id}>
-                {i > 0 && <Separator className="opacity-50" />}
-                <MemberRow
-                  member={member}
-                  adminCount={adminCount}
-                  currentUserId={user?.id ?? ""}
-                  onRoleChange={handleRoleChange}
-                />
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Invite Dialog */}
-      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Invite team member</DialogTitle>
-            <DialogDescription>
-              Send an invitation to join your organization.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex flex-col gap-4 py-4">
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium" htmlFor="invite-email">
-                Email
-              </label>
-              <Input
-                id="invite-email"
-                type="email"
-                placeholder="colleague@company.com"
-                value={inviteEmail}
-                onChange={(e) => setInviteEmail(e.target.value)}
+    <div className="max-w-2xl">
+      {/* Members list */}
+      <div className="rounded-lg border border-border/50 bg-[#2C2D30]">
+        {members.length === 0 ? (
+          <div className="px-5 py-8">
+            <p className="text-center text-sm text-muted-foreground">
+              No team members found.
+            </p>
+          </div>
+        ) : (
+          members.map((member, i) => (
+            <div key={member.id}>
+              {i > 0 && <Separator className="opacity-50" />}
+              <MemberRow
+                member={member}
+                adminCount={adminCount}
+                currentUserId={user?.id ?? ""}
+                onRoleChange={handleRoleChange}
               />
             </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium" htmlFor="invite-role">
-                Role
-              </label>
-              <Select
-                value={inviteRole}
-                onValueChange={(v) => setInviteRole(v as UserRole)}
-              >
-                <SelectTrigger id="invite-role">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROLE_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setInviteOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleInvite}
-              disabled={!inviteEmail.trim() || inviteMutation.isPending}
-            >
-              {inviteMutation.isPending ? "Sending..." : "Send invite"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+          ))
+        )}
+      </div>
+    </div>
   )
 }
 
