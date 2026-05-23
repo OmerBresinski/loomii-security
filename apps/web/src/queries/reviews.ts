@@ -13,6 +13,7 @@ export interface Review {
   id: string
   eventId: string
   status: "ASSEMBLING" | "READY" | "REVIEWING" | "COMPLETED" | "FAILED"
+  reviewStatus: "PENDING" | "GENERATING" | "DRAFT" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "PUBLISHED" | null
   riskLevel: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFO" | null
   title: string | null
   summary: string | null

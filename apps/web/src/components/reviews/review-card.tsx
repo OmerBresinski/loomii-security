@@ -4,6 +4,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { ProjectBadge } from "@/components/reviews/project-badge"
+import { ReviewStatusIcon } from "@/components/reviews/review-status-icon"
 import type { Review } from "@/queries/reviews"
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -100,89 +101,6 @@ function RiskIcon({ level }: { level: string }) {
   )
 }
 
-// ─── Status Icons ───────────────────────────────────────────────────────────
-
-const statusLabels: Record<string, string> = {
-  ASSEMBLING: "Assembling",
-  READY: "Todo",
-  REVIEWING: "In Review",
-  COMPLETED: "Done",
-  FAILED: "Failed",
-}
-
-function StatusIcon({ status }: { status: string }) {
-  switch (status) {
-    case "COMPLETED":
-      return (
-        <svg width="15" height="15" viewBox="0 0 16 16">
-          <circle cx="8" cy="8" r="7" fill="oklch(0.55 0.2 260)" />
-          <path
-            d="M5 8l2 2 4-4"
-            stroke="white"
-            strokeWidth="1.5"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      )
-    case "FAILED":
-      return (
-        <svg width="15" height="15" viewBox="0 0 16 16">
-          <circle cx="8" cy="8" r="7" fill="oklch(0.5 0 0)" />
-          <path
-            d="M6 6l4 4M10 6l-4 4"
-            stroke="white"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-        </svg>
-      )
-    case "REVIEWING":
-      return (
-        <svg width="15" height="15" viewBox="0 0 16 16">
-          <circle
-            cx="8"
-            cy="8"
-            r="6.5"
-            fill="none"
-            stroke="oklch(0.65 0.2 330)"
-            strokeWidth="1.5"
-          />
-          <path d="M8 1.5 A6.5 6.5 0 0 1 8 14.5" fill="oklch(0.65 0.2 330)" />
-        </svg>
-      )
-    case "READY":
-      return (
-        <svg width="15" height="15" viewBox="0 0 16 16">
-          <circle
-            cx="8"
-            cy="8"
-            r="6.5"
-            fill="none"
-            stroke="oklch(0.55 0 0)"
-            strokeWidth="1.5"
-          />
-        </svg>
-      )
-    case "ASSEMBLING":
-    default:
-      return (
-        <svg width="15" height="15" viewBox="0 0 16 16">
-          <circle
-            cx="8"
-            cy="8"
-            r="6.5"
-            fill="none"
-            stroke="oklch(0.45 0 0)"
-            strokeWidth="1.5"
-            strokeDasharray="2.5 2"
-          />
-        </svg>
-      )
-  }
-}
-
 // ─── Source ─────────────────────────────────────────────────────────────────
 
 const sourceFavicons: Record<string, string> = {
@@ -228,16 +146,7 @@ export function ReviewRow({ review }: ReviewRowProps) {
       </div>
 
       {/* Status */}
-      <Tooltip>
-        <TooltipTrigger>
-          <div className="flex w-8 shrink-0 items-center justify-center">
-            <StatusIcon status={review.status} />
-          </div>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="text-xs">
-          {statusLabels[review.status] ?? review.status}
-        </TooltipContent>
-      </Tooltip>
+      <ReviewStatusIcon status={review.reviewStatus} />
 
       {/* Title */}
       <div className="flex min-w-0 flex-1 items-center pr-4 pl-2">

@@ -6,7 +6,11 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { Badge } from "@/components/ui/badge"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Skeleton } from "@/components/ui/skeleton"
 import { FindingRow } from "@/components/reviews/finding-row"
 import {
@@ -52,48 +56,164 @@ function seedCacheFromList(
   }
 }
 
-// ─── Risk Badge ─────────────────────────────────────────────────────────────
+// ─── Risk Icon (matches list row icons) ─────────────────────────────────────
 
-function RiskBadge({ level }: { level: string | null }) {
+const riskLabels: Record<string, string> = {
+  CRITICAL: "Critical",
+  HIGH: "High",
+  MEDIUM: "Medium",
+  LOW: "Low",
+  INFO: "Info",
+}
+
+function RiskIcon({ level }: { level: string | null }) {
   if (!level) return null
 
-  const colorMap: Record<string, string> = {
-    CRITICAL: "bg-red-500/10 text-red-600 dark:text-red-400",
-    HIGH: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
-    MEDIUM: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
-    LOW: "bg-green-500/10 text-green-600 dark:text-green-400",
-    INFO: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
+  if (level === "CRITICAL") {
+    return (
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 16 16"
+        className="text-muted-foreground text-primary/60 dark:text-muted-foreground"
+      >
+        <rect width="16" height="16" rx="3" fill="currentColor" />
+        <text
+          x="8"
+          y="12"
+          textAnchor="middle"
+          fontSize="11"
+          fontWeight="bold"
+          fill="var(--background)"
+        >
+          !
+        </text>
+      </svg>
+    )
   }
 
+  const activeBars =
+    level === "HIGH" ? 3 : level === "MEDIUM" ? 2 : level === "LOW" ? 1 : 0
   return (
-    <Badge
-      variant="secondary"
-      className={`h-5 text-[10px] ${colorMap[level] ?? ""}`}
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      className="text-primary/60 dark:text-muted-foreground"
     >
-      {level}
-    </Badge>
+      <rect x="2" y="10" width="3" height="5" rx="0.5" fill="currentColor" opacity={activeBars >= 1 ? 1 : 0.3} />
+      <rect x="6.5" y="6" width="3" height="9" rx="0.5" fill="currentColor" opacity={activeBars >= 2 ? 1 : 0.3} />
+      <rect x="11" y="2" width="3" height="13" rx="0.5" fill="currentColor" opacity={activeBars >= 3 ? 1 : 0.3} />
+    </svg>
   )
 }
 
-// ─── Review Status Indicator (shown when already triaged) ───────────────────
+// ─── Review Status Stepper ──────────────────────────────────────────────────
 
-function ReviewStatusIndicator({ status }: { status: string | null }) {
+const REVIEW_STEPS = [
+  { key: "DRAFT", label: "Draft" },
+  { key: "IN_REVIEW", label: "Review" },
+  { key: "APPROVED", label: "Approved" },
+  { key: "PUBLISHED", label: "Published" },
+] as const
+
+function ReviewStepper({
+  status,
+  onAdvance,
+  onReject,
+  isUpdating,
+}: {
+  status: string | null
+  onAdvance?: (nextStatus: string) => void
+  onReject?: () => void
+  isUpdating?: boolean
+}) {
   if (!status) return null
 
-  const config: Record<string, { label: string; className: string }> = {
-    APPROVED: { label: "Approved", className: "text-green-500 bg-green-500/10" },
-    PUBLISHED: { label: "Published", className: "text-green-500 bg-green-500/10" },
-    REJECTED: { label: "Rejected", className: "text-red-400 bg-red-500/10" },
-    PENDING: { label: "Pending", className: "text-muted-foreground bg-muted" },
-    GENERATING: { label: "Generating", className: "text-muted-foreground bg-muted" },
+  if (status === "REJECTED") {
+    return (
+      <div className="flex items-center gap-2">
+        <span className="rounded-md bg-red-500/10 px-2.5 py-1 text-[11px] font-medium text-red-400">
+          Rejected
+        </span>
+      </div>
+    )
   }
 
-  const c = config[status] ?? { label: status, className: "text-muted-foreground bg-muted" }
+  const currentIdx = REVIEW_STEPS.findIndex((s) => s.key === status)
+
+  // Determine the contextual action for the current step
+  const action =
+    status === "DRAFT"
+      ? { label: "Start Review", next: "IN_REVIEW" }
+      : status === "IN_REVIEW"
+        ? { label: "Approve", next: "APPROVED" }
+        : status === "APPROVED"
+          ? { label: "Publish", next: "PUBLISHED" }
+          : null
 
   return (
-    <span className={`rounded-md px-2 py-0.5 text-[10px] font-medium ${c.className}`}>
-      {c.label}
-    </span>
+    <div className="flex min-h-[28px] w-full items-center gap-3">
+      {/* Dot stepper */}
+      <div className="flex flex-1 items-center">
+        {REVIEW_STEPS.map((step, idx) => {
+          const isCompleted = idx < currentIdx
+          const isCurrent = idx === currentIdx
+
+          const dotColor = isCompleted
+            ? "bg-[oklch(0.72_0.12_155)]"
+            : isCurrent
+              ? "bg-[oklch(0.72_0.12_280)]"
+              : "bg-muted-foreground/20"
+
+          const textColor = isCompleted
+            ? "text-[oklch(0.72_0.12_155)]"
+            : isCurrent
+              ? "text-[oklch(0.72_0.12_280)]"
+              : "text-muted-foreground/40"
+
+          const lineColor = isCompleted
+            ? "bg-[oklch(0.72_0.12_155)]/40"
+            : "bg-muted-foreground/15"
+
+          return (
+            <div key={step.key} className="flex flex-1 items-center">
+              <div className="flex items-center gap-2">
+                <div className={`size-2.5 rounded-full ${dotColor}`} />
+                <span className={`text-[12px] font-medium ${textColor}`}>
+                  {step.label}
+                </span>
+              </div>
+              {idx < REVIEW_STEPS.length - 1 && (
+                <div className={`mx-3 h-px flex-1 ${lineColor}`} />
+              )}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* Contextual action buttons */}
+      {action && (
+        <div className="flex shrink-0 items-center gap-1.5">
+          <button
+            onClick={() => onAdvance?.(action.next)}
+            disabled={isUpdating}
+            className="rounded-md border border-border bg-transparent px-2.5 py-1 text-[11px] font-medium text-foreground/70 transition-colors hover:border-[oklch(0.72_0.12_155)]/50 hover:text-[oklch(0.72_0.12_155)] disabled:opacity-50"
+          >
+            {action.label}
+          </button>
+          {status === "IN_REVIEW" && (
+            <button
+              onClick={onReject}
+              disabled={isUpdating}
+              className="rounded-md border border-border bg-transparent px-2.5 py-1 text-[11px] font-medium text-foreground/70 transition-colors hover:border-[oklch(0.7_0.12_15)]/50 hover:text-[oklch(0.7_0.12_15)] disabled:opacity-50"
+            >
+              Reject
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -131,11 +251,11 @@ export function ReviewSheet({
     findingMutation.mutate({ findingId, status })
   }
 
-  function handleApprove() {
+  function handleAdvance(nextStatus: string) {
     if (!review?.reviewId) return
     reviewStatusMutation.mutate({
       reviewDbId: review.reviewId,
-      status: "APPROVED",
+      status: nextStatus as "APPROVED" | "REJECTED",
     })
   }
 
@@ -165,7 +285,16 @@ export function ReviewSheet({
                 )}
               </SheetTitle>
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                {review && <RiskBadge level={review.riskLevel} />}
+                {review?.riskLevel && (
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <RiskIcon level={review.riskLevel} />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      {riskLabels[review.riskLevel]}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
                 {review?.externalId && (
                   <span className="text-[10px] text-muted-foreground uppercase">
                     {review.externalId}
@@ -177,27 +306,13 @@ export function ReviewSheet({
 
           {/* Review-level actions */}
           {review?.reviewId && (
-            <div className="mt-3 flex items-center gap-2">
-              {review.reviewStatus === "DRAFT" || review.reviewStatus === "IN_REVIEW" ? (
-                <>
-                  <button
-                    onClick={handleApprove}
-                    disabled={reviewStatusMutation.isPending}
-                    className="rounded-md border border-border bg-transparent px-2.5 py-1 text-[11px] font-medium text-foreground/80 transition-colors hover:border-green-500/40 hover:text-green-500 disabled:opacity-50"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    onClick={handleReject}
-                    disabled={reviewStatusMutation.isPending}
-                    className="rounded-md border border-border bg-transparent px-2.5 py-1 text-[11px] font-medium text-foreground/80 transition-colors hover:border-red-500/40 hover:text-red-500 disabled:opacity-50"
-                  >
-                    Reject
-                  </button>
-                </>
-              ) : (
-                <ReviewStatusIndicator status={review.reviewStatus} />
-              )}
+            <div className="mt-3">
+              <ReviewStepper
+                status={review.reviewStatus}
+                onAdvance={handleAdvance}
+                onReject={handleReject}
+                isUpdating={reviewStatusMutation.isPending}
+              />
             </div>
           )}
         </SheetHeader>
@@ -207,10 +322,7 @@ export function ReviewSheet({
           {/* Summary */}
           {review?.summary && (
             <div className="mb-6">
-              <h4 className="mb-2 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                Summary
-              </h4>
-              <div className="prose prose-sm prose-neutral dark:prose-invert max-w-none text-[13px] leading-relaxed text-foreground/90 prose-p:my-2 prose-ul:my-2 prose-ol:my-2 prose-li:my-0.5 prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:text-[12px] prose-pre:bg-muted prose-pre:rounded-md prose-pre:text-[12px] prose-headings:text-sm prose-headings:font-medium">
+              <div className="prose prose-sm max-w-none text-[13px] leading-relaxed text-foreground/90 prose-neutral dark:prose-invert prose-headings:text-sm prose-headings:font-medium prose-p:my-2 prose-code:rounded prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:text-[12px] prose-pre:rounded-md prose-pre:bg-muted prose-pre:text-[12px] prose-ol:my-2 prose-ul:my-2 prose-li:my-0.5">
                 <Markdown>{review.summary}</Markdown>
               </div>
             </div>

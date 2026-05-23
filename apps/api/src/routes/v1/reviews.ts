@@ -99,7 +99,8 @@ reviewRoutes.get("/", async (c) => {
         },
       },
       review: {
-        include: {
+        select: {
+          status: true,
           _count: {
             select: { findings: true },
           },
@@ -116,6 +117,7 @@ reviewRoutes.get("/", async (c) => {
     id: bundle.id,
     eventId: bundle.eventId,
     status: bundle.status,
+    reviewStatus: bundle.review?.status ?? null,
     riskLevel: bundle.riskLevel,
     title: bundle.title,
     summary: bundle.summary,

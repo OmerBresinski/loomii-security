@@ -24,6 +24,7 @@ export interface ProjectSourcesResponse {
 export interface ProjectReview {
   id: string
   status: "ASSEMBLING" | "READY" | "REVIEWING" | "COMPLETED" | "FAILED"
+  reviewStatus: string | null
   riskLevel: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | "INFO" | null
   title: string | null
   summary: string | null

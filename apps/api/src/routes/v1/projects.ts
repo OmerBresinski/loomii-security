@@ -739,6 +739,7 @@ projectRoutes.get("/:id/reviews", async (c) => {
       id: bundle.id,
       reviewId: bundle.review!.id,
       status: bundle.status,
+      reviewStatus: bundle.review!.status,
       riskLevel: bundle.riskLevel,
       severity: bundle.review!.severity,
       summary: bundle.review!.summary,
