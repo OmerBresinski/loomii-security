@@ -139,23 +139,25 @@ export default function ReviewsPage() {
 
   const virtualItems = virtualizer.getVirtualItems()
 
-  // Infinite scroll: fetch next page when user scrolls near the bottom
+  // Infinite scroll: use IntersectionObserver on a sentinel element
+  const sentinelRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!hasNextPage || isFetchingNextPage) return
 
-    const scrollEl = parentRef.current
-    if (!scrollEl) return
+    const sentinel = sentinelRef.current
+    if (!sentinel) return
 
-    function onScroll() {
-      if (!scrollEl || !hasNextPage || isFetchingNextPage) return
-      const { scrollTop, scrollHeight, clientHeight } = scrollEl
-      if (scrollHeight - scrollTop - clientHeight < 200) {
-        fetchNextPage()
-      }
-    }
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          fetchNextPage()
+        }
+      },
+      { root: parentRef.current, rootMargin: "200px" }
+    )
 
-    scrollEl.addEventListener("scroll", onScroll, { passive: true })
-    return () => scrollEl.removeEventListener("scroll", onScroll)
+    observer.observe(sentinel)
+    return () => observer.disconnect()
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
   // ─── Render ─────────────────────────────────────────────────────────────
@@ -217,6 +219,8 @@ export default function ReviewsPage() {
                 Loading more...
               </div>
             )}
+            {/* Sentinel element for IntersectionObserver infinite scroll */}
+            <div ref={sentinelRef} aria-hidden className="h-px" />
           </div>
         </div>
       )}

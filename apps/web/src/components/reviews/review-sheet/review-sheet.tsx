@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState } from "react"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
 import {
   useReviewDetail,
@@ -27,24 +27,39 @@ export function ReviewSheet({
   onClose,
 }: ReviewSheetProps) {
   const isOpen = !!reviewId
+
+  return (
+    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <SheetContent
+        side="right"
+        className="w-[40vw] overflow-hidden sm:max-w-none dark:bg-[#2C2D30]"
+      >
+        {reviewId && (
+          <ReviewSheetContent
+            key={reviewId}
+            reviewId={reviewId}
+            listReview={listReview}
+          />
+        )}
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+// ─── Inner Content (keyed by reviewId to auto-reset state) ──────────────────
+
+interface ReviewSheetContentProps {
+  reviewId: string
+  listReview?: Review | null
+}
+
+function ReviewSheetContent({ reviewId, listReview }: ReviewSheetContentProps) {
   const [activeFindingId, setActiveFindingId] = useState<string | null>(null)
 
-  // Reset finding view when review changes
-  const prevReviewId = useRef(reviewId)
-  useEffect(() => {
-    if (prevReviewId.current !== reviewId) {
-      prevReviewId.current = reviewId
-      setActiveFindingId(null)
-    }
-  }, [reviewId])
+  const { data: review, isPending } = useReviewDetail(reviewId, listReview)
 
-  const { data: review, isPending } = useReviewDetail(
-    reviewId ?? "",
-    listReview
-  )
-
-  const findingMutation = useUpdateFindingStatus(reviewId ?? "")
-  const reviewStatusMutation = useUpdateReviewStatus(reviewId ?? "")
+  const findingMutation = useUpdateFindingStatus(reviewId)
+  const reviewStatusMutation = useUpdateReviewStatus(reviewId)
 
   function handleFindingStatusChange(
     findingId: string,
@@ -73,33 +88,24 @@ export function ReviewSheet({
     ? (review?.findings.find((f) => f.id === activeFindingId) ?? null)
     : null
 
-  return (
-    <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <SheetContent
-        side="right"
-        className="w-[40vw] overflow-hidden sm:max-w-none dark:bg-[#2C2D30]"
-      >
-        {activeFinding ? (
-          <FindingDetailView
-            finding={activeFinding}
-            onBack={() => setActiveFindingId(null)}
-            onStatusChange={handleFindingStatusChange}
-            isUpdating={
-              findingMutation.isPending &&
-              findingMutation.variables?.findingId === activeFinding.id
-            }
-          />
-        ) : (
-          <ReviewSummaryView
-            review={review}
-            isPending={isPending}
-            onAdvance={handleAdvance}
-            onReject={handleReject}
-            isStatusUpdating={reviewStatusMutation.isPending}
-            onFindingClick={setActiveFindingId}
-          />
-        )}
-      </SheetContent>
-    </Sheet>
+  return activeFinding ? (
+    <FindingDetailView
+      finding={activeFinding}
+      onBack={() => setActiveFindingId(null)}
+      onStatusChange={handleFindingStatusChange}
+      isUpdating={
+        findingMutation.isPending &&
+        findingMutation.variables?.findingId === activeFinding.id
+      }
+    />
+  ) : (
+    <ReviewSummaryView
+      review={review}
+      isPending={isPending}
+      onAdvance={handleAdvance}
+      onReject={handleReject}
+      isStatusUpdating={reviewStatusMutation.isPending}
+      onFindingClick={setActiveFindingId}
+    />
   )
 }
