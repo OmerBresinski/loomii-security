@@ -1,16 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { fetchApi } from "@/lib/api-client"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   useNotifications,
-  notificationKeys,
   type NotificationFilters,
   type NotificationItem,
 } from "@/queries/notifications"
+import { useMarkAsRead, useMarkAllAsRead } from "@/mutations/notifications"
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -80,23 +78,6 @@ function formatRelativeTime(dateStr: string): string {
   })
 }
 
-// ─── Mark All Read Mutation ─────────────────────────────────────────────────
-
-function useMarkAllRead() {
-  const queryClient = useQueryClient()
-
-  return useMutation({
-    mutationKey: ["notifications", "mark-all-read"],
-    mutationFn: () =>
-      fetchApi<{ success: boolean }>("/api/v1/notifications/read-all", {
-        method: "POST",
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: notificationKeys.all })
-    },
-  })
-}
-
 // ─── Page ───────────────────────────────────────────────────────────────────
 
 export default function NotificationsPage() {
@@ -123,7 +104,10 @@ export default function NotificationsPage() {
   )
 
   // Mark all read mutation
-  const markAllRead = useMarkAllRead()
+  const markAllRead = useMarkAllAsRead()
+
+  // Mark single as read mutation
+  const markAsRead = useMarkAsRead()
 
   // Infinite scroll sentinel
   const parentRef = useRef<HTMLDivElement>(null)
@@ -148,14 +132,17 @@ export default function NotificationsPage() {
     return () => observer.disconnect()
   }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
-  // Click handler — navigate to linkUrl
+  // Click handler — mark as read + navigate to linkUrl
   const handleClick = useCallback(
     (notification: NotificationItem) => {
+      if (!notification.read) {
+        markAsRead.mutate(notification.id)
+      }
       if (notification.linkUrl) {
         navigate({ to: notification.linkUrl })
       }
     },
-    [navigate]
+    [navigate, markAsRead]
   )
 
   // ─── Render ─────────────────────────────────────────────────────────────
