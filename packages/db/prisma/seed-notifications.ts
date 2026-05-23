@@ -25,163 +25,87 @@ interface NotificationSeed {
   hoursAgo: number;
 }
 
-const NOTIFICATIONS: NotificationSeed[] = [
-  // Critical / high-risk notifications (unread)
-  {
-    type: "high_risk_detected",
-    title: "High risk detected",
-    body: "A critical severity issue was identified in 'Payment Service Redesign'",
-    linkUrl: "/reviews",
-    projectId: "proj_payment_service",
-    read: false,
-    hoursAgo: 0.5,
-  },
-  {
-    type: "high_risk_detected",
-    title: "High risk detected",
-    body: "A high severity issue was identified in 'User Authentication Overhaul'",
-    linkUrl: "/reviews",
-    projectId: "proj_auth_overhaul",
-    read: false,
-    hoursAgo: 2,
-  },
+// ─── Generate many notifications for infinite scroll testing ────────────────
 
-  // Review completed notifications (mix of read/unread)
-  {
-    type: "review_completed",
-    title: "Security review completed",
-    body: "Review for 'Payment Service Redesign' found 4 finding(s)",
-    linkUrl: "/reviews",
-    projectId: "proj_payment_service",
-    read: false,
-    hoursAgo: 1,
-  },
-  {
-    type: "review_completed",
-    title: "Security review completed",
-    body: "Review for 'User Authentication Overhaul' found 3 finding(s)",
-    linkUrl: "/reviews",
-    projectId: "proj_auth_overhaul",
-    read: false,
-    hoursAgo: 3,
-  },
-  {
-    type: "review_completed",
-    title: "Security review completed",
-    body: "Review for 'Notion Integration v2' found 2 finding(s)",
-    linkUrl: "/reviews",
-    projectId: "proj_notion_v2",
-    read: true,
-    hoursAgo: 8,
-  },
-  {
-    type: "review_completed",
-    title: "Security review completed",
-    body: "Review for 'API Rate Limiting & Abuse Prevention' found 3 finding(s)",
-    linkUrl: "/reviews",
-    projectId: "proj_rate_limiting",
-    read: true,
-    hoursAgo: 18,
-  },
-
-  // Source linked notifications
-  {
-    type: "source_linked",
-    title: "Source linked",
-    body: "A Linear issue was linked to 'Payment Service Redesign'",
-    linkUrl: "/projects",
-    projectId: "proj_payment_service",
-    read: false,
-    hoursAgo: 4,
-  },
-  {
-    type: "source_linked",
-    title: "Source linked",
-    body: "A Notion page was linked to 'User Authentication Overhaul'",
-    linkUrl: "/projects",
-    projectId: "proj_auth_overhaul",
-    read: true,
-    hoursAgo: 12,
-  },
-  {
-    type: "source_linked",
-    title: "Source linked",
-    body: "A Linear issue was linked to 'API Rate Limiting & Abuse Prevention'",
-    linkUrl: "/projects",
-    projectId: "proj_rate_limiting",
-    read: true,
-    hoursAgo: 26,
-  },
-
-  // Source archived notifications
-  {
-    type: "source_archived",
-    title: "Source archived",
-    body: "A Notion page was archived from 'Internal Admin Dashboard'",
-    linkUrl: "/projects",
-    projectId: "proj_admin_dashboard",
-    read: true,
-    hoursAgo: 36,
-  },
-
-  // Summary updated notifications
-  {
-    type: "summary_updated",
-    title: "Project summary updated",
-    body: "'Payment Service Redesign' summary has been regenerated",
-    linkUrl: "/projects",
-    projectId: "proj_payment_service",
-    read: false,
-    hoursAgo: 5,
-  },
-  {
-    type: "summary_updated",
-    title: "Project summary updated",
-    body: "'Notion Integration v2' summary has been regenerated",
-    linkUrl: "/projects",
-    projectId: "proj_notion_v2",
-    read: true,
-    hoursAgo: 14,
-  },
-  {
-    type: "summary_updated",
-    title: "Project summary updated",
-    body: "'User Authentication Overhaul' summary has been regenerated",
-    linkUrl: "/projects",
-    projectId: "proj_auth_overhaul",
-    read: true,
-    hoursAgo: 48,
-  },
-
-  // Older read notifications for history
-  {
-    type: "review_completed",
-    title: "Security review completed",
-    body: "Review for 'Internal Admin Dashboard' found 2 finding(s)",
-    linkUrl: "/reviews",
-    projectId: "proj_admin_dashboard",
-    read: true,
-    hoursAgo: 72,
-  },
-  {
-    type: "high_risk_detected",
-    title: "High risk detected",
-    body: "A critical severity issue was identified in 'API Rate Limiting & Abuse Prevention'",
-    linkUrl: "/reviews",
-    projectId: "proj_rate_limiting",
-    read: true,
-    hoursAgo: 96,
-  },
-  {
-    type: "source_linked",
-    title: "Source linked",
-    body: "A Linear issue was linked to 'Notion Integration v2'",
-    linkUrl: "/projects",
-    projectId: "proj_notion_v2",
-    read: true,
-    hoursAgo: 120,
-  },
+const PROJECT_IDS = [
+  "proj_payment_service",
+  "proj_auth_overhaul",
+  "proj_notion_v2",
+  "proj_rate_limiting",
+  "proj_admin_dashboard",
 ];
+
+const PROJECT_NAMES: Record<string, string> = {
+  proj_payment_service: "Payment Service Redesign",
+  proj_auth_overhaul: "User Authentication Overhaul",
+  proj_notion_v2: "Notion Integration v2",
+  proj_rate_limiting: "API Rate Limiting & Abuse Prevention",
+  proj_admin_dashboard: "Internal Admin Dashboard",
+};
+
+const SOURCES = ["Linear issue", "Notion page", "GitHub PR"];
+
+function generateNotifications(): NotificationSeed[] {
+  const notifications: NotificationSeed[] = [];
+  let hoursAgo = 0.3;
+
+  for (let i = 0; i < 120; i++) {
+    const type = NOTIFICATION_TYPES[i % NOTIFICATION_TYPES.length];
+    const projectId = PROJECT_IDS[i % PROJECT_IDS.length];
+    const projectName = PROJECT_NAMES[projectId];
+    const source = SOURCES[i % SOURCES.length];
+    const read = i > 8; // first ~9 are unread
+
+    let title: string;
+    let body: string;
+    let linkUrl: string;
+
+    switch (type) {
+      case "review_completed":
+        title = "Security review completed";
+        body = `Review for '${projectName}' found ${(i % 7) + 1} finding(s)`;
+        linkUrl = "/reviews";
+        break;
+      case "high_risk_detected":
+        title = "High risk detected";
+        body = `A ${i % 2 === 0 ? "critical" : "high"} severity issue was identified in '${projectName}'`;
+        linkUrl = "/reviews";
+        break;
+      case "source_linked":
+        title = "Source linked";
+        body = `A ${source} was linked to '${projectName}'`;
+        linkUrl = "/projects";
+        break;
+      case "source_archived":
+        title = "Source archived";
+        body = `A ${source} was archived from '${projectName}'`;
+        linkUrl = "/projects";
+        break;
+      case "summary_updated":
+        title = "Project summary updated";
+        body = `'${projectName}' summary has been regenerated with new findings`;
+        linkUrl = "/projects";
+        break;
+    }
+
+    notifications.push({
+      type,
+      title,
+      body,
+      linkUrl,
+      projectId,
+      read,
+      hoursAgo,
+    });
+
+    // Increment time gap (accelerating into the past)
+    hoursAgo += 0.5 + Math.random() * 2 + (i > 30 ? 3 : 0);
+  }
+
+  return notifications;
+}
+
+const NOTIFICATIONS: NotificationSeed[] = generateNotifications();
 
 async function main() {
   console.log("=== Seeding Notifications ===\n");
