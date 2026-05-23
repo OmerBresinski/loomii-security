@@ -129,9 +129,28 @@ export function useReviews(filters: ReviewFilters) {
   return useInfiniteQuery(reviewsInfiniteQueryOptions(filters))
 }
 
-export function useReviewDetail(reviewId: string) {
+export function useReviewDetail(reviewId: string, listReview?: Review | null) {
   return useQuery({
     ...reviewDetailQueryOptions(reviewId),
-    placeholderData: keepPreviousData,
+    placeholderData: (previousData) => {
+      // Prefer keeping previous detail data while refetching
+      if (previousData) return previousData
+      // Fall back to list-level data so the header renders instantly
+      if (!listReview) return undefined
+      return {
+        id: listReview.id,
+        status: listReview.status,
+        riskLevel: listReview.riskLevel,
+        title: listReview.title,
+        summary: listReview.summary,
+        confidence: null,
+        source: listReview.source,
+        externalId: listReview.externalId,
+        reviewId: null,
+        reviewStatus: null,
+        createdAt: listReview.createdAt,
+        findings: [],
+      } satisfies ReviewDetail
+    },
   })
 }

@@ -48,7 +48,6 @@ export default function ProjectDetailPage() {
             <TabsTrigger value="reviews">Reviews</TabsTrigger>
           </div>
           <TabsTrigger value="activity">Activity</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="min-h-0 flex-1 overflow-y-auto pt-6">
@@ -73,15 +72,6 @@ export default function ProjectDetailPage() {
             <p className="text-sm font-medium">Activity</p>
             <p className="text-xs text-muted-foreground">
               Activity feed coming soon.
-            </p>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="settings" className="min-h-0 flex-1 overflow-y-auto pt-6">
-          <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-            <p className="text-sm font-medium">Settings</p>
-            <p className="text-xs text-muted-foreground">
-              Project settings coming soon.
             </p>
           </div>
         </TabsContent>
