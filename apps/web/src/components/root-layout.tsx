@@ -1,5 +1,10 @@
 import React, { useState } from "react"
-import { Outlet, Link, useRouterState, useNavigate } from "@tanstack/react-router"
+import {
+  Outlet,
+  Link,
+  useRouterState,
+  useNavigate,
+} from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
@@ -71,8 +76,18 @@ const workspaceItems: NavItem[] = [
 ]
 
 const governanceItems: NavItem[] = [
-  { title: "Policies", href: "/policies", icon: ShieldKeyIcon, roles: ["ADMIN", "SECURITY_LEAD"] },
-  { title: "Metrics", href: "/metrics", icon: ChartLineData01Icon, roles: ["ADMIN", "SECURITY_LEAD"] },
+  {
+    title: "Policies",
+    href: "/policies",
+    icon: ShieldKeyIcon,
+    roles: ["ADMIN", "SECURITY_LEAD"],
+  },
+  {
+    title: "Metrics",
+    href: "/metrics",
+    icon: ChartLineData01Icon,
+    roles: ["ADMIN", "SECURITY_LEAD"],
+  },
 ]
 
 /** Map route segments to display labels */
@@ -110,12 +125,16 @@ function AppBreadcrumb() {
           let label: string
           if (segments[index - 1] === "projects" && segment !== "new") {
             // This is a projectId segment — look up the name from cache
-            const cached = queryClient.getQueryData<{ name: string }>(["projects", segment])
+            const cached = queryClient.getQueryData<{ name: string }>([
+              "projects",
+              segment,
+            ])
             label = cached?.name ?? segment
           } else {
             label =
               segmentLabels[segment] ??
-              segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, " ")
+              segment.charAt(0).toUpperCase() +
+                segment.slice(1).replace(/-/g, " ")
           }
 
           return (
@@ -140,7 +159,11 @@ function AppBreadcrumb() {
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
-function getInitials(firstName?: string | null, lastName?: string | null, email?: string): string {
+function getInitials(
+  firstName?: string | null,
+  lastName?: string | null,
+  email?: string
+): string {
   if (firstName && lastName) {
     return `${firstName[0]}${lastName[0]}`.toUpperCase()
   }
@@ -156,7 +179,17 @@ function getInitials(firstName?: string | null, lastName?: string | null, email?
 // ─── Notification Bell ──────────────────────────────────────────────────────
 
 const BellIcon = (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
     <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
   </svg>
@@ -216,7 +249,16 @@ function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="p-4">
-        <Link to="/" className="flex items-center gap-2 text-sm font-bold">
+        <Link
+          to="/"
+          search={{
+            status: undefined,
+            riskLevel: undefined,
+            q: undefined,
+            review: undefined,
+          }}
+          className="flex items-center gap-2 text-sm font-bold"
+        >
           Loomii
         </Link>
       </SidebarHeader>
@@ -225,7 +267,7 @@ function AppSidebar() {
         {/* ── Workspace group ── */}
         <SidebarGroup className={workspaceOpen ? undefined : "pb-0"}>
           <Collapsible open={workspaceOpen} onOpenChange={setWorkspaceOpen}>
-            <CollapsibleTrigger className="flex h-8 w-full select-none items-center gap-1 rounded-xl px-3 text-xs font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground">
+            <CollapsibleTrigger className="flex h-8 w-full items-center gap-1 rounded-xl px-3 text-xs font-medium text-sidebar-foreground/70 select-none hover:bg-sidebar-accent/60 hover:text-sidebar-foreground">
               Workspace
               <HugeiconsIcon
                 icon={workspaceOpen ? ArrowDown01Icon : ArrowRight01Icon}
@@ -257,7 +299,7 @@ function AppSidebar() {
         {visibleGovernanceItems.length > 0 && (
           <SidebarGroup>
             <Collapsible open={governanceOpen} onOpenChange={setGovernanceOpen}>
-              <CollapsibleTrigger className="flex h-8 w-full select-none items-center gap-1 rounded-xl px-3 text-xs font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground">
+              <CollapsibleTrigger className="flex h-8 w-full items-center gap-1 rounded-xl px-3 text-xs font-medium text-sidebar-foreground/70 select-none hover:bg-sidebar-accent/60 hover:text-sidebar-foreground">
                 Governance
                 <HugeiconsIcon
                   icon={governanceOpen ? ArrowDown01Icon : ArrowRight01Icon}
@@ -293,7 +335,13 @@ function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   size="sm"
-                  render={<Link to="/settings" preload="intent" />}
+                  render={
+                    <Link
+                      to="/settings"
+                      preload="intent"
+                      search={{ tab: undefined }}
+                    />
+                  }
                   isActive={isActive("/settings")}
                 >
                   <NavIcon icon={Settings01Icon} />
@@ -323,7 +371,8 @@ function AppSidebar() {
                   </span>
                   {role && (
                     <span className="truncate text-[10px] text-muted-foreground">
-                      {role.charAt(0) + role.slice(1).toLowerCase().replace("_", " ")}
+                      {role.charAt(0) +
+                        role.slice(1).toLowerCase().replace("_", " ")}
                     </span>
                   )}
                 </div>
@@ -346,16 +395,16 @@ function AppSidebar() {
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
                   <DropdownMenuItem
-                    onClick={() => navigate({ to: "/settings" })}
+                    onClick={() =>
+                      navigate({ to: "/settings", search: { tab: undefined } })
+                    }
                   >
                     Settings
                   </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
-                  <DropdownMenuItem onClick={logout}>
-                    Log out
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={logout}>Log out</DropdownMenuItem>
                 </DropdownMenuGroup>
               </DropdownMenuContent>
             </DropdownMenu>
