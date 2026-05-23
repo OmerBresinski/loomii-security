@@ -13,7 +13,6 @@ import {
   type ReviewFilters,
 } from "@/queries/projects"
 import { reviewDetailQueryOptions, type Review } from "@/queries/reviews"
-import { ReviewFiltersBar } from "@/components/reviews/review-filters"
 import { ReviewSheet } from "@/components/reviews/review-sheet"
 import { ReviewStatusIcon } from "@/components/reviews/review-status-icon"
 
@@ -271,11 +270,6 @@ export function ReviewsTab({ projectId }: ReviewsTabProps) {
 
   return (
     <div className="flex flex-col">
-      {/* Filters */}
-      <div className="pb-4">
-        <ReviewFiltersBar filters={filters} onFiltersChange={setFilters} />
-      </div>
-
       {/* Review List */}
       {isPending ? (
         <div className="flex flex-col">

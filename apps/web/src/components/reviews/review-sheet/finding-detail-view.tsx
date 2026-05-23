@@ -112,7 +112,7 @@ export function FindingDetailView({
             </SelectTrigger>
             <SelectContent>
               {FINDING_STATUSES.map((s) => (
-                <SelectItem key={s} value={s} textValue={findingStatusLabels[s]}>
+                <SelectItem key={s} value={s}>
                   {findingStatusLabels[s]}
                 </SelectItem>
               ))}

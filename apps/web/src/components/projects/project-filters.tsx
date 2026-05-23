@@ -34,7 +34,12 @@ interface MultiSelectProps {
   onSelectionChange: (values: string[]) => void
 }
 
-function MultiSelect({ label, options, selected, onSelectionChange }: MultiSelectProps) {
+function MultiSelect({
+  label,
+  options,
+  selected,
+  onSelectionChange,
+}: MultiSelectProps) {
   const [open, setOpen] = useState(false)
 
   function toggle(value: string) {
@@ -47,11 +52,14 @@ function MultiSelect({ label, options, selected, onSelectionChange }: MultiSelec
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
+      <PopoverTrigger>
         <Button variant="outline" size="sm" className="h-8 text-xs">
           {label}
           {selected.length > 0 && (
-            <Badge variant="secondary" className="ml-1.5 px-1 py-0 text-[10px] tabular-nums">
+            <Badge
+              variant="secondary"
+              className="ml-1.5 px-1 py-0 text-[10px] tabular-nums"
+            >
               {selected.length}
             </Badge>
           )}
@@ -79,7 +87,16 @@ function MultiSelect({ label, options, selected, onSelectionChange }: MultiSelec
                         }`}
                       >
                         {isSelected && (
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <svg
+                            width="10"
+                            height="10"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="3"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
                         )}
@@ -104,7 +121,10 @@ interface ProjectFiltersProps {
   onFiltersChange: (filters: ProjectFilterState) => void
 }
 
-export function ProjectFilters({ filters, onFiltersChange }: ProjectFiltersProps) {
+export function ProjectFilters({
+  filters,
+  onFiltersChange,
+}: ProjectFiltersProps) {
   const hasActiveFilters = filters.riskLevel.length > 0
 
   return (

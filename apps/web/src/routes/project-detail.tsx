@@ -5,6 +5,7 @@ import { useProjectDetail, projectReviewsQueryOptions } from "@/queries/projects
 import { ProjectHeader } from "@/components/projects/detail/project-header"
 import { OverviewTab } from "@/components/projects/detail/overview-tab"
 import { ReviewsTab } from "@/components/projects/detail/reviews-tab"
+import { SourcesTab } from "@/components/projects/detail/sources-tab"
 
 const routeApi = getRouteApi("/projects/$projectId")
 
@@ -55,12 +56,7 @@ export default function ProjectDetailPage() {
         </TabsContent>
 
         <TabsContent value="sources" className="min-h-0 flex-1 overflow-y-auto pt-6">
-          <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
-            <p className="text-sm font-medium">Sources</p>
-            <p className="text-xs text-muted-foreground">
-              Source management coming soon.
-            </p>
-          </div>
+          <SourcesTab projectId={projectId} />
         </TabsContent>
 
         <TabsContent value="reviews" className="min-h-0 flex-1 overflow-y-auto pt-6">

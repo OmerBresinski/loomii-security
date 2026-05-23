@@ -362,6 +362,14 @@ projectRoutes.get("/:id/sources", async (c) => {
       archivedReason: true,
       linkedAt: true,
       unlinkedAt: true,
+      linkedByUser: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
     },
   });
 

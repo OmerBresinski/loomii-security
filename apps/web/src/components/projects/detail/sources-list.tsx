@@ -52,7 +52,7 @@ export function SourcesList({ sources, isPending }: SourcesListProps) {
                 href={source.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label={`Open ${source.title ?? source.sourceId} in ${sourceTypeLabels[source.sourceType]}`}
+                aria-label={`Open ${source.sourceId} in ${sourceTypeLabels[source.sourceType]}`}
                 className="group flex items-center gap-2 rounded-md px-1.5 py-1.5 transition-colors duration-[80ms] hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
               >
                 <img
@@ -65,7 +65,7 @@ export function SourcesList({ sources, isPending }: SourcesListProps) {
                   className="shrink-0"
                 />
                 <span className="min-w-0 flex-1 truncate text-xs text-foreground/80 group-hover:text-foreground">
-                  {source.title ?? source.sourceId}
+                  {source.sourceId}
                 </span>
                 <HugeiconsIcon
                   icon={ArrowUpRight01Icon}
@@ -88,7 +88,7 @@ export function SourcesList({ sources, isPending }: SourcesListProps) {
                   className="shrink-0"
                 />
                 <span className="truncate text-xs text-foreground/80">
-                  {source.title ?? source.sourceId}
+                  {source.sourceId}
                 </span>
               </div>
             )
