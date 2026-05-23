@@ -13,6 +13,7 @@ import {
   projectsQueryOptions,
   projectDetailQueryOptions,
   projectSourcesQueryOptions,
+  projectReviewsQueryOptions,
 } from "@/queries/projects"
 
 // ─── Auth Guard ─────────────────────────────────────────────────────────────
@@ -163,9 +164,10 @@ const projectDetailRoute = createRoute({
     review: search.review as string | undefined,
   }),
   loader: ({ params }) => {
-    // Prefetch detail and sources in parallel
+    // Prefetch detail, sources, and reviews in parallel (overview is the default tab)
     queryClient.prefetchQuery(projectDetailQueryOptions(params.projectId))
     queryClient.prefetchQuery(projectSourcesQueryOptions(params.projectId))
+    queryClient.prefetchQuery(projectReviewsQueryOptions(params.projectId))
   },
   component: lazyRouteComponent(() => import("@/routes/project-detail")),
 })

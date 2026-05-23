@@ -46,11 +46,15 @@ function computeAggregates(project: ProjectWithIncludes) {
     return riskOrder.indexOf(r.severity) < riskOrder.indexOf(highest) ? r.severity : highest;
   }, null);
 
+  const highRiskCount = reviews.filter(
+    (r) => r.severity === "CRITICAL" || r.severity === "HIGH"
+  ).length;
+
   const lastActivity = project.contextBundles.length > 0
     ? project.contextBundles.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())[0].updatedAt.toISOString()
     : null;
 
-  return { sourceCount, reviewCount, highestRisk, lastActivity };
+  return { sourceCount, reviewCount, highRiskCount, highestRisk, lastActivity };
 }
 
 // ===========================================
@@ -148,7 +152,7 @@ projectRoutes.get("/", async (c) => {
   });
 
   const results = projects.map((p) => {
-    const { sourceCount, reviewCount, highestRisk, lastActivity } = computeAggregates(p);
+    const { sourceCount, reviewCount, highRiskCount, highestRisk, lastActivity } = computeAggregates(p);
 
     return {
       id: p.id,
@@ -157,6 +161,7 @@ projectRoutes.get("/", async (c) => {
       color: p.color,
       sourceCount,
       reviewCount,
+      highRiskCount,
       highestRisk,
       lastActivity,
       createdAt: p.createdAt.toISOString(),
@@ -209,7 +214,7 @@ projectRoutes.get("/:id", async (c) => {
     );
   }
 
-  const { sourceCount, reviewCount, highestRisk, lastActivity } = computeAggregates(project);
+  const { sourceCount, reviewCount, highRiskCount, highestRisk, lastActivity } = computeAggregates(project);
 
   return c.json({
     id: project.id,
@@ -220,6 +225,7 @@ projectRoutes.get("/:id", async (c) => {
     summaryUpdatedAt: project.summaryUpdatedAt?.toISOString() ?? null,
     sourceCount,
     reviewCount,
+    highRiskCount,
     highestRisk,
     lastActivity,
     createdAt: project.createdAt.toISOString(),

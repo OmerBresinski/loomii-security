@@ -65,11 +65,11 @@ export function StatsRow({
     sources?.sources.filter((s) => !s.isArchived).length ?? project.sourceCount
   const totalReviews = reviews?.reviews.length ?? project.reviewCount
 
-  // Count critical/high-risk reviews
+  // Count critical/high-risk reviews (fallback to project-level aggregate)
   const criticalHighCount =
     reviews?.reviews.filter(
       (r) => r.riskLevel === "CRITICAL" || r.riskLevel === "HIGH"
-    ).length ?? 0
+    ).length ?? project.highRiskCount
 
   return (
     <div className="flex items-center divide-x divide-border/50 py-4">
