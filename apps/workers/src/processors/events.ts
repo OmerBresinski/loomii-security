@@ -2,18 +2,33 @@
  * Events Queue Processor
  *
  * Processes events from the events queue (published by review-events,
- * event-publisher, and threat-model-events). Responsible for:
+ * event-publisher, and threat-model-events). Implements the full notification
+ * delivery pipeline:
  *
- * 1. Mapping event types to notification types
- * 2. Checking user notification preferences
- * 3. Delivering notifications to eligible users
+ * 1. Map event type → notification type
+ * 2. Resolve project context (fallback for missing fields)
+ * 3. Resolve recipients (role-based + project-scoped)
+ * 4. Filter by user notification preferences
+ * 5. Build notification content from templates
+ * 6. Build deduplication key
+ * 7. Batch insert notifications with skipDuplicates
  *
- * Events that don't map to a notification type are logged and skipped.
+ * Events that don't map to a notification type are skipped silently.
  */
 import type { Job } from "bullmq";
 import type { EventsPayload } from "@loomii/queue";
+import { db } from "@loomii/db";
 import { logger } from "../lib/logger";
-import { deliverNotification } from "../lib/notifications";
+import {
+  getNotificationType,
+  filterNotificationRecipients,
+} from "../lib/notifications";
+import { resolveRecipients } from "../lib/recipient-resolution";
+import {
+  buildNotificationContent,
+  buildSourceEventId,
+  resolveProjectContext,
+} from "../lib/notification-templates";
 
 /**
  * Main processor for the events queue.
@@ -35,18 +50,76 @@ export async function processEvents(job: Job<EventsPayload>): Promise<void> {
   const start = Date.now();
 
   try {
-    const result = await deliverNotification(tenantId, eventType, data);
+    // 1. Map event to notification type (skip if unmapped)
+    const notificationType = getNotificationType(eventType);
+    if (!notificationType) {
+      childLogger.debug("Event does not map to a notification type, skipping");
+      return;
+    }
+
+    // 2. Resolve project context (fallback for missing fields)
+    const projectContext = await resolveProjectContext(data);
+    const enrichedData = { ...data, ...projectContext };
+    const projectId = (enrichedData.projectId as string) ?? null;
+
+    // 3. Resolve recipients (role-based + project-scoped)
+    const allRecipients = await resolveRecipients(
+      tenantId,
+      notificationType,
+      projectId
+    );
+
+    // 4. Filter by preferences (batch query)
+    const eligibleRecipients = await filterNotificationRecipients(
+      allRecipients,
+      notificationType
+    );
+
+    if (eligibleRecipients.length === 0) {
+      childLogger.info(
+        { notificationType, totalRecipients: allRecipients.length },
+        "No eligible recipients after preference filtering"
+      );
+      return;
+    }
+
+    // 5. Build notification content from template
+    const content = buildNotificationContent(notificationType, enrichedData);
+
+    // 6. Build deduplication key
+    const baseSourceEventId = buildSourceEventId(
+      eventType,
+      enrichedData,
+      timestamp
+    );
+
+    // 7. Batch insert (skipDuplicates handles retries)
+    await db.notification.createMany({
+      data: eligibleRecipients.map((userId) => ({
+        userId,
+        tenantId,
+        type: notificationType,
+        title: content.title,
+        body: content.body,
+        linkUrl: content.linkUrl,
+        projectId,
+        sourceEventId: baseSourceEventId
+          ? `${baseSourceEventId}:${userId}`
+          : null,
+      })),
+      skipDuplicates: true,
+    });
 
     const durationMs = Date.now() - start;
     childLogger.info(
       {
         durationMs,
-        notificationType: result.notificationType,
-        totalUsers: result.totalUsers,
-        eligibleUsers: result.eligibleUsers,
-        delivered: result.delivered,
+        notificationType,
+        totalRecipients: allRecipients.length,
+        eligibleRecipients: eligibleRecipients.length,
+        projectId,
       },
-      `Event processed: ${eventType}`
+      `Notifications delivered: ${eventType}`
     );
   } catch (error) {
     const durationMs = Date.now() - start;
