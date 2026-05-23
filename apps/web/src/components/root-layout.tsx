@@ -51,7 +51,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/hooks/use-auth"
-import { useNotificationsStore } from "@/stores/notifications"
+import { useUnreadCount } from "@/queries/notifications"
 import type { UserRole } from "@/lib/api-client"
 
 // ─── Nav Configuration ──────────────────────────────────────────────────────
@@ -163,7 +163,9 @@ const BellIcon = (
 )
 
 function NotificationBell() {
-  const unreadCount = useNotificationsStore((s) => s.unreadCount)
+  const { data } = useUnreadCount()
+  const unreadCount = data?.count ?? 0
+  const hasCritical = (data?.byType?.high_risk_detected ?? 0) > 0
 
   return (
     <Link
@@ -175,7 +177,7 @@ function NotificationBell() {
       {BellIcon}
       {unreadCount > 0 && (
         <Badge
-          variant="destructive"
+          variant={hasCritical ? "destructive" : "default"}
           className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full p-0 text-[9px]"
         >
           {unreadCount > 9 ? "9+" : unreadCount}
