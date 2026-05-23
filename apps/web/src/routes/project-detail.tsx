@@ -1,7 +1,7 @@
 import { getRouteApi, useNavigate } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useProjectDetail, projectReviewsQueryOptions } from "@/queries/projects"
+import { useProjectDetail, projectReviewsQueryOptions, projectSourcesQueryOptions, projectActivityQueryOptions } from "@/queries/projects"
 import { ProjectHeader } from "@/components/projects/detail/project-header"
 import { OverviewTab } from "@/components/projects/detail/overview-tab"
 import { ReviewsTab } from "@/components/projects/detail/reviews-tab"
@@ -28,10 +28,21 @@ export default function ProjectDetailPage() {
     })
   }
 
+  function prefetchOverview() {
+    queryClient.prefetchQuery(projectSourcesQueryOptions(projectId))
+    queryClient.prefetchQuery(projectReviewsQueryOptions(projectId))
+  }
+
+  function prefetchSources() {
+    queryClient.prefetchQuery(projectSourcesQueryOptions(projectId))
+  }
+
   function prefetchReviews() {
-    queryClient.prefetchQuery(
-      projectReviewsQueryOptions(projectId, {})
-    )
+    queryClient.prefetchQuery(projectReviewsQueryOptions(projectId, {}))
+  }
+
+  function prefetchActivity() {
+    queryClient.prefetchQuery(projectActivityQueryOptions(projectId))
   }
 
   return (
@@ -44,12 +55,18 @@ export default function ProjectDetailPage() {
       {/* Tabs */}
       <Tabs value={tab} onValueChange={handleTabChange} className="flex min-h-0 flex-1 flex-col">
         <TabsList variant="line">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="sources">Sources</TabsTrigger>
+          <div onMouseEnter={prefetchOverview}>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+          </div>
+          <div onMouseEnter={prefetchSources}>
+            <TabsTrigger value="sources">Sources</TabsTrigger>
+          </div>
           <div onMouseEnter={prefetchReviews}>
             <TabsTrigger value="reviews">Reviews</TabsTrigger>
           </div>
-          <TabsTrigger value="activity">Activity</TabsTrigger>
+          <div onMouseEnter={prefetchActivity}>
+            <TabsTrigger value="activity">Activity</TabsTrigger>
+          </div>
         </TabsList>
 
         <TabsContent value="overview" className="min-h-0 flex-1 overflow-y-auto pt-6">

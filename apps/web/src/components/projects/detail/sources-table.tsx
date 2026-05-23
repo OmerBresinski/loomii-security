@@ -198,8 +198,8 @@ function SourceRow({
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="shrink-0">
-                <Avatar size="xs">
-                  <AvatarFallback>
+                <Avatar size="sm" className="size-5">
+                  <AvatarFallback className="text-[9px]">
                     {getUserInitials(source.linkedByUser)}
                   </AvatarFallback>
                 </Avatar>
