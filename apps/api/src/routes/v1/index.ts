@@ -9,6 +9,7 @@ import { policyRoutes } from "./policies";
 import { reviewRoutes } from "./reviews";
 import { findingRoutes } from "./findings";
 import { notificationRoutes } from "./notifications";
+import { teamRoutes } from "./team";
 
 export const v1Routes = new Hono<AppEnv>();
 
@@ -22,6 +23,7 @@ v1Routes.route("/policies", policyRoutes);
 v1Routes.route("/reviews", reviewRoutes);
 v1Routes.route("/findings", findingRoutes);
 v1Routes.route("/notifications", notificationRoutes);
+v1Routes.route("/team", teamRoutes);
 
 /**
  * GET /api/v1/me - Return current authenticated user info.
