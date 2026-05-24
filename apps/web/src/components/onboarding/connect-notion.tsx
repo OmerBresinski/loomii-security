@@ -1,5 +1,6 @@
 // ─── Step 2: Connect Notion ─────────────────────────────────────────────────
 
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -9,7 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { fetchApi } from "@/lib/api-client"
+import { fetchApi, ApiError } from "@/lib/api-client"
 
 interface ConnectNotionProps {
   connected: boolean
@@ -24,16 +25,29 @@ export function ConnectNotion({
   onSkip,
   onBack,
 }: ConnectNotionProps) {
+  const [error, setError] = useState<string | null>(null)
+  const [isConnecting, setIsConnecting] = useState(false)
+
   async function handleConnect() {
-    // Call POST endpoint which returns the OAuth redirect URL
-    const { redirectUrl } = await fetchApi<{ redirectUrl: string }>(
-      "/api/v1/integrations/notion/connect",
-      {
-        method: "POST",
-        body: { redirectUrl: `${window.location.origin}/onboarding` },
+    setError(null)
+    setIsConnecting(true)
+    try {
+      const { redirectUrl } = await fetchApi<{ redirectUrl: string }>(
+        "/api/v1/integrations/notion/connect",
+        {
+          method: "POST",
+          body: { redirectUrl: `${window.location.origin}/onboarding` },
+        }
+      )
+      window.location.href = redirectUrl
+    } catch (err) {
+      setIsConnecting(false)
+      if (err instanceof ApiError && err.status === 409) {
+        setError("Notion is already connected.")
+      } else {
+        setError("Failed to connect. Please try again.")
       }
-    )
-    window.location.href = redirectUrl
+    }
   }
 
   return (
@@ -78,9 +92,12 @@ export function ConnectNotion({
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3">
-            <Button size="sm" onClick={handleConnect}>
-              Connect Notion
+            <Button size="sm" onClick={handleConnect} disabled={isConnecting}>
+              {isConnecting ? "Connecting..." : "Connect Notion"}
             </Button>
+            {error && (
+              <p className="text-[11px] text-destructive">{error}</p>
+            )}
             <div className="flex items-center gap-3">
               <button
                 onClick={onBack}
