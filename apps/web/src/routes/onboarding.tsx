@@ -1,74 +1,75 @@
 // ─── Onboarding Wizard Page ──────────────────────────────────────────────────
 
-import { useCallback } from "react"
-import { useNavigate } from "@tanstack/react-router"
-import { Skeleton } from "@/components/ui/skeleton"
+import { useNavigate, useParams } from "@tanstack/react-router"
+import { useQueryClient } from "@tanstack/react-query"
 import { Stepper } from "@/components/onboarding/stepper"
 import { ConnectLinear } from "@/components/onboarding/connect-linear"
 import { ConnectNotion } from "@/components/onboarding/connect-notion"
 import { PolicySetup } from "@/components/onboarding/policy-setup"
 import { MonitoringScope } from "@/components/onboarding/monitoring-scope"
 import { InitialSync } from "@/components/onboarding/initial-sync"
-import { useOnboardingState } from "@/queries/onboarding"
+import {
+  useOnboardingState,
+  onboardingStateQueryOptions,
+} from "@/queries/onboarding"
 import { useSaveOnboardingStep } from "@/mutations/onboarding"
 
 // ─── Step Definitions ───────────────────────────────────────────────────────
 
-const STEPS = [
+export const ONBOARDING_STEPS = [
   { key: "linear", label: "Linear" },
   { key: "notion", label: "Notion" },
   { key: "policies", label: "Policies" },
   { key: "scope", label: "Scope" },
   { key: "sync", label: "Sync" },
-]
+] as const
+
+export type OnboardingStep = (typeof ONBOARDING_STEPS)[number]["key"]
+
+const STEP_INDEX: Record<string, number> = Object.fromEntries(
+  ONBOARDING_STEPS.map((s, i) => [s.key, i])
+)
+
+// Mutable copy for Stepper prop (hoisted to avoid allocation per render)
+const STEPS_ARRAY = ONBOARDING_STEPS.map((s) => ({ key: s.key, label: s.label }))
 
 // ─── Page Component ─────────────────────────────────────────────────────────
 
 export default function OnboardingPage() {
   const navigate = useNavigate()
-  const { data, isPending } = useOnboardingState()
+  const { step } = useParams({ from: "/onboarding/$step" })
+  const queryClient = useQueryClient()
+  const { data } = useOnboardingState()
   const saveStep = useSaveOnboardingStep()
 
   const onboarding = data?.onboarding
+  const currentStepIndex = STEP_INDEX[step] ?? 0
 
-  // Current step from server state (persisted for resume)
-  const currentStep = onboarding?.currentStep ?? 0
+  function goToStep(stepKey: string) {
+    const stepIndex = STEP_INDEX[stepKey] ?? 0
+    saveStep.mutate({ step: stepIndex })
+    navigate({ to: "/onboarding/$step", params: { step: stepKey } })
+  }
 
-  const goToStep = useCallback(
-    (step: number) => {
-      saveStep.mutate({ step })
-    },
-    [saveStep]
-  )
+  function handleNext() {
+    const nextStep = ONBOARDING_STEPS[currentStepIndex + 1]
+    if (nextStep) goToStep(nextStep.key)
+  }
 
-  const handleNext = useCallback(() => {
-    goToStep(currentStep + 1)
-  }, [currentStep, goToStep])
+  function handleBack() {
+    const prevStep = ONBOARDING_STEPS[currentStepIndex - 1]
+    if (prevStep) goToStep(prevStep.key)
+  }
 
-  const handleBack = useCallback(() => {
-    if (currentStep > 0) {
-      goToStep(currentStep - 1)
-    }
-  }, [currentStep, goToStep])
+  function handleSkip() {
+    handleNext()
+  }
 
-  const handleSkip = useCallback(() => {
-    goToStep(currentStep + 1)
-  }, [currentStep, goToStep])
-
-  const handleComplete = useCallback(() => {
+  function handleComplete() {
+    queryClient.invalidateQueries({
+      queryKey: onboardingStateQueryOptions().queryKey,
+    })
     navigate({ to: "/reviews" })
-  }, [navigate])
-
-  // Loading state
-  if (isPending) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center p-6">
-        <div className="flex w-full max-w-lg flex-col gap-6">
-          <Skeleton className="mx-auto h-8 w-72" />
-          <Skeleton className="h-64 w-full rounded-lg" />
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -83,19 +84,19 @@ export default function OnboardingPage() {
 
       {/* Stepper */}
       <div className="shrink-0 px-6">
-        <Stepper currentStep={currentStep} steps={STEPS} />
+        <Stepper currentStep={currentStepIndex} steps={STEPS_ARRAY} />
       </div>
 
       {/* Step Content */}
       <div className="flex min-h-0 flex-1 items-start justify-center overflow-y-auto px-6 pb-8 pt-4">
-        {currentStep === 0 && (
+        {step === "linear" && (
           <ConnectLinear
             connected={onboarding?.linearConnected ?? false}
             onNext={handleNext}
             onSkip={handleSkip}
           />
         )}
-        {currentStep === 1 && (
+        {step === "notion" && (
           <ConnectNotion
             connected={onboarding?.notionConnected ?? false}
             onNext={handleNext}
@@ -103,13 +104,13 @@ export default function OnboardingPage() {
             onBack={handleBack}
           />
         )}
-        {currentStep === 2 && (
+        {step === "policies" && (
           <PolicySetup onNext={handleNext} onSkip={handleSkip} onBack={handleBack} />
         )}
-        {currentStep === 3 && (
+        {step === "scope" && (
           <MonitoringScope onNext={handleNext} onSkip={handleSkip} onBack={handleBack} />
         )}
-        {currentStep === 4 && <InitialSync onComplete={handleComplete} />}
+        {step === "sync" && <InitialSync onComplete={handleComplete} />}
       </div>
     </div>
   )

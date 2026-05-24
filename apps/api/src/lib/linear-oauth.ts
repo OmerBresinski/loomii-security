@@ -139,12 +139,21 @@ export async function completeLinearOAuth(
   // 4. Verify access by calling Linear API
   const viewer = await verifyLinearAccess(tokenResponse.access_token);
 
-  // 5. Register webhooks for change detection
-  const webhook = await registerLinearWebhooks(
-    tokenResponse.access_token,
-    webhookCallbackUrl,
-    ["Issue", "Comment", "Project"]
-  );
+  // 5. Register webhooks for change detection (skip in local dev - requires public HTTPS)
+  let webhook: LinearWebhookResult;
+  const isLocalDev =
+    webhookCallbackUrl.includes("localhost") ||
+    webhookCallbackUrl.includes("127.0.0.1");
+
+  if (isLocalDev) {
+    webhook = { id: "skipped-localhost", enabled: false, resourceTypes: [] };
+  } else {
+    webhook = await registerLinearWebhooks(
+      tokenResponse.access_token,
+      webhookCallbackUrl,
+      ["Issue", "Comment", "Project"]
+    );
+  }
 
   return {
     encryptedAccessToken,

@@ -15,7 +15,7 @@ import {
   projectSourcesQueryOptions,
   projectReviewsQueryOptions,
 } from "@/queries/projects"
-import { onboardingStateQueryOptions } from "@/queries/onboarding"
+import { onboardingStateQueryOptions, monitoringScopeQueryOptions } from "@/queries/onboarding"
 
 // ─── Auth Guard ─────────────────────────────────────────────────────────────
 
@@ -31,7 +31,7 @@ function requireAuth() {
     throw redirect({ to: "/login" })
   }
   if (!getOnboardingCompleted()) {
-    throw redirect({ to: "/onboarding" })
+    throw redirect({ to: "/onboarding/$step", params: { step: "linear" } })
   }
 }
 
@@ -154,14 +154,53 @@ const notificationsRoute = createRoute({
   component: lazyRouteComponent(() => import("@/routes/notifications")),
 })
 
+const VALID_ONBOARDING_STEPS = new Set([
+  "linear", "notion", "policies", "scope", "sync",
+])
+
 const onboardingRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/onboarding",
-  beforeLoad: requireOnboarding,
-  loader: () => {
-    queryClient.prefetchQuery(onboardingStateQueryOptions())
+  path: "/onboarding/$step",
+  beforeLoad: ({ params }) => {
+    const token = getSessionToken()
+    if (!token) {
+      throw redirect({ to: "/login" })
+    }
+    if (getOnboardingCompleted()) {
+      throw redirect({ to: "/reviews" })
+    }
+    // Validate step param
+    if (!VALID_ONBOARDING_STEPS.has(params.step)) {
+      throw redirect({ to: "/onboarding/$step", params: { step: "linear" } })
+    }
+  },
+  loader: async ({ params }) => {
+    // Ensure onboarding state is in cache before render (no loading flash)
+    await queryClient.ensureQueryData(onboardingStateQueryOptions())
+
+    // Prefetch step-specific data
+    if (params.step === "scope") {
+      queryClient.prefetchQuery(monitoringScopeQueryOptions())
+    }
   },
   component: lazyRouteComponent(() => import("@/routes/onboarding")),
+})
+
+// Redirect /onboarding to /onboarding/linear (first step)
+const onboardingIndexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/onboarding",
+  beforeLoad: () => {
+    const token = getSessionToken()
+    if (!token) {
+      throw redirect({ to: "/login" })
+    }
+    if (getOnboardingCompleted()) {
+      throw redirect({ to: "/reviews" })
+    }
+    // Redirect bare /onboarding to first step
+    throw redirect({ to: "/onboarding/$step", params: { step: "linear" } })
+  },
 })
 
 // ─── Projects Routes ────────────────────────────────────────────────────────
@@ -206,6 +245,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
   authCallbackRoute,
+  onboardingIndexRoute,
   onboardingRoute,
   reviewsRoute,
   projectsRoute,
