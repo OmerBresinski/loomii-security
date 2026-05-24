@@ -117,7 +117,7 @@ reviewRoutes.get("/", async (c) => {
     id: bundle.id,
     eventId: bundle.eventId,
     status: bundle.status,
-    reviewStatus: bundle.review?.status ?? null,
+    reviewStatus: bundle.review?.status ?? (bundle.status === "READY" ? "GENERATING" : "PENDING"),
     riskLevel: bundle.riskLevel,
     title: bundle.title,
     summary: bundle.summary,
@@ -186,7 +186,7 @@ reviewRoutes.get("/:id", async (c) => {
     source: bundle.event.source,
     externalId: bundle.event.externalId,
     reviewId: bundle.review?.id ?? null,
-    reviewStatus: bundle.review?.status ?? null,
+    reviewStatus: bundle.review?.status ?? (bundle.status === "READY" ? "GENERATING" : "PENDING"),
     createdAt: bundle.createdAt.toISOString(),
     findings: bundle.review?.findings ?? [],
   });

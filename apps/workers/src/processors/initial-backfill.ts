@@ -21,6 +21,7 @@ import { db, insertEmbedding } from "@loomii/db";
 import { decrypt } from "@loomii/shared";
 import {
   createRedisConnection,
+  reviewQueue,
   type InitialBackfillPayload,
 } from "@loomii/queue";
 import type { Redis } from "ioredis";
@@ -592,22 +593,99 @@ export async function processInitialBackfill(job: Job<InitialBackfillPayload>): 
 
     await job.updateProgress(85);
 
-    // ─── Step 10: Mark as triage_complete ─────────────────────────────────
-    // Note: Risk classification is skipped during backfill because ContextBundles
-    // don't exist yet. Items will be classified through the normal polling pipeline
-    // as changes are detected going forward. For now we mark as complete.
+    // ─── Step 10: Create ContextBundles + enqueue reviews per project ──────
+    // Each project gets a single review covering all its aggregated sources.
+
+    const itemMap = new Map(allItems.map((item) => [item.id, item]));
+
+    for (const created of projectResult.created) {
+      // Build aggregated content from all items in this project
+      const projectItems = created.itemIds
+        .map((id) => itemMap.get(id))
+        .filter((item): item is BackfillItem => item !== undefined);
+
+      const aggregatedContent = projectItems
+        .map((item) => `## ${item.title}\n\n${item.content}`)
+        .join("\n\n---\n\n");
+
+      // Upsert synthetic event (idempotent on re-run)
+      const syntheticEvent = await db.event.upsert({
+        where: {
+          tenantId_source_externalId_type: {
+            tenantId,
+            source: "LINEAR",
+            externalId: `backfill-project-${created.projectId}`,
+            type: "project.backfill_review",
+          },
+        },
+        update: {
+          status: "COMPLETED",
+          payload: {
+            projectId: created.projectId,
+            projectName: created.name,
+            sourceCount: created.itemIds.length,
+          },
+        },
+        create: {
+          tenantId,
+          integrationId: linearIntegrationId ?? notionIntegrationId!,
+          source: "LINEAR",
+          externalId: `backfill-project-${created.projectId}`,
+          type: "project.backfill_review",
+          status: "COMPLETED",
+          payload: {
+            projectId: created.projectId,
+            projectName: created.name,
+            sourceCount: created.itemIds.length,
+          },
+        },
+      });
+
+      // Create ContextBundle with aggregated content
+      const bundle = await db.contextBundle.create({
+        data: {
+          tenantId,
+          eventId: syntheticEvent.id,
+          projectId: created.projectId,
+          status: "READY",
+          title: `Security Review: ${created.name}`,
+          content: {
+            projectName: created.name,
+            sourceCount: created.itemIds.length,
+            aggregatedContent: aggregatedContent.slice(0, 50000), // Cap at 50k chars
+            reviewType: "backfill_initial_scan",
+          },
+        },
+      });
+
+      // Enqueue review generation
+      await reviewQueue.add("review", {
+        tenantId,
+        contextId: bundle.id,
+        reviewType: "design-review",
+      });
+    }
+
+    childLogger.info(
+      { reviewsEnqueued: projectResult.created.length },
+      "Project reviews enqueued"
+    );
+
+    await job.updateProgress(90);
+
+    // ─── Step 11: Mark as triage_complete ─────────────────────────────────
 
     await redis.hset(redisKey, {
       status: "triage_complete",
       projects: String(projectResult.created.length),
       classified: String(allItems.length),
-      highRisk: "0",
-      message: `Scan complete! ${projectResult.created.length} projects discovered.`,
+      highRisk: String(projectResult.created.length),
+      message: `Scan complete! ${projectResult.created.length} projects discovered, reviews generating.`,
     });
 
     childLogger.info(
-      { total: allItems.length, projects: projectResult.created.length },
-      "Backfill Phase 1 complete (classification deferred to normal pipeline)"
+      { total: allItems.length, projects: projectResult.created.length, reviewsEnqueued: projectResult.created.length },
+      "Backfill Phase 1 complete - reviews enqueued"
     );
     await job.updateProgress(100);
   } catch (err) {
