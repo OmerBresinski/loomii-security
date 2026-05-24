@@ -6,7 +6,7 @@
  * 2. Connect Notion
  * 3. Configure Policies
  * 4. Select Monitoring Scope
- * 5. Initial Sync (cosmetic)
+ * 5. Initial Sync (Redis-backed backfill pipeline)
  *
  * Routes:
  * - GET    /api/v1/onboarding              - Get current onboarding state
@@ -14,14 +14,16 @@
  * - POST   /api/v1/onboarding/policies     - Configure policy toggles
  * - GET    /api/v1/onboarding/scope        - List available resources to monitor
  * - POST   /api/v1/onboarding/scope        - Save monitoring scope selection
- * - POST   /api/v1/onboarding/sync         - Start initial sync (cosmetic)
- * - GET    /api/v1/onboarding/sync/status  - Poll sync status
+ * - POST   /api/v1/onboarding/sync         - Start initial backfill
+ * - GET    /api/v1/onboarding/sync/status  - Poll backfill progress
  * - POST   /api/v1/onboarding/complete     - Mark onboarding as done
  */
 import { Hono } from "hono";
 import { z } from "zod";
+import type { Redis } from "ioredis";
 import type { AppEnv } from "../../lib/types";
 import { db } from "@loomii/db";
+import { createRedisConnection, initialBackfillQueue } from "@loomii/queue";
 
 export const onboardingRoutes = new Hono<AppEnv>();
 
@@ -41,12 +43,25 @@ const SaveScopeSchema = z.object({
   notionPageIds: z.array(z.string()),
 });
 
-// ─── In-memory sync state (per-tenant, cosmetic) ─────────────────────────────
+// ─── Redis connection (lazy singleton) ───────────────────────────────────────
 
-const syncState = new Map<
-  string,
-  { status: string; progress: number; message: string; startedAt: number }
->();
+const BACKFILL_KEY_PREFIX = "backfill:status:";
+const DEFAULT_LOOKBACK_DAYS = 90;
+const BACKFILL_KEY_TTL_SECONDS = 86400; // 24 hours
+
+let _redis: Redis | null = null;
+
+function getRedis(): Redis {
+  if (!_redis) {
+    _redis = createRedisConnection();
+  }
+  return _redis;
+}
+
+/** Allow injecting a mock Redis for tests */
+export function _setRedis(redis: Redis | null): void {
+  _redis = redis;
+}
 
 // ─── GET /api/v1/onboarding ──────────────────────────────────────────────────
 
@@ -309,14 +324,80 @@ onboardingRoutes.post("/scope", async (c) => {
 
 onboardingRoutes.post("/sync", async (c) => {
   const tenantId = c.get("tenantId");
+  const requestId = c.get("requestId");
+  const redis = getRedis();
+  const redisKey = `${BACKFILL_KEY_PREFIX}${tenantId}`;
 
-  // Start cosmetic sync progress
-  syncState.set(tenantId, {
-    status: "syncing",
-    progress: 0,
-    message: "Preparing initial sync...",
-    startedAt: Date.now(),
+  // Atomically check-and-set: only proceed if no key exists or status is "error"
+  const existingStatus = await redis.hget(redisKey, "status");
+  if (existingStatus && existingStatus !== "error") {
+    return c.json(
+      {
+        error: {
+          code: "BACKFILL_IN_PROGRESS",
+          message: "Initial backfill is already in progress",
+          requestId,
+        },
+      },
+      409
+    );
+  }
+
+  // Look up connected integrations
+  const integrations = await db.integration.findMany({
+    where: { tenantId, status: "ACTIVE" },
+    select: { id: true, provider: true },
   });
+
+  if (integrations.length === 0) {
+    return c.json(
+      {
+        error: {
+          code: "NO_INTEGRATIONS",
+          message: "At least one integration must be connected before syncing",
+          requestId,
+        },
+      },
+      400
+    );
+  }
+
+  const linearIntegration = integrations.find((i) => i.provider === "LINEAR");
+  const notionIntegration = integrations.find((i) => i.provider === "NOTION");
+
+  // Initialize Redis hash atomically with pipeline + TTL
+  const pipeline = redis.pipeline();
+  pipeline.del(redisKey); // Clear any stale error state
+  pipeline.hset(redisKey, {
+    status: "scanning",
+    total: "0",
+    classified: "0",
+    highRisk: "0",
+    projects: "0",
+    progress: "5",
+    message: "Scanning & organizing your workspace...",
+  });
+  pipeline.expire(redisKey, BACKFILL_KEY_TTL_SECONDS);
+  await pipeline.exec();
+
+  // Remove any existing job with same ID (stale completed/failed) before enqueuing
+  const jobId = `backfill:${tenantId}`;
+  const existingJob = await initialBackfillQueue.getJob(jobId);
+  if (existingJob) {
+    await existingJob.remove();
+  }
+
+  // Enqueue initial-backfill job
+  await initialBackfillQueue.add(
+    jobId,
+    {
+      tenantId,
+      linearIntegrationId: linearIntegration?.id ?? null,
+      notionIntegrationId: notionIntegration?.id ?? null,
+      lookbackDays: DEFAULT_LOOKBACK_DAYS,
+    },
+    { jobId }
+  );
 
   return c.json({ success: true });
 });
@@ -325,41 +406,59 @@ onboardingRoutes.post("/sync", async (c) => {
 
 onboardingRoutes.get("/sync/status", async (c) => {
   const tenantId = c.get("tenantId");
+  const redis = getRedis();
+  const redisKey = `${BACKFILL_KEY_PREFIX}${tenantId}`;
 
-  const state = syncState.get(tenantId);
+  const data = await redis.hgetall(redisKey);
 
-  if (!state) {
-    return c.json({ status: "idle", progress: 0, message: "Not started" });
-  }
-
-  // Cosmetic progress: advance over ~5 seconds
-  const elapsed = Date.now() - state.startedAt;
-  const duration = 5000; // 5 seconds total
-
-  if (elapsed >= duration) {
-    // Complete
-    syncState.delete(tenantId);
+  // No backfill started yet (hgetall returns {} for non-existent keys)
+  if (!data.status) {
     return c.json({
-      status: "completed",
-      progress: 100,
-      message: "Initial sync complete!",
+      status: "idle",
+      progress: 0,
+      total: 0,
+      projects: 0,
+      classified: 0,
+      highRisk: 0,
+      message: "Not started",
     });
   }
 
-  // Calculate progress with easing
-  const rawProgress = Math.min(elapsed / duration, 1);
-  // Ease-out cubic for natural feeling
-  const easedProgress = 1 - Math.pow(1 - rawProgress, 3);
-  const progress = Math.round(easedProgress * 95); // Cap at 95% until done
+  const status = data.status as "scanning" | "classifying" | "triage_complete" | "error";
+  const total = parseInt(data.total || "0", 10);
+  const classified = parseInt(data.classified || "0", 10);
+  const highRisk = parseInt(data.highRisk || "0", 10);
+  const projects = parseInt(data.projects || "0", 10);
+  const message = data.message || "";
 
-  // Progress messages
-  let message = "Preparing initial sync...";
-  if (progress > 20) message = "Connecting to workspaces...";
-  if (progress > 40) message = "Scanning Linear issues...";
-  if (progress > 60) message = "Scanning Notion pages...";
-  if (progress > 80) message = "Indexing content...";
+  // Compute progress based on status
+  let progress: number;
+  switch (status) {
+    case "scanning":
+      progress = 5;
+      break;
+    case "classifying":
+      progress = total > 0 ? Math.round(10 + (classified / total) * 90) : 10;
+      break;
+    case "triage_complete":
+      progress = 100;
+      break;
+    case "error":
+      progress = parseInt(data.progress || "0", 10);
+      break;
+    default:
+      progress = 0;
+  }
 
-  return c.json({ status: "syncing", progress, message });
+  return c.json({
+    status,
+    progress,
+    total,
+    projects,
+    classified,
+    highRisk,
+    message,
+  });
 });
 
 // ─── POST /api/v1/onboarding/complete ────────────────────────────────────────
@@ -395,9 +494,6 @@ onboardingRoutes.post("/complete", async (c) => {
       onboardingStep: 4, // Final step
     },
   });
-
-  // Clean up sync state
-  syncState.delete(tenantId);
 
   return c.json({ success: true });
 });
