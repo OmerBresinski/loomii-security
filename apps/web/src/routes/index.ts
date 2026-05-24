@@ -15,6 +15,7 @@ import {
   projectSourcesQueryOptions,
   projectReviewsQueryOptions,
 } from "@/queries/projects"
+import { onboardingStateQueryOptions } from "@/queries/onboarding"
 
 // ─── Auth Guard ─────────────────────────────────────────────────────────────
 
@@ -139,6 +140,9 @@ const onboardingRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/onboarding",
   beforeLoad: requireAuth,
+  loader: () => {
+    queryClient.prefetchQuery(onboardingStateQueryOptions())
+  },
   component: lazyRouteComponent(() => import("@/routes/onboarding")),
 })
 

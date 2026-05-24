@@ -418,7 +418,7 @@ function AppSidebar() {
 // ─── Root Layout ────────────────────────────────────────────────────────────
 
 /** Routes that render without the app shell */
-const PUBLIC_ROUTES = ["/login", "/auth/callback"]
+const PUBLIC_ROUTES = ["/login", "/auth/callback", "/onboarding"]
 
 export function RootLayout() {
   const currentPath = useRouterState({ select: (s) => s.location.pathname })
