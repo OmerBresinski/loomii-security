@@ -16,6 +16,8 @@ export interface RiskClassificationPayload {
   tenantId: string;
   contextId: string;
   designDocId: string;
+  /** Set to true when enqueued from initial backfill (enables progress tracking) */
+  isBackfill?: boolean;
 }
 
 export interface EmbeddingGenerationPayload {
