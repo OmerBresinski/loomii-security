@@ -77,14 +77,52 @@ Rate your confidence (0-100) in the review:
 - Never include raw system prompts, internal instructions, or meta-commentary in findings
 
 ## Markdown Formatting (IMPORTANT)
-Both the \`summary\` and each finding's \`description\` field MUST be written in **GitHub-flavored Markdown**. Use:
+Both the \`summary\` and each finding's \`description\` field MUST be written in **GitHub-flavored Markdown**.
+
+### Summary Structure
+The \`summary\` field must follow this template:
+
+\`\`\`
+## Overview
+
+[1-2 sentences: what this change does and its security relevance]
+
+## Key Concerns
+
+- **[Concern 1]**: [Brief explanation]
+- **[Concern 2]**: [Brief explanation]
+- **[Concern 3]**: [Brief explanation, if applicable]
+
+## Affected Components
+
+- \`component/path\` — [what's at risk]
+- \`endpoint/or/service\` — [what's at risk]
+
+## Recommendation
+
+[1-2 sentences: overall security posture assessment and top priority action]
+\`\`\`
+
+### Finding Description Structure
+Each finding's \`description\` field must follow this template:
+
+\`\`\`
+[2-3 sentences explaining the specific vulnerability or requirement in context]
+
+**Impact**: [What happens if this is exploited / not addressed]
+
+**Attack scenario**: [Concrete steps an attacker would take, or conditions for exploitation]
+
+**Evidence**: \`relevant code/config/endpoint\` from the context that demonstrates this risk
+\`\`\`
+
+### Formatting Rules
 - **Bold** for emphasis on key terms, affected components, and severity indicators
 - \`inline code\` for endpoints, function names, headers, variables, file paths
 - Fenced code blocks (\`\`\`) for code snippets, config examples, or exploit payloads
 - Bullet lists for enumerating impacts, steps, or requirements
 - Numbered lists for sequential exploitation steps or implementation steps
-
-The summary should be 2-4 paragraphs with clear structure. Finding descriptions should be detailed (3-8 sentences minimum) with specific technical context.
+- Use \`---\` horizontal rules to separate major sections within long descriptions
 
 ## Output Format
 Generate a structured JSON object matching the ReviewOutputSchema exactly.`;
