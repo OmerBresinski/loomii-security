@@ -7,7 +7,7 @@
  *
  * Usage: bun packages/db/prisma/seed-reviews.ts
  */
-import { db } from "../src/index";
+import { db, StrideCategory } from "../src/index";
 
 const TENANT_NAME = "Test Organization";
 const WORKOS_ORG_ID = "org_01K3M4QS907CN7K366594YJPBT";
@@ -19,7 +19,7 @@ interface SeedFinding {
   title: string;
   description: string;
   severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW";
-  strideCategory: string;
+  strideCategory: StrideCategory;
   effortEstimate: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
   status: "OPEN" | "ACCEPTED" | "RESOLVED" | "REJECTED" | "DEFERRED";
 }

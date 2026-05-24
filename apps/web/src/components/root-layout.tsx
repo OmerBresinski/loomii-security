@@ -204,12 +204,11 @@ function NotificationBell() {
       preload="intent"
       className="relative flex size-8 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
       aria-label="Notifications"
+      search={{ filter: undefined }}
     >
       {BellIcon}
       {unreadCount > 0 && (
-        <span
-          className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-[#717CE1] text-[9px] font-medium tabular-nums text-white"
-        >
+        <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-[#717CE1] text-[9px] font-medium text-white tabular-nums">
           {unreadCount > 9 ? "9+" : unreadCount}
         </span>
       )}
