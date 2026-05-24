@@ -1,6 +1,6 @@
 // ─── Step 4: Monitoring Scope ────────────────────────────────────────────────
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -30,6 +30,18 @@ export function MonitoringScope({ onNext, onSkip, onBack }: MonitoringScopeProps
     new Set()
   )
   const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set())
+
+  const hasLinear =
+    data && (data.linearTeams.length > 0 || data.linearProjects.length > 0)
+  const hasNotion = data && data.notionPages.length > 0
+  const hasAnyResources = hasLinear || hasNotion
+
+  // Auto-skip if no workspaces connected (nothing to scope)
+  useEffect(() => {
+    if (!isPending && !hasAnyResources) {
+      onSkip()
+    }
+  }, [isPending, hasAnyResources]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function toggleTeam(id: string) {
     setSelectedTeams((prev) => {
@@ -102,10 +114,6 @@ export function MonitoringScope({ onNext, onSkip, onBack }: MonitoringScopeProps
       </Card>
     )
   }
-
-  const hasLinear =
-    data && (data.linearTeams.length > 0 || data.linearProjects.length > 0)
-  const hasNotion = data && data.notionPages.length > 0
 
   return (
     <Card className="mx-auto w-full max-w-lg">

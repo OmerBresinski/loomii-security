@@ -187,8 +187,17 @@ notionRoutes.get("/callback", async (c) => {
       "Notion integration connected successfully"
     );
 
-    // Redirect to frontend success page
+    // Redirect to frontend - onboarding if not completed, otherwise settings
     const frontendUrl = process.env.FRONTEND_URL;
+    const tenant = await db.tenant.findUnique({
+      where: { id: tenantId },
+      select: { onboardingCompleted: true },
+    });
+
+    if (!tenant?.onboardingCompleted) {
+      return c.redirect(`${frontendUrl}/onboarding/policies`);
+    }
+
     return c.redirect(
       `${frontendUrl}/settings/integrations?status=success&provider=notion`
     );
@@ -201,6 +210,15 @@ notionRoutes.get("/callback", async (c) => {
     );
 
     const frontendUrl = process.env.FRONTEND_URL;
+    const tenant = await db.tenant.findUnique({
+      where: { id: tenantId },
+      select: { onboardingCompleted: true },
+    });
+
+    if (!tenant?.onboardingCompleted) {
+      return c.redirect(`${frontendUrl}/onboarding/notion`);
+    }
+
     return c.redirect(
       `${frontendUrl}/settings/integrations?status=error&reason=exchange_failed`
     );
