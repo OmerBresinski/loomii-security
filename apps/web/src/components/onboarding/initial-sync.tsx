@@ -20,6 +20,7 @@ export function InitialSync({ onComplete }: InitialSyncProps) {
   const startSync = useStartSync()
   const completeOnboarding = useCompleteOnboarding()
   const hasStarted = useRef(false)
+  const hasCompleted = useRef(false)
 
   // Start the sync on mount
   useEffect(() => {
@@ -34,7 +35,8 @@ export function InitialSync({ onComplete }: InitialSyncProps) {
 
   // When sync completes, mark onboarding as done and redirect
   useEffect(() => {
-    if (syncStatus?.status === "completed") {
+    if (syncStatus?.status === "completed" && !hasCompleted.current) {
+      hasCompleted.current = true
       completeOnboarding.mutate(undefined, {
         onSuccess: () => onComplete(),
       })

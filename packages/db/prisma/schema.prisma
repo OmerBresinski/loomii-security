@@ -136,11 +136,13 @@ enum LinkMethod {
 // ===========================================
 
 model Tenant {
-  id          String   @id @default(cuid())
-  name        String
-  workosOrgId String   @unique @map("workos_org_id")
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  id                   String   @id @default(cuid())
+  name                 String
+  workosOrgId          String   @unique @map("workos_org_id")
+  onboardingStep       Int      @default(0) @map("onboarding_step")
+  onboardingCompleted  Boolean  @default(false) @map("onboarding_completed")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
 
   // Relations
   users                   User[]

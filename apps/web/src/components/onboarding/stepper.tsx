@@ -8,16 +8,15 @@ interface StepperProps {
 export function Stepper({ currentStep, steps }: StepperProps) {
   return (
     <div className="flex w-full items-center justify-center py-6">
-      <div className="flex items-center gap-0">
-        {steps.map((step, idx) => {
-          const isCompleted = idx < currentStep
-          const isCurrent = idx === currentStep
-          const isUpcoming = idx > currentStep
+      <div className="flex flex-col items-center">
+        {/* Circles + connectors row */}
+        <div className="flex items-center">
+          {steps.map((step, idx) => {
+            const isCompleted = idx < currentStep
+            const isCurrent = idx === currentStep
 
-          return (
-            <div key={step.key} className="flex items-center">
-              {/* Step circle + label */}
-              <div className="flex flex-col items-center gap-1.5">
+            return (
+              <div key={step.key} className="flex items-center">
                 <div
                   className={`flex size-8 items-center justify-center rounded-full border-2 text-xs font-medium transition-colors ${
                     isCompleted
@@ -47,34 +46,50 @@ export function Stepper({ currentStep, steps }: StepperProps) {
                     idx + 1
                   )}
                 </div>
-                <span
-                  className={`text-[11px] font-medium whitespace-nowrap ${
-                    isCompleted
-                      ? "text-[oklch(0.72_0.12_155)]"
-                      : isCurrent
-                        ? "text-foreground"
-                        : "text-muted-foreground/50"
-                  }`}
-                >
-                  {step.label}
-                </span>
-              </div>
 
-              {/* Connector line */}
-              {idx < steps.length - 1 && (
-                <div
-                  className={`mx-3 h-0.5 w-12 rounded-full ${
-                    isCompleted
-                      ? "bg-[oklch(0.72_0.12_155)]"
-                      : isUpcoming
-                        ? "bg-muted-foreground/15"
-                        : "bg-muted-foreground/25"
-                  }`}
-                />
-              )}
-            </div>
-          )
-        })}
+                {/* Connector line */}
+                {idx < steps.length - 1 && (
+                  <div
+                    className={`mx-2 h-0.5 w-10 rounded-full ${
+                      isCompleted
+                        ? "bg-[oklch(0.72_0.12_155)]"
+                        : "bg-muted-foreground/15"
+                    }`}
+                  />
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Labels row */}
+        <div className="mt-2 flex items-center">
+          {steps.map((step, idx) => {
+            const isCompleted = idx < currentStep
+            const isCurrent = idx === currentStep
+
+            return (
+              <div key={step.key} className="flex items-center">
+                <div className="flex w-8 items-center justify-center">
+                  <span
+                    className={`text-[11px] font-medium whitespace-nowrap ${
+                      isCompleted
+                        ? "text-[oklch(0.72_0.12_155)]"
+                        : isCurrent
+                          ? "text-foreground"
+                          : "text-muted-foreground/50"
+                    }`}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+
+                {/* Spacer matching connector width */}
+                {idx < steps.length - 1 && <div className="mx-2 w-10" />}
+              </div>
+            )
+          })}
+        </div>
       </div>
     </div>
   )

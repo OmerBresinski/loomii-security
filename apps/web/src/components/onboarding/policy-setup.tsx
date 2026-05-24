@@ -17,54 +17,54 @@ import { useConfigurePolicies } from "@/mutations/onboarding"
 
 const OWASP_POLICIES = [
   {
-    id: "injection",
-    label: "Injection Flaws",
-    description: "SQL, NoSQL, OS, and LDAP injection",
-  },
-  {
-    id: "broken-auth",
-    label: "Broken Authentication",
-    description: "Session management, credential handling",
-  },
-  {
-    id: "sensitive-data",
-    label: "Sensitive Data Exposure",
-    description: "Encryption, data classification, PII handling",
-  },
-  {
-    id: "xxe",
-    label: "XML External Entities",
-    description: "XML parser vulnerabilities",
-  },
-  {
-    id: "broken-access",
+    id: "A01",
     label: "Broken Access Control",
-    description: "Authorization bypass, privilege escalation",
+    description: "Authorization bypass, privilege escalation, IDOR",
   },
   {
-    id: "misconfig",
+    id: "A02",
+    label: "Cryptographic Failures",
+    description: "Weak encryption, data exposure, missing TLS",
+  },
+  {
+    id: "A03",
+    label: "Injection",
+    description: "SQL, NoSQL, OS command, and LDAP injection",
+  },
+  {
+    id: "A04",
+    label: "Insecure Design",
+    description: "Missing security controls, flawed architecture",
+  },
+  {
+    id: "A05",
     label: "Security Misconfiguration",
     description: "Default configs, unnecessary features, error handling",
   },
   {
-    id: "xss",
-    label: "Cross-Site Scripting (XSS)",
-    description: "Reflected, stored, DOM-based XSS",
-  },
-  {
-    id: "deserialization",
-    label: "Insecure Deserialization",
-    description: "Object and data structure manipulation",
-  },
-  {
-    id: "components",
+    id: "A06",
     label: "Vulnerable Components",
-    description: "Known CVEs in dependencies",
+    description: "Known CVEs in dependencies, outdated libraries",
   },
   {
-    id: "logging",
-    label: "Insufficient Logging",
-    description: "Monitoring, alerting, and audit trail gaps",
+    id: "A07",
+    label: "Auth & Session Failures",
+    description: "Broken authentication, session management flaws",
+  },
+  {
+    id: "A08",
+    label: "Data Integrity Failures",
+    description: "Insecure deserialization, untrusted CI/CD pipelines",
+  },
+  {
+    id: "A09",
+    label: "Logging & Monitoring Failures",
+    description: "Insufficient logging, alerting, and audit trails",
+  },
+  {
+    id: "A10",
+    label: "Server-Side Request Forgery",
+    description: "SSRF attacks, internal resource access",
   },
 ]
 

@@ -9,8 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000"
+import { fetchApi } from "@/lib/api-client"
 
 interface ConnectLinearProps {
   connected: boolean
@@ -23,12 +22,16 @@ export function ConnectLinear({
   onNext,
   onSkip,
 }: ConnectLinearProps) {
-  function handleConnect() {
-    // Redirect to backend OAuth flow for Linear
-    const redirectUrl = encodeURIComponent(
-      `${window.location.origin}/onboarding?step=0&oauth=linear`
+  async function handleConnect() {
+    // Call POST endpoint which returns the OAuth redirect URL
+    const { redirectUrl } = await fetchApi<{ redirectUrl: string }>(
+      "/api/v1/integrations/linear/connect",
+      {
+        method: "POST",
+        body: { redirectUrl: `${window.location.origin}/onboarding` },
+      }
     )
-    window.location.href = `${API_BASE_URL}/api/v1/integrations/linear/connect?redirectUrl=${redirectUrl}`
+    window.location.href = redirectUrl
   }
 
   return (
