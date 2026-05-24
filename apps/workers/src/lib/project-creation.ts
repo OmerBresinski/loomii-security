@@ -105,7 +105,6 @@ async function storeSummaryEmbedding(
     await database.$executeRaw`
       UPDATE projects
       SET summary_embedding = ${vectorStr}::vector,
-          summary_updated_at = NOW(),
           updated_at = NOW()
       WHERE id = ${projectId}
     `;
