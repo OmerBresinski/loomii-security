@@ -25,7 +25,7 @@ import {
 } from "@loomii/queue";
 import type { Redis } from "ioredis";
 import { generateEmbeddings } from "../lib/embeddings";
-import { clusterByCosineSimilarity } from "../lib/clustering";
+import { clusterByCosineSimilarity, cosineSimilarity } from "../lib/clustering";
 import {
   createProjectsFromBackfill,
   type LinearProjectMapping,
@@ -244,6 +244,81 @@ async function fetchNotionPages(
   }
 
   return items;
+}
+
+// ─── Unclustered Item Assignment ─────────────────────────────────────────────
+
+const MIN_ASSIGNMENT_SIMILARITY = 0.3; // Low threshold since these are cross-domain matches
+
+/**
+ * Assigns unclustered orphan items to the nearest existing project
+ * by comparing their embedding against each project's summaryEmbedding.
+ * Creates ProjectSource records for assigned items.
+ */
+async function assignUnclusteredToProjects(
+  tenantId: string,
+  unclusteredIds: string[],
+  orphanMap: Map<string, { item: BackfillItem; embedding: number[] }>,
+  childLogger: typeof logger
+): Promise<number> {
+  let assignedCount = 0;
+
+  // Fetch project summary embeddings
+  const projectEmbeddings = await db.$queryRaw<Array<{ id: string; embedding: string }>>`
+    SELECT id, summary_embedding::text as embedding
+    FROM projects
+    WHERE tenant_id = ${tenantId}
+      AND summary_embedding IS NOT NULL
+  `;
+
+  // Parse embedding strings back to number arrays
+  const projects = projectEmbeddings.map((p) => ({
+    id: p.id,
+    embedding: JSON.parse(`[${p.embedding.slice(1, -1)}]`) as number[],
+  }));
+
+  if (projects.length === 0) return 0;
+
+  for (const itemId of unclusteredIds) {
+    const orphan = orphanMap.get(itemId);
+    if (!orphan) continue;
+
+    // Find most similar project
+    let bestProjectId: string | null = null;
+    let bestSimilarity = -Infinity;
+
+    for (const project of projects) {
+      const similarity = cosineSimilarity(orphan.embedding, project.embedding);
+      if (similarity > bestSimilarity) {
+        bestSimilarity = similarity;
+        bestProjectId = project.id;
+      }
+    }
+
+    if (!bestProjectId || bestSimilarity < MIN_ASSIGNMENT_SIMILARITY) continue;
+
+    // Create ProjectSource link
+    try {
+      await db.projectSource.create({
+        data: {
+          projectId: bestProjectId,
+          sourceType: orphan.item.source === "LINEAR" ? "LINEAR_ISSUE" : "NOTION_PAGE",
+          sourceId: orphan.item.id,
+          linkedBy: "AUTO",
+          linkReason: {
+            method: "embedding_nearest_project",
+            similarity: Math.round(bestSimilarity * 100) / 100,
+          },
+        },
+      });
+      assignedCount++;
+    } catch (err: any) {
+      if (err?.code === "P2002") continue;
+      childLogger.warn({ itemId, error: err.message }, "Failed to assign unclustered item");
+    }
+  }
+
+  return assignedCount;
 }
 
 // ─── Main Processor ──────────────────────────────────────────────────────────
@@ -497,6 +572,23 @@ export async function processInitialBackfill(job: Job<InitialBackfillPayload>): 
       { created: projectResult.created.length, skipped: projectResult.skipped.length },
       "Projects created"
     );
+
+    // ─── Step 9b: Assign unclustered items to nearest project ─────────────
+    // Items that didn't cluster get matched to the most similar existing project
+    // by comparing their embedding against project summaryEmbeddings.
+
+    if (clusterResult.unclustered.length > 0 && projectResult.created.length > 0) {
+      const unclusteredAssigned = await assignUnclusteredToProjects(
+        tenantId,
+        clusterResult.unclustered,
+        orphanMap,
+        childLogger
+      );
+      childLogger.info(
+        { assigned: unclusteredAssigned },
+        "Unclustered items assigned to nearest projects"
+      );
+    }
 
     await job.updateProgress(85);
 
