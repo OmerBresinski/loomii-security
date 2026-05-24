@@ -55,6 +55,7 @@ export const processors: Record<QueueName, Processor> = {
   }) as Processor,
   [QUEUE_NAMES.SUMMARY_GENERATION]: processSummaryGeneration as Processor,
   [QUEUE_NAMES.PROJECT_MATCHING]: processProjectMatching as Processor,
+  [QUEUE_NAMES.INITIAL_BACKFILL]: createPlaceholderProcessor("initial-backfill"),
   [QUEUE_NAMES.EVENTS]: processEvents as Processor,
 };
 
@@ -72,5 +73,6 @@ export const concurrency: Record<QueueName, number> = {
   [QUEUE_NAMES.THREAT_MODEL_UPDATE]: 2,
   [QUEUE_NAMES.SUMMARY_GENERATION]: 2,
   [QUEUE_NAMES.PROJECT_MATCHING]: 5,
+  [QUEUE_NAMES.INITIAL_BACKFILL]: 5,
   [QUEUE_NAMES.EVENTS]: 10,
 };
