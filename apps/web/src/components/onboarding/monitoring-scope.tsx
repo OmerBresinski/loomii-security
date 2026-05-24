@@ -18,9 +18,10 @@ import { useSaveMonitoringScope } from "@/mutations/onboarding"
 interface MonitoringScopeProps {
   onNext: () => void
   onSkip: () => void
+  onBack: () => void
 }
 
-export function MonitoringScope({ onNext, onSkip }: MonitoringScopeProps) {
+export function MonitoringScope({ onNext, onSkip, onBack }: MonitoringScopeProps) {
   const { data, isPending } = useMonitoringScope()
   const saveScope = useSaveMonitoringScope()
 
@@ -228,6 +229,12 @@ export function MonitoringScope({ onNext, onSkip }: MonitoringScopeProps) {
         </div>
 
         <div className="flex items-center justify-center gap-3 pt-2">
+          <button
+            onClick={onBack}
+            className="text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            Back
+          </button>
           <Button
             size="sm"
             onClick={handleContinue}

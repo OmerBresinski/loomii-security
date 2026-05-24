@@ -15,12 +15,14 @@ interface ConnectNotionProps {
   connected: boolean
   onNext: () => void
   onSkip: () => void
+  onBack: () => void
 }
 
 export function ConnectNotion({
   connected,
   onNext,
   onSkip,
+  onBack,
 }: ConnectNotionProps) {
   async function handleConnect() {
     // Call POST endpoint which returns the OAuth redirect URL
@@ -62,21 +64,37 @@ export function ConnectNotion({
             <p className="text-xs text-muted-foreground">
               Your Notion workspace is connected.
             </p>
-            <Button size="sm" onClick={onNext}>
-              Continue
-            </Button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={onBack}
+                className="text-[11px] text-muted-foreground hover:text-foreground"
+              >
+                Back
+              </button>
+              <Button size="sm" onClick={onNext}>
+                Continue
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="flex flex-col items-center gap-3">
             <Button size="sm" onClick={handleConnect}>
               Connect Notion
             </Button>
-            <button
-              onClick={onSkip}
-              className="text-[11px] text-muted-foreground hover:text-foreground"
-            >
-              Skip for now
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={onBack}
+                className="text-[11px] text-muted-foreground hover:text-foreground"
+              >
+                Back
+              </button>
+              <button
+                onClick={onSkip}
+                className="text-[11px] text-muted-foreground hover:text-foreground"
+              >
+                Skip for now
+              </button>
+            </div>
           </div>
         )}
       </CardContent>

@@ -71,9 +71,10 @@ const OWASP_POLICIES = [
 interface PolicySetupProps {
   onNext: () => void
   onSkip: () => void
+  onBack: () => void
 }
 
-export function PolicySetup({ onNext, onSkip }: PolicySetupProps) {
+export function PolicySetup({ onNext, onSkip, onBack }: PolicySetupProps) {
   // All OWASP defaults are on initially
   const [enabled, setEnabled] = useState<Record<string, boolean>>(
     Object.fromEntries(OWASP_POLICIES.map((p) => [p.id, true]))
@@ -136,6 +137,12 @@ export function PolicySetup({ onNext, onSkip }: PolicySetupProps) {
         </div>
 
         <div className="flex items-center justify-center gap-3 pt-2">
+          <button
+            onClick={onBack}
+            className="text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            Back
+          </button>
           <Button
             size="sm"
             onClick={handleContinue}

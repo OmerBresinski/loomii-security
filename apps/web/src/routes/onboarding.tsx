@@ -45,6 +45,12 @@ export default function OnboardingPage() {
     goToStep(currentStep + 1)
   }, [currentStep, goToStep])
 
+  const handleBack = useCallback(() => {
+    if (currentStep > 0) {
+      goToStep(currentStep - 1)
+    }
+  }, [currentStep, goToStep])
+
   const handleSkip = useCallback(() => {
     goToStep(currentStep + 1)
   }, [currentStep, goToStep])
@@ -106,13 +112,14 @@ export default function OnboardingPage() {
             connected={onboarding?.notionConnected ?? false}
             onNext={handleNext}
             onSkip={handleSkip}
+            onBack={handleBack}
           />
         )}
         {currentStep === 2 && (
-          <PolicySetup onNext={handleNext} onSkip={handleSkip} />
+          <PolicySetup onNext={handleNext} onSkip={handleSkip} onBack={handleBack} />
         )}
         {currentStep === 3 && (
-          <MonitoringScope onNext={handleNext} onSkip={handleSkip} />
+          <MonitoringScope onNext={handleNext} onSkip={handleSkip} onBack={handleBack} />
         )}
         {currentStep === 4 && <InitialSync onComplete={handleComplete} />}
       </div>
