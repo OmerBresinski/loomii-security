@@ -9,6 +9,7 @@
  */
 import { generateText } from "ai";
 import type { PrismaClient } from "@loomii/db";
+import { summaryGenerationQueue } from "@loomii/queue";
 import { bedrock, MODELS } from "./bedrock";
 import { generateQueryEmbedding } from "./embeddings";
 import { logger } from "./logger";
@@ -198,6 +199,13 @@ export async function createProjectsFromBackfill(
     // Generate summaryEmbedding (non-blocking for transaction)
     await storeSummaryEmbedding(project.id, [mapping.linearProjectName], database);
 
+    // Trigger full summary generation (debounced to allow sources to settle)
+    await summaryGenerationQueue.add(
+      "regenerate",
+      { projectId: project.id, trigger: "project-creation-mirror" },
+      { jobId: `summary-${project.id}`, delay: 60_000 }
+    );
+
     result.created.push({
       projectId: project.id,
       name: project.name,
@@ -254,6 +262,13 @@ export async function createProjectsFromBackfill(
 
     // Generate summaryEmbedding from cluster titles
     await storeSummaryEmbedding(project.id, cluster.titles, database);
+
+    // Trigger full summary generation (debounced to allow sources to settle)
+    await summaryGenerationQueue.add(
+      "regenerate",
+      { projectId: project.id, trigger: "project-creation-cluster" },
+      { jobId: `summary-${project.id}`, delay: 60_000 }
+    );
 
     result.created.push({
       projectId: project.id,

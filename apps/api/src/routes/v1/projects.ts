@@ -113,6 +113,11 @@ projectRoutes.post("/", async (c) => {
     return newProject;
   });
 
+  // Trigger summary generation if sources were linked at creation time
+  if (sources && sources.length > 0) {
+    await triggerSummaryRegeneration(project.id);
+  }
+
   return c.json(
     {
       id: project.id,
