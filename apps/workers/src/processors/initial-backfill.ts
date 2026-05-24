@@ -304,7 +304,7 @@ async function assignUnclusteredToProjects(
         data: {
           projectId: bestProjectId,
           sourceType: orphan.item.source === "LINEAR" ? "LINEAR_ISSUE" : "NOTION_PAGE",
-          sourceId: orphan.item.id,
+          sourceId: orphan.item.externalId,
           linkedBy: "AUTO",
           linkReason: {
             method: "embedding_nearest_project",
@@ -503,12 +503,12 @@ export async function processInitialBackfill(job: Job<InitialBackfillPayload>): 
       if (item.linearProjectId && item.linearProjectName) {
         const existing = linearProjectMap.get(item.linearProjectId);
         if (existing) {
-          existing.itemIds.push(item.id);
+          existing.itemIds.push(item.externalId);
         } else {
           linearProjectMap.set(item.linearProjectId, {
             linearProjectId: item.linearProjectId,
             linearProjectName: item.linearProjectName,
-            itemIds: [item.id],
+            itemIds: [item.externalId],
           });
         }
       } else {
@@ -526,7 +526,7 @@ export async function processInitialBackfill(job: Job<InitialBackfillPayload>): 
     // ─── Step 8: Cluster orphans ──────────────────────────────────────────
 
     const clusterInput = orphanItems.map(({ item, embedding }) => ({
-      id: item.id,
+      id: item.externalId,
       embedding,
     }));
 
@@ -536,14 +536,14 @@ export async function processInitialBackfill(job: Job<InitialBackfillPayload>): 
     });
 
     // Build OrphanCluster[] for project creation using a Map for O(1) lookups
-    const orphanMap = new Map(orphanItems.map((o) => [o.item.id, o]));
+    const orphanMap = new Map(orphanItems.map((o) => [o.item.externalId, o]));
 
     const orphanClusters: OrphanCluster[] = clusterResult.clusters.map((cluster) => {
       const clusterItems = cluster.items.map((itemId) => orphanMap.get(itemId)!.item);
 
       return {
         items: clusterItems.map((item): ClusterItemRef => ({
-          id: item.id,
+          id: item.externalId,
           sourceType: item.source === "LINEAR" ? "LINEAR_ISSUE" : "NOTION_PAGE",
         })),
         centroid: cluster.centroid,
@@ -596,7 +596,7 @@ export async function processInitialBackfill(job: Job<InitialBackfillPayload>): 
     // ─── Step 10: Create ContextBundles + enqueue reviews per project ──────
     // Each project gets a single review covering all its aggregated sources.
 
-    const itemMap = new Map(allItems.map((item) => [item.id, item]));
+    const itemMap = new Map(allItems.map((item) => [item.externalId, item]));
 
     for (const created of projectResult.created) {
       // Build aggregated content from all items in this project
