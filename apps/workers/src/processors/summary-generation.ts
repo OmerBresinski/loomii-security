@@ -26,9 +26,10 @@ import { bedrock } from "../lib/bedrock";
 import { generateQueryEmbedding } from "../lib/embeddings";
 import { SUMMARY_SYSTEM_PROMPT } from "../prompts/summary-system";
 import { logger } from "../lib/logger";
+import { MODELS } from "../lib/bedrock";
 
-/** Claude Sonnet model for summary generation */
-const SONNET_MODEL_ID = "anthropic.claude-sonnet-4-20250514-v1:0";
+/** Claude Sonnet model for summary generation (cross-region inference profile) */
+const SONNET_MODEL_ID = MODELS.CLAUDE_SONNET;
 
 /** Maximum tokens for the generated summary */
 const MAX_OUTPUT_TOKENS = 1500;

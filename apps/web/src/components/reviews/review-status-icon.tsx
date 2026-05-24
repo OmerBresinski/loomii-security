@@ -77,17 +77,29 @@ function ReviewStatusIconSvg({ status }: { status: string | null }) {
         </svg>
       )
     case "GENERATING":
-      // Soft gray dashed circle
+      // Spinning arc indicator
       return (
-        <svg width="15" height="15" viewBox="0 0 16 16">
+        <svg
+          width="15"
+          height="15"
+          viewBox="0 0 16 16"
+          className="animate-spin"
+          style={{ animationDuration: "1s" }}
+        >
           <circle
             cx="8"
             cy="8"
             r="6.5"
             fill="none"
+            stroke="oklch(0.6 0.02 260 / 0.3)"
+            strokeWidth="1.5"
+          />
+          <path
+            d="M8 1.5 A6.5 6.5 0 0 1 14.5 8"
+            fill="none"
             stroke="oklch(0.6 0.02 260)"
             strokeWidth="1.5"
-            strokeDasharray="2.5 2"
+            strokeLinecap="round"
           />
         </svg>
       )
