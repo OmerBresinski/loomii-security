@@ -39,9 +39,21 @@ app.route("/", healthRoute);
 app.route("/", authRoutes);
 app.route("/webhooks/linear", linearWebhookRoute);
 
+// OAuth callback paths exempt from auth + rate limiting (browser redirects, no session)
+const PUBLIC_API_PATHS = new Set([
+  "/api/v1/integrations/linear/callback",
+  "/api/v1/integrations/notion/callback",
+]);
+
 // Protected routes - auth + rate limiting
-app.use("/api/*", authMiddleware);
-app.use("/api/*", rateLimiter);
+app.use("/api/*", async (c, next) => {
+  if (PUBLIC_API_PATHS.has(c.req.path)) return next();
+  return authMiddleware(c, next);
+});
+app.use("/api/*", async (c, next) => {
+  if (PUBLIC_API_PATHS.has(c.req.path)) return next();
+  return rateLimiter(c, next);
+});
 app.route("/api/v1", v1Routes);
 
 // 404 handler
