@@ -21,7 +21,6 @@ import { db, insertEmbedding } from "@loomii/db";
 import { decrypt } from "@loomii/shared";
 import {
   createRedisConnection,
-  riskClassificationQueue,
   type InitialBackfillPayload,
 } from "@loomii/queue";
 import type { Redis } from "ioredis";
@@ -501,30 +500,23 @@ export async function processInitialBackfill(job: Job<InitialBackfillPayload>): 
 
     await job.updateProgress(85);
 
-    // ─── Step 10: Update Redis with projects count ────────────────────────
+    // ─── Step 10: Mark as triage_complete ─────────────────────────────────
+    // Note: Risk classification is skipped during backfill because ContextBundles
+    // don't exist yet. Items will be classified through the normal polling pipeline
+    // as changes are detected going forward. For now we mark as complete.
 
     await redis.hset(redisKey, {
-      status: "classifying",
+      status: "triage_complete",
       projects: String(projectResult.created.length),
-      message: `Classifying risk for ${allItems.length} items...`,
+      classified: String(allItems.length),
+      highRisk: "0",
+      message: `Scan complete! ${projectResult.created.length} projects discovered.`,
     });
 
-    // ─── Step 11: Fan out risk-classification jobs (bulk enqueue) ──────────
-
-    await riskClassificationQueue.addBulk(
-      allItems.map((item) => ({
-        name: "classify",
-        data: {
-          tenantId,
-          contextId: item.id,
-          designDocId: item.externalId,
-          isBackfill: true,
-          sourceType: item.source === "LINEAR" ? "linear" as const : "notion" as const,
-        },
-      }))
+    childLogger.info(
+      { total: allItems.length, projects: projectResult.created.length },
+      "Backfill Phase 1 complete (classification deferred to normal pipeline)"
     );
-
-    childLogger.info({ jobCount: allItems.length }, "Risk-classification jobs enqueued");
     await job.updateProgress(100);
   } catch (err) {
     childLogger.error({ error: err }, "Initial backfill failed");

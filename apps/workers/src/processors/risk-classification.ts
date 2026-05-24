@@ -288,7 +288,7 @@ async function handleBackfillProgress(
         sourceType,
         sourceId: jobData.designDocId,
       },
-      { jobId: `assemble:${tenantId}:${jobData.designDocId}` }
+      { jobId: `assemble-${tenantId}-${jobData.designDocId}` }
     );
     childLogger.info(
       { level: classification.level, sourceType },

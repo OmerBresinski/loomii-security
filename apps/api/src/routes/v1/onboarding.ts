@@ -396,7 +396,7 @@ onboardingRoutes.post("/sync", async (c) => {
   await pipeline.exec();
 
   // Remove any existing job with same ID (stale completed/failed) before enqueuing
-  const jobId = `backfill:${tenantId}`;
+  const jobId = `backfill-${tenantId}`;
   const existingJob = await initialBackfillQueue.getJob(jobId);
   if (existingJob) {
     await existingJob.remove();
