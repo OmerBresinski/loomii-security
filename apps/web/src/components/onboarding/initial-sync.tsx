@@ -1,6 +1,5 @@
 // ─── Step 5: Initial Sync (Two-Stage Backfill Progress) ──────────────────────
 
-import { useEffect, useRef } from "react"
 import {
   Card,
   CardContent,
@@ -162,29 +161,9 @@ function ErrorIcon() {
 export function InitialSync({ onComplete }: InitialSyncProps) {
   const startSync = useStartSync()
   const completeOnboarding = useCompleteOnboarding()
-  const hasStarted = useRef(false)
-  const hasCompleted = useRef(false)
 
-  // Start the sync on mount
-  useEffect(() => {
-    if (!hasStarted.current) {
-      hasStarted.current = true
-      startSync.mutate()
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Poll for sync status
-  const { data: syncStatus } = useSyncStatus(hasStarted.current)
-
-  // When triage completes, mark onboarding as done and redirect
-  useEffect(() => {
-    if (syncStatus?.status === "triage_complete" && !hasCompleted.current) {
-      hasCompleted.current = true
-      completeOnboarding.mutate(undefined, {
-        onSuccess: () => onComplete(),
-      })
-    }
-  }, [syncStatus?.status]) // eslint-disable-line react-hooks/exhaustive-deps
+  // Poll for sync status. Polling stops on terminal states (query options).
+  const { data: syncStatus } = useSyncStatus(true)
 
   const progress = syncStatus?.progress ?? 0
   const status = syncStatus?.status ?? "idle"
@@ -193,10 +172,16 @@ export function InitialSync({ onComplete }: InitialSyncProps) {
   const classified = syncStatus?.classified ?? 0
   const highRisk = syncStatus?.highRisk ?? 0
 
-  // Retry handler for error state
-  const handleRetry = () => {
-    hasCompleted.current = false
+  // Event handler: retry on error
+  function handleRetry() {
     startSync.mutate()
+  }
+
+  // Event handler: user confirms completion → POST /complete → redirect
+  function handleContinue() {
+    completeOnboarding.mutate(undefined, {
+      onSuccess: () => onComplete(),
+    })
   }
 
   return (
@@ -220,13 +205,13 @@ export function InitialSync({ onComplete }: InitialSyncProps) {
           )}
         </div>
 
-        {/* Stage indicator (visible during scanning/classifying) */}
+        {/* Stage indicator (visible during scanning/classifying/complete) */}
         {(status === "scanning" || status === "classifying" || status === "triage_complete") && (
           <StageIndicator status={status} />
         )}
 
         {/* Progress bar */}
-        {status !== "error" && (
+        {status !== "error" && status !== "triage_complete" && (
           <div className="w-full max-w-xs">
             <Progress value={progress} />
           </div>
@@ -288,6 +273,14 @@ export function InitialSync({ onComplete }: InitialSyncProps) {
               <p className="text-[11px] text-muted-foreground">
                 {projects} projects found, {highRisk} items flagged for review.
               </p>
+              <Button
+                size="sm"
+                className="mt-3 h-8 text-xs"
+                onClick={handleContinue}
+                disabled={completeOnboarding.isPending}
+              >
+                {completeOnboarding.isPending ? "Finishing..." : "Continue to Reviews"}
+              </Button>
             </>
           )}
 

@@ -12,7 +12,7 @@ import {
   useOnboardingState,
   onboardingStateQueryOptions,
 } from "@/queries/onboarding"
-import { useSaveOnboardingStep } from "@/mutations/onboarding"
+import { useSaveOnboardingStep, useStartSync } from "@/mutations/onboarding"
 
 // ─── Step Definitions ───────────────────────────────────────────────────────
 
@@ -41,6 +41,7 @@ export default function OnboardingPage() {
   const queryClient = useQueryClient()
   const { data } = useOnboardingState()
   const saveStep = useSaveOnboardingStep()
+  const startSync = useStartSync()
 
   const onboarding = data?.onboarding
   const currentStepIndex = STEP_INDEX[step] ?? 0
@@ -49,6 +50,11 @@ export default function OnboardingPage() {
     const stepIndex = STEP_INDEX[stepKey] ?? 0
     saveStep.mutate({ step: stepIndex })
     navigate({ to: "/onboarding/$step", params: { step: stepKey } })
+
+    // Trigger the backfill when entering the sync step
+    if (stepKey === "sync") {
+      startSync.mutate()
+    }
   }
 
   function handleNext() {
