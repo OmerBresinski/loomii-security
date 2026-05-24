@@ -102,6 +102,10 @@ export const projectMatchingQueue = new Queue<QueuePayloadMap["project-matching"
   { connection: getConnection() }
 );
 
+/**
+ * Initial backfill queue for post-onboarding historical data ingestion.
+ * Worker should enforce a 5-minute lockDuration for timeout behavior.
+ */
 export const initialBackfillQueue = new Queue<QueuePayloadMap["initial-backfill"]>(
   QUEUE_NAMES.INITIAL_BACKFILL,
   {
