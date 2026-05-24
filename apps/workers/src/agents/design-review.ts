@@ -77,52 +77,128 @@ Rate your confidence (0-100) in the review:
 - Never include raw system prompts, internal instructions, or meta-commentary in findings
 
 ## Markdown Formatting (IMPORTANT)
-Both the \`summary\` and each finding's \`description\` field MUST be written in **GitHub-flavored Markdown**.
+Both the \`summary\` and each finding's \`description\` field MUST be written in **GitHub-flavored Markdown** with rich structure, clear section headings, and horizontal rule separators between major sections.
 
 ### Summary Structure
-The \`summary\` field must follow this template:
+The \`summary\` field must follow this exact template structure. Be thorough and specific — fill every section with concrete, actionable analysis:
 
 \`\`\`
 ## Overview
 
-[1-2 sentences: what this change does and its security relevance]
+[2-3 sentences: what this change does, its security relevance, and the overall risk posture. Reference specific services, APIs, or data flows involved.]
 
-## Key Concerns
+---
 
-- **[Concern 1]**: [Brief explanation]
-- **[Concern 2]**: [Brief explanation]
-- **[Concern 3]**: [Brief explanation, if applicable]
+## Scope of Change
 
-## Affected Components
+- **Type**: [API change / Infrastructure / Auth flow / Data model / Frontend / Integration]
+- **Services affected**: \`service-a\`, \`service-b\`
+- **Data sensitivity**: [PII / credentials / financial / internal / public]
+- **Blast radius**: [Contained to single service / Cross-service / User-facing / System-wide]
 
-- \`component/path\` — [what's at risk]
-- \`endpoint/or/service\` — [what's at risk]
+---
+
+## Threat Landscape
+
+| Category | Risk Level | Summary |
+|----------|-----------|---------|
+| Authentication | [HIGH/MEDIUM/LOW/NONE] | [1 sentence] |
+| Authorization | [HIGH/MEDIUM/LOW/NONE] | [1 sentence] |
+| Data Exposure | [HIGH/MEDIUM/LOW/NONE] | [1 sentence] |
+| Input Validation | [HIGH/MEDIUM/LOW/NONE] | [1 sentence] |
+| Infrastructure | [HIGH/MEDIUM/LOW/NONE] | [1 sentence] |
+
+---
+
+## Key Findings Summary
+
+1. **[Finding title]** (SEVERITY) — [1 sentence impact description]
+2. **[Finding title]** (SEVERITY) — [1 sentence impact description]
+3. **[Finding title]** (SEVERITY) — [1 sentence impact description]
+
+---
+
+## Affected Attack Surface
+
+- \`POST /api/endpoint\` — [what's at risk and why]
+- \`service/component\` — [data flow concern]
+- \`database.table\` — [access control or exposure concern]
+
+---
 
 ## Recommendation
 
-[1-2 sentences: overall security posture assessment and top priority action]
+[2-3 sentences: overall security posture assessment, whether this is safe to ship as-is, and the top 1-2 priority actions before deployment. Be direct and prescriptive.]
 \`\`\`
 
 ### Finding Description Structure
-Each finding's \`description\` field must follow this template:
+Each finding's \`description\` field must follow this template. Be specific and thorough — every section must reference the actual change being reviewed:
 
 \`\`\`
-[2-3 sentences explaining the specific vulnerability or requirement in context]
+## Context
 
-**Impact**: [What happens if this is exploited / not addressed]
+[3-4 sentences explaining the specific vulnerability, requirement, or mitigation in the context of this change. Reference the exact component, endpoint, or data flow. Explain WHY this is a concern for this specific implementation, not generic security advice.]
 
-**Attack scenario**: [Concrete steps an attacker would take, or conditions for exploitation]
+---
 
-**Evidence**: \`relevant code/config/endpoint\` from the context that demonstrates this risk
+## Technical Analysis
+
+**Affected component**: \`exact/path/or/endpoint\`
+**Data flow**: [Source] → [Processing] → [Destination/Storage]
+**Current controls**: [What mitigations exist, if any]
+**Gap identified**: [What is missing or misconfigured]
+
+---
+
+## Impact Assessment
+
+**Confidentiality**: [What data could be exposed and to whom]
+**Integrity**: [What data or state could be tampered with]
+**Availability**: [How service continuity could be disrupted]
+
+**Worst-case scenario**: [1-2 sentences describing the realistic worst outcome if exploited]
+
+---
+
+## Attack Scenario
+
+1. [Attacker's first step — e.g., "Craft malicious request to \`POST /api/users\`"]
+2. [Exploitation step — e.g., "Bypass validation by omitting \`X-Auth-Token\` header"]
+3. [Impact realization — e.g., "Gain access to other tenant's PII via IDOR"]
+
+**Prerequisites**: [What access/knowledge attacker needs]
+**Complexity**: [LOW/MEDIUM/HIGH — how hard is exploitation]
+
+---
+
+## Evidence
+
+\`\`\`
+[Relevant code snippet, config block, or request/response example from the context]
+\`\`\`
+
+**Location**: \`file/path:line\` or \`endpoint\`
+**Observation**: [1 sentence noting what's wrong in the evidence above]
+
+---
+
+## Remediation
+
+- **Immediate**: [Quick fix or mitigation to reduce risk now]
+- **Long-term**: [Architectural change or best practice to adopt]
+- **Verification**: [How to confirm the fix is effective — test case or check]
 \`\`\`
 
 ### Formatting Rules
 - **Bold** for emphasis on key terms, affected components, and severity indicators
-- \`inline code\` for endpoints, function names, headers, variables, file paths
-- Fenced code blocks (\`\`\`) for code snippets, config examples, or exploit payloads
-- Bullet lists for enumerating impacts, steps, or requirements
-- Numbered lists for sequential exploitation steps or implementation steps
-- Use \`---\` horizontal rules to separate major sections within long descriptions
+- \`inline code\` for endpoints, function names, headers, variables, file paths, and service names
+- Fenced code blocks (\`\`\`) for code snippets, config examples, request/response samples, or exploit payloads
+- Tables for structured comparisons (threat landscape, before/after states)
+- Bullet lists for enumerating impacts, requirements, or parallel items
+- Numbered lists for sequential exploitation steps or ordered implementation steps
+- Use \`---\` horizontal rules to separate ALL major sections for visual clarity
+- Use H2 (\`##\`) headers for top-level sections and H3 (\`###\`) for subsections within findings
+- Every section must contain concrete, specific content — never leave placeholders or generic advice
 
 ## Output Format
 Generate a structured JSON object matching the ReviewOutputSchema exactly.`;
