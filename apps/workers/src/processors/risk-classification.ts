@@ -16,7 +16,14 @@
  */
 import type { Job } from "bullmq";
 import { db, type RiskLevel } from "@loomii/db";
-import { reviewQueue, eventsQueue, type RiskClassificationPayload } from "@loomii/queue";
+import {
+  reviewQueue,
+  eventsQueue,
+  contextAssemblyQueue,
+  createRedisConnection,
+  type RiskClassificationPayload,
+} from "@loomii/queue";
+import type { Redis } from "ioredis";
 import { createBedrockAgent } from "../lib/bedrock";
 import {
   riskClassificationSchema,
@@ -27,6 +34,19 @@ import {
 import { logger } from "../lib/logger";
 
 const LLM_TIMEOUT_MS = 15_000; // 15s for LLM call
+const BACKFILL_KEY_PREFIX = "backfill:status:";
+const MEDIUM_PLUS_LEVELS: Set<string> = new Set(["CRITICAL", "HIGH", "MEDIUM"]);
+
+// ─── Redis Singleton ─────────────────────────────────────────────────────────
+
+let _redis: Redis | null = null;
+
+function getRedis(): Redis {
+  if (!_redis) {
+    _redis = createRedisConnection();
+  }
+  return _redis;
+}
 
 /**
  * The risk classifier Mastra agent.
@@ -54,6 +74,7 @@ export async function processRiskClassification(
   job: Job<RiskClassificationPayload>
 ): Promise<void> {
   const { tenantId, contextId } = job.data;
+  const isBackfill = job.data.isBackfill === true;
 
   const childLogger = logger.child({
     queue: "risk-classification",
@@ -73,11 +94,13 @@ export async function processRiskClassification(
 
   if (!bundle) {
     childLogger.error("Context bundle not found, skipping classification");
+    if (isBackfill) await incrementBackfillClassified(tenantId, "LOW", childLogger);
     return;
   }
 
   if (!bundle.content) {
     childLogger.error("Context bundle has no content, skipping classification");
+    if (isBackfill) await incrementBackfillClassified(tenantId, "LOW", childLogger);
     return;
   }
 
@@ -109,8 +132,13 @@ export async function processRiskClassification(
     },
   });
 
-  // 4. Publish events based on risk level
-  await publishRiskEvents(tenantId, contextId, classification, childLogger);
+  // 4. Backfill-specific: track progress in Redis + route downstream
+  if (isBackfill) {
+    await handleBackfillProgress(tenantId, contextId, classification, job.data, childLogger);
+  } else {
+    // 5. Normal pipeline: publish events based on risk level
+    await publishRiskEvents(tenantId, contextId, classification, childLogger);
+  }
 
   const durationMs = Date.now() - startTime;
   childLogger.info(
@@ -176,6 +204,100 @@ async function classifyWithAgent(
 
 function createTimeout(ms: number): Promise<"TIMEOUT"> {
   return new Promise((resolve) => setTimeout(() => resolve("TIMEOUT"), ms));
+}
+
+/**
+ * Lua script for atomic backfill progress tracking.
+ * Increments classified (and highRisk if applicable), then checks completion.
+ * Returns [classified, total, highRisk, isComplete (0|1)]
+ */
+const BACKFILL_PROGRESS_SCRIPT = `
+  local classified = redis.call('HINCRBY', KEYS[1], 'classified', 1)
+  local incrHighRisk = tonumber(ARGV[1])
+  if incrHighRisk == 1 then
+    redis.call('HINCRBY', KEYS[1], 'highRisk', 1)
+  end
+  local total = tonumber(redis.call('HGET', KEYS[1], 'total') or '0')
+  local highRisk = tonumber(redis.call('HGET', KEYS[1], 'highRisk') or '0')
+  if classified >= total and total > 0 then
+    redis.call('HSET', KEYS[1], 'status', 'triage_complete', 'message', 'Scan complete! ' .. highRisk .. ' items flagged for review.')
+    return {classified, total, highRisk, 1}
+  end
+  return {classified, total, highRisk, 0}
+`;
+
+/**
+ * Increment backfill classified counter only (for early returns where
+ * classification is skipped but we still need to track progress).
+ */
+async function incrementBackfillClassified(
+  tenantId: string,
+  level: string,
+  childLogger: typeof logger
+): Promise<void> {
+  const redis = getRedis();
+  const redisKey = `${BACKFILL_KEY_PREFIX}${tenantId}`;
+  const isMediumPlus = MEDIUM_PLUS_LEVELS.has(level) ? 1 : 0;
+
+  await redis.eval(BACKFILL_PROGRESS_SCRIPT, 1, redisKey, String(isMediumPlus));
+  childLogger.info("Backfill progress incremented (skipped item)");
+}
+
+/**
+ * Handles backfill-specific logic after classification:
+ * 1. Atomically increments classified counter (and highRisk if MEDIUM+) + checks completion
+ * 2. Routes MEDIUM+ to context-assembly, LOW/INFO stops here
+ */
+async function handleBackfillProgress(
+  tenantId: string,
+  contextId: string,
+  classification: RiskClassification,
+  jobData: RiskClassificationPayload,
+  childLogger: typeof logger
+): Promise<void> {
+  const redis = getRedis();
+  const redisKey = `${BACKFILL_KEY_PREFIX}${tenantId}`;
+  const isMediumPlus = MEDIUM_PLUS_LEVELS.has(classification.level);
+
+  // Atomic: increment + check completion via Lua
+  const result = await redis.eval(
+    BACKFILL_PROGRESS_SCRIPT,
+    1,
+    redisKey,
+    isMediumPlus ? "1" : "0"
+  ) as [number, number, number, number];
+
+  const [classifiedCount, totalCount, highRiskCount, isComplete] = result;
+
+  if (isComplete) {
+    childLogger.info(
+      { classified: classifiedCount, total: totalCount, highRisk: highRiskCount },
+      "Backfill triage complete"
+    );
+  }
+
+  // Route downstream based on risk level
+  if (isMediumPlus) {
+    // MEDIUM+ → enqueue to context-assembly for full review pipeline
+    const sourceType = jobData.sourceType ?? "linear";
+    await contextAssemblyQueue.add(
+      "assemble",
+      {
+        eventId: contextId,
+        tenantId,
+        sourceType,
+        sourceId: jobData.designDocId,
+      },
+      { jobId: `assemble:${tenantId}:${jobData.designDocId}` }
+    );
+    childLogger.info(
+      { level: classification.level, sourceType },
+      "Backfill MEDIUM+ item enqueued to context-assembly"
+    );
+  } else {
+    // LOW/INFO → already marked COMPLETED above, no further downstream processing
+    childLogger.info("Backfill LOW item - no further processing");
+  }
 }
 
 /**

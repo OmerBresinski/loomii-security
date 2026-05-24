@@ -519,6 +519,7 @@ export async function processInitialBackfill(job: Job<InitialBackfillPayload>): 
           contextId: item.id,
           designDocId: item.externalId,
           isBackfill: true,
+          sourceType: item.source === "LINEAR" ? "linear" as const : "notion" as const,
         },
       }))
     );

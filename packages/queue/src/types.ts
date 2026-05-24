@@ -18,6 +18,8 @@ export interface RiskClassificationPayload {
   designDocId: string;
   /** Set to true when enqueued from initial backfill (enables progress tracking) */
   isBackfill?: boolean;
+  /** Source type for backfill items (used for downstream routing) */
+  sourceType?: "linear" | "notion";
 }
 
 export interface EmbeddingGenerationPayload {
