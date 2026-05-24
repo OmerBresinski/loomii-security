@@ -73,6 +73,14 @@ export interface EventsPayload {
   timestamp: string;
 }
 
+export interface InitialBackfillPayload {
+  tenantId: string;
+  linearIntegrationId: string | null;
+  notionIntegrationId: string | null;
+  /** Number of days to look back for historical data (default 90) */
+  lookbackDays: number;
+}
+
 /**
  * Map of queue names to their job payload types.
  */
@@ -86,5 +94,6 @@ export interface QueuePayloadMap {
   "threat-model-update": ThreatModelUpdatePayload;
   "summary-generation": SummaryGenerationPayload;
   "project-matching": ProjectMatchingPayload;
+  "initial-backfill": InitialBackfillPayload;
   events: EventsPayload;
 }

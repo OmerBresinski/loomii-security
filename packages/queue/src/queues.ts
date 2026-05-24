@@ -16,6 +16,7 @@ export const QUEUE_NAMES = {
   THREAT_MODEL_UPDATE: "threat-model-update",
   SUMMARY_GENERATION: "summary-generation",
   PROJECT_MATCHING: "project-matching",
+  INITIAL_BACKFILL: "initial-backfill",
   EVENTS: "events",
 } as const;
 
@@ -99,4 +100,16 @@ export const summaryGenerationQueue = new Queue<QueuePayloadMap["summary-generat
 export const projectMatchingQueue = new Queue<QueuePayloadMap["project-matching"]>(
   QUEUE_NAMES.PROJECT_MATCHING,
   { connection: getConnection() }
+);
+
+export const initialBackfillQueue = new Queue<QueuePayloadMap["initial-backfill"]>(
+  QUEUE_NAMES.INITIAL_BACKFILL,
+  {
+    connection: getConnection(),
+    defaultJobOptions: {
+      attempts: 1, // No retry - Phase 1 is idempotent
+      removeOnComplete: { count: 1000 },
+      removeOnFail: { count: 5000 },
+    },
+  }
 );

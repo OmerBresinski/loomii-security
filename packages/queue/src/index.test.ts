@@ -24,6 +24,9 @@ import {
   reviewQueue,
   threatModelQueue,
   eventsQueue,
+  summaryGenerationQueue,
+  projectMatchingQueue,
+  initialBackfillQueue,
 } from "./index";
 
 import type {
@@ -34,6 +37,9 @@ import type {
   IntegrationHealthPayload,
   ReviewGenerationPayload,
   ThreatModelUpdatePayload,
+  SummaryGenerationPayload,
+  ProjectMatchingPayload,
+  InitialBackfillPayload,
   EventsPayload,
   QueuePayloadMap,
   QueueName,
@@ -41,12 +47,12 @@ import type {
 
 describe("@loomii/queue", () => {
   describe("queue name constants", () => {
-    it("exports all 8 queue name constants", () => {
-      expect(Object.keys(QUEUE_NAMES)).toHaveLength(8);
+    it("exports all 11 queue name constants", () => {
+      expect(Object.keys(QUEUE_NAMES)).toHaveLength(11);
     });
 
-    it("ALL_QUEUE_NAMES contains all 8 queue names", () => {
-      expect(ALL_QUEUE_NAMES).toHaveLength(8);
+    it("ALL_QUEUE_NAMES contains all 11 queue names", () => {
+      expect(ALL_QUEUE_NAMES).toHaveLength(11);
       expect(ALL_QUEUE_NAMES).toContain("context-assembly");
       expect(ALL_QUEUE_NAMES).toContain("risk-classification");
       expect(ALL_QUEUE_NAMES).toContain("embedding-generation");
@@ -54,6 +60,9 @@ describe("@loomii/queue", () => {
       expect(ALL_QUEUE_NAMES).toContain("integration-health");
       expect(ALL_QUEUE_NAMES).toContain("review-generation");
       expect(ALL_QUEUE_NAMES).toContain("threat-model-update");
+      expect(ALL_QUEUE_NAMES).toContain("summary-generation");
+      expect(ALL_QUEUE_NAMES).toContain("project-matching");
+      expect(ALL_QUEUE_NAMES).toContain("initial-backfill");
       expect(ALL_QUEUE_NAMES).toContain("events");
     });
 
@@ -65,12 +74,15 @@ describe("@loomii/queue", () => {
       expect(QUEUE_NAMES.INTEGRATION_HEALTH).toBe("integration-health");
       expect(QUEUE_NAMES.REVIEW_GENERATION).toBe("review-generation");
       expect(QUEUE_NAMES.THREAT_MODEL_UPDATE).toBe("threat-model-update");
+      expect(QUEUE_NAMES.SUMMARY_GENERATION).toBe("summary-generation");
+      expect(QUEUE_NAMES.PROJECT_MATCHING).toBe("project-matching");
+      expect(QUEUE_NAMES.INITIAL_BACKFILL).toBe("initial-backfill");
       expect(QUEUE_NAMES.EVENTS).toBe("events");
     });
   });
 
   describe("queue instances", () => {
-    it("exports all 8 queue instances", () => {
+    it("exports all queue instances", () => {
       expect(contextAssemblyQueue).toBeDefined();
       expect(riskClassificationQueue).toBeDefined();
       expect(embeddingQueue).toBeDefined();
@@ -79,6 +91,9 @@ describe("@loomii/queue", () => {
       expect(reviewQueue).toBeDefined();
       expect(threatModelQueue).toBeDefined();
       expect(eventsQueue).toBeDefined();
+      expect(summaryGenerationQueue).toBeDefined();
+      expect(projectMatchingQueue).toBeDefined();
+      expect(initialBackfillQueue).toBeDefined();
     });
 
     it("queue instances have correct names", () => {
@@ -90,6 +105,9 @@ describe("@loomii/queue", () => {
       expect(reviewQueue.name).toBe("review-generation");
       expect(threatModelQueue.name).toBe("threat-model-update");
       expect(eventsQueue.name).toBe("events");
+      expect(summaryGenerationQueue.name).toBe("summary-generation");
+      expect(projectMatchingQueue.name).toBe("project-matching");
+      expect(initialBackfillQueue.name).toBe("initial-backfill");
     });
   });
 
@@ -159,6 +177,14 @@ describe("@loomii/queue", () => {
         timestamp: new Date().toISOString(),
       };
       expect(eventsPayload.eventType).toBe("issue.created");
+
+      const backfillPayload: InitialBackfillPayload = {
+        tenantId: "t_1",
+        linearIntegrationId: "lin_1",
+        notionIntegrationId: null,
+        lookbackDays: 90,
+      };
+      expect(backfillPayload.lookbackDays).toBe(90);
     });
   });
 });
