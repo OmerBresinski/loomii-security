@@ -43,8 +43,12 @@ export interface MonitoringScopeResponse {
 }
 
 export interface SyncStatus {
-  status: "idle" | "syncing" | "completed" | "error"
+  status: "idle" | "scanning" | "classifying" | "triage_complete" | "error"
   progress: number
+  total: number
+  projects: number
+  classified: number
+  highRisk: number
   message: string
 }
 
@@ -82,7 +86,11 @@ export function syncStatusQueryOptions(enabled: boolean) {
     queryKey: onboardingKeys.sync(),
     queryFn: ({ signal }) =>
       fetchApi<SyncStatus>("/api/v1/onboarding/sync/status", { signal }),
-    refetchInterval: enabled ? 2_000 : false,
+    refetchInterval: (query) => {
+      const status = query.state.data?.status
+      if (status === "triage_complete" || status === "error") return false
+      return enabled ? 2_000 : false
+    },
     staleTime: 0,
     enabled,
   })
