@@ -7,6 +7,7 @@ import { ReviewRow } from "@/components/reviews/review-card"
 import { ReviewFiltersBar } from "@/components/reviews/review-filters"
 import { ReviewSearch } from "@/components/reviews/review-search"
 import { ReviewSheet } from "@/components/reviews/review-sheet"
+import { BackfillBanner } from "@/components/reviews/backfill-banner"
 import {
   useReviews,
   reviewDetailQueryOptions,
@@ -169,6 +170,9 @@ export default function ReviewsPage() {
         <ReviewSearch value={filters.search ?? ""} onChange={setSearch} />
         <ReviewFiltersBar filters={filters} onFiltersChange={setFilters} />
       </div>
+
+      {/* Backfill complete banner (dismissable, post-onboarding) */}
+      <BackfillBanner />
 
       {/* Table */}
       {isPending ? (

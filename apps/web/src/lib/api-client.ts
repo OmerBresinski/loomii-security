@@ -3,6 +3,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000"
 const SESSION_KEY = "loomii:session"
 const ROLE_KEY = "loomii:role"
 const ONBOARDING_KEY = "loomii:onboarded"
+const BACKFILL_BANNER_KEY = "loomii:backfill-banner-dismissed"
 
 // ─── Session Storage ────────────────────────────────────────────────────────
 
@@ -60,6 +61,22 @@ export function clearSession(): void {
     localStorage.removeItem(SESSION_KEY)
     localStorage.removeItem(ROLE_KEY)
     localStorage.removeItem(ONBOARDING_KEY)
+  } catch {
+    // noop
+  }
+}
+
+export function getBackfillBannerDismissed(): boolean {
+  try {
+    return localStorage.getItem(BACKFILL_BANNER_KEY) === "true"
+  } catch {
+    return true // default dismissed to avoid showing stale banners
+  }
+}
+
+export function setBackfillBannerDismissed(): void {
+  try {
+    localStorage.setItem(BACKFILL_BANNER_KEY, "true")
   } catch {
     // noop
   }

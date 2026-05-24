@@ -11,6 +11,11 @@ export interface OnboardingState {
   policiesConfigured: boolean
   monitoringConfigured: boolean
   syncCompleted: boolean
+  lastBackfillStats: {
+    total: number
+    highRisk: number
+    completedAt: string
+  } | null
 }
 
 export interface OnboardingStateResponse {

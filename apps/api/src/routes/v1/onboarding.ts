@@ -92,6 +92,20 @@ onboardingRoutes.get("/", async (c) => {
   const linearConnected = integrations.some((i) => i.provider === "LINEAR");
   const notionConnected = integrations.some((i) => i.provider === "NOTION");
 
+  // Read backfill stats from Redis (if triage_complete)
+  let lastBackfillStats: { total: number; highRisk: number; completedAt: string } | null = null;
+  const redis = getRedis();
+  const backfillKey = `${BACKFILL_KEY_PREFIX}${tenantId}`;
+  const backfillData = await redis.hgetall(backfillKey);
+
+  if (backfillData.status === "triage_complete") {
+    lastBackfillStats = {
+      total: parseInt(backfillData.total || "0", 10),
+      highRisk: parseInt(backfillData.highRisk || "0", 10),
+      completedAt: backfillData.completedAt || new Date().toISOString(),
+    };
+  }
+
   return c.json({
     onboarding: {
       currentStep: tenant.onboardingStep,
@@ -101,6 +115,7 @@ onboardingRoutes.get("/", async (c) => {
       policiesConfigured: tenant.onboardingStep > 2,
       monitoringConfigured: tenant.onboardingStep > 3,
       syncCompleted: tenant.onboardingCompleted,
+      lastBackfillStats,
     },
   });
 });
