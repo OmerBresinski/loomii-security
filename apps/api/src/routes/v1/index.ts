@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { AppEnv } from "../../lib/types";
+import { db } from "@loomii/db";
 import { integrationRoutes } from "./integrations";
 import { searchRoutes } from "./search";
 import { sourceRoutes } from "./sources";
@@ -31,10 +32,15 @@ v1Routes.route("/onboarding", onboardingRoutes);
  * GET /api/v1/me - Return current authenticated user info.
  * Used by the frontend to validate the session on app mount.
  */
-v1Routes.get("/me", (c) => {
+v1Routes.get("/me", async (c) => {
   const user = c.get("user");
   const tenantId = c.get("tenantId");
   const role = c.get("role");
+
+  const tenant = await db.tenant.findUnique({
+    where: { id: tenantId },
+    select: { onboardingCompleted: true },
+  });
 
   return c.json({
     user: {
@@ -45,6 +51,7 @@ v1Routes.get("/me", (c) => {
     },
     tenantId,
     role,
+    onboardingCompleted: tenant?.onboardingCompleted ?? false,
   });
 });
 

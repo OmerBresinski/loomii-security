@@ -6,7 +6,7 @@ import {
   redirect,
 } from "@tanstack/react-router"
 import { RootLayout } from "@/components/root-layout"
-import { getSessionToken, getStoredRole } from "@/lib/api-client"
+import { getSessionToken, getStoredRole, getOnboardingCompleted } from "@/lib/api-client"
 import { queryClient } from "@/lib/query-client"
 import { reviewsInfiniteQueryOptions } from "@/queries/reviews"
 import {
@@ -22,12 +22,30 @@ import { onboardingStateQueryOptions } from "@/queries/onboarding"
 /**
  * beforeLoad guard for protected routes.
  * Checks localStorage for a session token; if absent, redirects to /login.
+ * If onboarding is incomplete, redirects to /onboarding.
  * The full validation against the API happens in AuthProvider on mount.
  */
 function requireAuth() {
   const token = getSessionToken()
   if (!token) {
     throw redirect({ to: "/login" })
+  }
+  if (!getOnboardingCompleted()) {
+    throw redirect({ to: "/onboarding" })
+  }
+}
+
+/**
+ * beforeLoad guard for the onboarding route.
+ * Requires auth but redirects AWAY if onboarding is already done.
+ */
+function requireOnboarding() {
+  const token = getSessionToken()
+  if (!token) {
+    throw redirect({ to: "/login" })
+  }
+  if (getOnboardingCompleted()) {
+    throw redirect({ to: "/reviews" })
   }
 }
 
@@ -139,7 +157,7 @@ const notificationsRoute = createRoute({
 const onboardingRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/onboarding",
-  beforeLoad: requireAuth,
+  beforeLoad: requireOnboarding,
   loader: () => {
     queryClient.prefetchQuery(onboardingStateQueryOptions())
   },

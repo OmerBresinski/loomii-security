@@ -1,6 +1,6 @@
 // ─── Onboarding Wizard Page ──────────────────────────────────────────────────
 
-import { useCallback, useEffect } from "react"
+import { useCallback } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Stepper } from "@/components/onboarding/stepper"
@@ -59,14 +59,6 @@ export default function OnboardingPage() {
     navigate({ to: "/reviews" })
   }, [navigate])
 
-  // If onboarding already completed, redirect immediately
-  const isCompleted = onboarding?.completed ?? false
-  useEffect(() => {
-    if (isCompleted) {
-      navigate({ to: "/reviews" })
-    }
-  }, [isCompleted, navigate])
-
   // Loading state
   if (isPending) {
     return (
@@ -77,10 +69,6 @@ export default function OnboardingPage() {
         </div>
       </div>
     )
-  }
-
-  if (isCompleted) {
-    return null
   }
 
   return (

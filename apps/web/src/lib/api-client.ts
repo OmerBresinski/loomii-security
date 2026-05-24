@@ -2,6 +2,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000"
 
 const SESSION_KEY = "loomii:session"
 const ROLE_KEY = "loomii:role"
+const ONBOARDING_KEY = "loomii:onboarded"
 
 // ─── Session Storage ────────────────────────────────────────────────────────
 
@@ -38,10 +39,27 @@ export function setStoredRole(role: UserRole): void {
   }
 }
 
+export function getOnboardingCompleted(): boolean {
+  try {
+    return localStorage.getItem(ONBOARDING_KEY) === "true"
+  } catch {
+    return true // default true to avoid redirect loops
+  }
+}
+
+export function setOnboardingCompleted(completed: boolean): void {
+  try {
+    localStorage.setItem(ONBOARDING_KEY, String(completed))
+  } catch {
+    // noop
+  }
+}
+
 export function clearSession(): void {
   try {
     localStorage.removeItem(SESSION_KEY)
     localStorage.removeItem(ROLE_KEY)
+    localStorage.removeItem(ONBOARDING_KEY)
   } catch {
     // noop
   }
@@ -143,6 +161,7 @@ interface MeResponse {
   user: AuthUser
   tenantId: string
   role: UserRole
+  onboardingCompleted: boolean
 }
 
 /**

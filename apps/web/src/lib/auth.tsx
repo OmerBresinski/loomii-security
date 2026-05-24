@@ -15,6 +15,7 @@ import {
   getSessionToken,
   setSessionToken,
   setStoredRole,
+  setOnboardingCompleted,
   exchangeAuthCode,
 } from "@/lib/api-client"
 
@@ -79,6 +80,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setTenantId(result.tenantId)
           setRole(result.role)
           setStoredRole(result.role)
+          setOnboardingCompleted(result.onboardingCompleted)
         } else {
           // Invalid session - clear it
           clearSession()

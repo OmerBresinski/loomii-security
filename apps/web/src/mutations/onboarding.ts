@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { fetchApi } from "@/lib/api-client"
+import { fetchApi, setOnboardingCompleted } from "@/lib/api-client"
 import {
   onboardingKeys,
   type OnboardingStateResponse,
@@ -130,6 +130,8 @@ export function useCompleteOnboarding() {
       }),
 
     onSuccess: () => {
+      // Update localStorage so route guards know onboarding is done
+      setOnboardingCompleted(true)
       queryClient.invalidateQueries({ queryKey: onboardingKeys.state() })
     },
   })
