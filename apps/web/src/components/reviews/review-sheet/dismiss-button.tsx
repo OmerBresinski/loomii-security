@@ -9,7 +9,7 @@ import {
 import { useState } from "react"
 
 interface DismissButtonProps {
-  findingId?: string
+  findingId: string
   onDismiss: (findingId: string, reason: DismissalReason) => void
   disabled?: boolean
 }
@@ -34,7 +34,7 @@ export function DismissButton({ findingId, onDismiss, disabled }: DismissButtonP
             <button
               key={reason}
               onClick={() => {
-                if (findingId) onDismiss(findingId, reason)
+                onDismiss(findingId, reason)
                 setOpen(false)
               }}
               className="rounded px-2.5 py-1.5 text-left text-[12px] text-foreground/90 transition-colors hover:bg-muted"

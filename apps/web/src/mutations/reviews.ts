@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { fetchApi } from "@/lib/api-client"
-import { reviewKeys } from "@/queries/reviews"
+import { reviewKeys, type ReviewDetail } from "@/queries/reviews"
 import type { DismissalReason } from "@/components/reviews/review-sheet/constants"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -52,15 +52,15 @@ export function useDismissFinding(reviewId: string) {
       // Cancel outgoing refetches to avoid overwriting optimistic update
       await queryClient.cancelQueries({ queryKey: reviewKeys.detail(reviewId) })
       // Snapshot previous value for rollback
-      const previous = queryClient.getQueryData(reviewKeys.detail(reviewId))
+      const previous = queryClient.getQueryData<ReviewDetail>(reviewKeys.detail(reviewId))
       // Optimistically update the cache
-      queryClient.setQueryData(reviewKeys.detail(reviewId), (old: any) => {
+      queryClient.setQueryData<ReviewDetail | undefined>(reviewKeys.detail(reviewId), (old) => {
         if (!old) return old
         return {
           ...old,
-          findings: old.findings.map((f: any) =>
+          findings: old.findings.map((f) =>
             f.id === findingId
-              ? { ...f, status: "DISMISSED", dismissalReason: reason }
+              ? { ...f, status: "DISMISSED" as const, dismissalReason: reason }
               : f
           ),
         }
@@ -70,7 +70,7 @@ export function useDismissFinding(reviewId: string) {
     onError: (_err, _vars, context) => {
       // Rollback on error
       if (context?.previous) {
-        queryClient.setQueryData(reviewKeys.detail(reviewId), context.previous)
+        queryClient.setQueryData<ReviewDetail | undefined>(reviewKeys.detail(reviewId), context.previous)
       }
     },
     onSettled: () => {
@@ -94,12 +94,12 @@ export function useRestoreFinding(reviewId: string) {
       ),
     onMutate: async ({ findingId }) => {
       await queryClient.cancelQueries({ queryKey: reviewKeys.detail(reviewId) })
-      const previous = queryClient.getQueryData(reviewKeys.detail(reviewId))
-      queryClient.setQueryData(reviewKeys.detail(reviewId), (old: any) => {
+      const previous = queryClient.getQueryData<ReviewDetail>(reviewKeys.detail(reviewId))
+      queryClient.setQueryData<ReviewDetail | undefined>(reviewKeys.detail(reviewId), (old) => {
         if (!old) return old
         return {
           ...old,
-          findings: old.findings.map((f: any) =>
+          findings: old.findings.map((f) =>
             f.id === findingId
               ? { ...f, status: null, dismissalReason: null }
               : f
@@ -110,7 +110,7 @@ export function useRestoreFinding(reviewId: string) {
     },
     onError: (_err, _vars, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(reviewKeys.detail(reviewId), context.previous)
+        queryClient.setQueryData<ReviewDetail | undefined>(reviewKeys.detail(reviewId), context.previous)
       }
     },
     onSettled: () => {

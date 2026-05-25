@@ -7,7 +7,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowRight01Icon, ArrowTurnBackwardIcon } from "@hugeicons/core-free-icons"
 import type { Finding } from "@/queries/reviews"
-import { dismissalReasonLabels, type DismissalReason } from "./constants"
+import { dismissalReasonLabels } from "./constants"
 
 interface DismissedSectionProps {
   findings: Finding[]
@@ -43,9 +43,7 @@ export function DismissedSection({
                 {finding.title}
               </span>
               <span className="shrink-0 text-[10px] text-muted-foreground/60">
-                {dismissalReasonLabels[
-                  finding.dismissalReason as DismissalReason
-                ] ?? "Dismissed"}
+                {dismissalReasonLabels[finding.dismissalReason ?? ""] ?? "Dismissed"}
               </span>
               <button
                 onClick={() => onRestore(finding.id)}

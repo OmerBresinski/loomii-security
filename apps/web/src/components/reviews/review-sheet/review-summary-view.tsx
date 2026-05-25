@@ -63,7 +63,11 @@ export function ReviewSummaryView({
     const active: Finding[] = []
     const dismissed: Finding[] = []
     for (const f of review?.findings ?? []) {
-      ;(f.status === "DISMISSED" ? dismissed : active).push(f)
+      if (f.status === "DISMISSED") {
+        dismissed.push(f)
+      } else {
+        active.push(f)
+      }
     }
     return { activeFindings: active, dismissedFindings: dismissed }
   }, [review?.findings])
