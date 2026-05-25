@@ -26,6 +26,7 @@ Output exactly 4 sections using the format below. Be specific and factual — re
 (2-4 bullets: concerns identified in prior reviews, open security issues, areas lacking coverage)
 
 Rules:
+- Do NOT include any title, heading, or preamble before the first section. Start directly with "## Project Scope".
 - If no reviews exist yet, state "No prior security reviews available" under Known Risks.
 - If sources are sparse, acknowledge gaps rather than fabricating details.
 - Focus on security-relevant architectural decisions.
