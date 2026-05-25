@@ -2,7 +2,7 @@ import { createMiddleware } from "hono/factory";
 import type { Redis } from "ioredis";
 import { createRedisConnection } from "@loomii/queue";
 
-const RATE_LIMIT = 100;
+const RATE_LIMIT = 300;
 const WINDOW_SECONDS = 60;
 
 let redis: Redis | null = null;
