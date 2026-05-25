@@ -27,6 +27,7 @@ import { generateQueryEmbedding } from "../lib/embeddings";
 import { SUMMARY_SYSTEM_PROMPT } from "../prompts/summary-system";
 import { logger } from "../lib/logger";
 import { MODELS } from "../lib/bedrock";
+import { recordUsage } from "../lib/ai-usage";
 
 /** Claude Sonnet model for summary generation (cross-region inference profile) */
 const SONNET_MODEL_ID = MODELS.CLAUDE_SONNET;
@@ -179,7 +180,7 @@ async function generateAndStoreSummary(params: GenerateParams): Promise<"DONE"> 
   // ─── 4. Build prompt and call Claude Sonnet ───────────────────────────────
   const userPrompt = buildUserPrompt(project.name, sourceContents, recentReviews);
 
-  const { text: summaryText } = await generateText({
+  const { text: summaryText, usage } = await generateText({
     model: bedrock(SONNET_MODEL_ID),
     system: SUMMARY_SYSTEM_PROMPT,
     prompt: userPrompt,
@@ -187,6 +188,16 @@ async function generateAndStoreSummary(params: GenerateParams): Promise<"DONE"> 
     temperature: 0.2,
     abortSignal: AbortSignal.timeout(25_000), // Leave 5s buffer within 30s SLA
   });
+
+  // Record AI usage (fire-and-forget)
+  if (usage) {
+    recordUsage({
+      tenantId: project.tenantId,
+      modelId: SONNET_MODEL_ID,
+      operation: "summary-generation",
+      usage: { promptTokens: usage.promptTokens, completionTokens: usage.completionTokens },
+    });
+  }
 
   if (!summaryText || summaryText.trim().length === 0) {
     childLogger.warn("LLM returned empty summary, preserving existing");

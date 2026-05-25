@@ -28,6 +28,7 @@ import {
 } from "../agents/design-review-fallback";
 import { MODELS } from "./bedrock";
 import { logger } from "./logger";
+import { recordUsage, type TokenUsage } from "./ai-usage";
 import type { Logger } from "pino";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -122,7 +123,8 @@ export async function generateWithFallbackAgents(
     agents.primary,
     agents.primaryTools,
     input,
-    childLogger
+    childLogger,
+    agents.primaryModelId
   );
   if (attempt1) {
     return {
@@ -144,7 +146,8 @@ export async function generateWithFallbackAgents(
     agents.primary,
     agents.primaryTools,
     input,
-    childLogger
+    childLogger,
+    agents.primaryModelId
   );
   if (attempt2) {
     return {
@@ -162,7 +165,8 @@ export async function generateWithFallbackAgents(
     agents.fallback,
     agents.fallbackTools,
     input,
-    childLogger
+    childLogger,
+    agents.fallbackModelId
   );
   if (attempt3) {
     return {
@@ -184,7 +188,8 @@ export async function generateWithFallbackAgents(
     agents.fallback,
     agents.fallbackTools,
     input,
-    childLogger
+    childLogger,
+    agents.fallbackModelId
   );
   if (attempt4) {
     return {
@@ -213,7 +218,8 @@ async function tryGenerate(
   agent: { generate: Function },
   tools: Record<string, any>,
   input: FallbackInput,
-  childLogger: Logger
+  childLogger: Logger,
+  modelId: string
 ): Promise<ReviewOutput | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ATTEMPT_TIMEOUT_MS);
@@ -238,7 +244,7 @@ async function tryGenerate(
         maxRetries: 1,
       },
       abortSignal: controller.signal,
-    } as any) as Promise<{ object: ReviewOutput | null; text: string }>);
+    } as any) as Promise<{ object: ReviewOutput | null; text: string; usage?: TokenUsage }>);
 
     if (!result.object) {
       childLogger.warn(
@@ -271,6 +277,16 @@ async function tryGenerate(
         "Attempt failed Zod validation"
       );
       return null;
+    }
+
+    // Record token usage (fire-and-forget)
+    if (result.usage) {
+      recordUsage({
+        tenantId: input.tenantId,
+        modelId,
+        operation: "review-generation",
+        usage: result.usage,
+      });
     }
 
     return parsed.data;

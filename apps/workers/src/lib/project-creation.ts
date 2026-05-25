@@ -13,6 +13,7 @@ import { summaryGenerationQueue } from "@loomii/queue";
 import { bedrock, MODELS } from "./bedrock";
 import { generateQueryEmbedding } from "./embeddings";
 import { logger } from "./logger";
+import { recordUsage } from "./ai-usage";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -64,18 +65,28 @@ const LLM_TIMEOUT_MS = 10_000;
 async function generateProjectName(
   titles: string[],
   snippets: string[],
-  fallbackIndex: number
+  fallbackIndex: number,
+  tenantId?: string
 ): Promise<string> {
   try {
     const titlesSection = titles.slice(0, 10).map((t) => `- ${t}`).join("\n");
     const snippetsSection = snippets.slice(0, 5).map((s) => `- ${s}`).join("\n");
 
-    const { text } = await generateText({
+    const { text, usage } = await generateText({
       model: bedrock(MODELS.CLAUDE_HAIKU),
       prompt: `${NAMING_PROMPT}\n\nTitles:\n${titlesSection}\n\nSnippets:\n${snippetsSection}`,
       maxOutputTokens: 20,
       abortSignal: AbortSignal.timeout(LLM_TIMEOUT_MS),
     });
+
+    if (usage && tenantId) {
+      recordUsage({
+        tenantId,
+        modelId: MODELS.CLAUDE_HAIKU,
+        operation: "project-naming",
+        usage: { promptTokens: usage.promptTokens, completionTokens: usage.completionTokens },
+      });
+    }
 
     const name = text.trim();
     if (name && name.length > 0 && name.length <= 100) {
@@ -219,7 +230,7 @@ export async function createProjectsFromBackfill(
   // Parallelize LLM naming calls (then write to DB sequentially)
   const clusterNames = await Promise.all(
     orphanClusters.map((cluster, idx) =>
-      generateProjectName(cluster.titles, cluster.contentSnippets, idx + 1)
+      generateProjectName(cluster.titles, cluster.contentSnippets, idx + 1, tenantId)
     )
   );
 

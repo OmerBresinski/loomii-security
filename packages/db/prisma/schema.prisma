@@ -151,6 +151,7 @@ model Tenant {
   policyOverrides         PolicyOverride[]
   notificationPreferences NotificationPreference[]
   notifications           Notification[]
+  aiUsage                 AiUsage[]
 
   @@map("tenants")
 }
@@ -729,4 +730,25 @@ model Notification {
   @@index([userId, createdAt]) // Paginated history
   @@index([tenantId])
   @@map("notifications")
+}
+
+// ─── AI Usage Tracking ──────────────────────────────────────────────────────
+
+model AiUsage {
+  id               String   @id @default(cuid())
+  tenantId         String   @map("tenant_id")
+  model            String   // e.g., "claude-sonnet-4", "claude-haiku-4", "titan-embed-v2"
+  operation        String   // e.g., "review-generation", "summary-generation", "risk-classification", "embedding", "threat-model", "project-naming"
+  promptTokens     Int      @map("prompt_tokens")
+  completionTokens Int      @map("completion_tokens")
+  totalTokens      Int      @map("total_tokens")
+  costCents        Float    @map("cost_cents") // Cost in USD cents (e.g., 1.5 = $0.015)
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // Relations
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, operation])
+  @@map("ai_usage")
 }
