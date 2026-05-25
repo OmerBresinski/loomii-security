@@ -68,7 +68,7 @@ export const fetchHistoryTool = createTool({
     const reviews = await db.review.findMany({
       where: {
         tenantId,
-        status: { in: ["PUBLISHED", "APPROVED", "IN_REVIEW"] },
+        status: { in: ["PUBLISHED", "READY"] },
         createdAt: { gte: lookbackDate },
       },
       orderBy: { createdAt: "desc" },

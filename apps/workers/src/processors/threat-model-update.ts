@@ -79,7 +79,7 @@ export async function processThreatModelUpdate(
     where: {
       contextBundleId: designDocId,
       tenantId,
-      status: { in: ["PUBLISHED", "IN_REVIEW"] },
+      status: { in: ["PUBLISHED", "READY"] },
     },
     select: {
       id: true,

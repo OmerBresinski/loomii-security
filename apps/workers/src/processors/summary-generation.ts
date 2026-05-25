@@ -152,11 +152,11 @@ async function generateAndStoreSummary(params: GenerateParams): Promise<"DONE"> 
     "Fetched source content from embedding index"
   );
 
-  // ─── 3. Fetch up to 10 most recent approved/published reviews ─────────────
+  // ─── 3. Fetch up to 10 most recent published reviews ────────────────────────
   const recentReviews = await db.review.findMany({
     where: {
       tenantId: project.tenantId,
-      status: { in: ["APPROVED", "PUBLISHED"] },
+      status: "PUBLISHED",
       contextBundle: {
         projectId: project.id,
       },
