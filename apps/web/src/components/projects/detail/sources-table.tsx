@@ -153,7 +153,12 @@ function SourceRow({
 
   return (
     <>
-      <div className="group flex h-12 items-center gap-3 border-b border-border/30 pr-3 pl-[20px] last:border-b-0 hover:bg-accent/50 dark:hover:bg-[#25262A]/50">
+      <div
+        className="group flex h-12 items-center gap-3 border-b border-border/30 pr-3 pl-[20px] last:border-b-0 hover:bg-accent/50 dark:hover:bg-[#25262A]/50 cursor-pointer"
+        onClick={() => {
+          if (source.sourceUrl) window.open(source.sourceUrl, "_blank", "noopener,noreferrer")
+        }}
+      >
         {/* Type icon */}
         <img
           src={sourceFavicons[source.sourceType]}
@@ -238,7 +243,10 @@ function SourceRow({
         {/* Actions dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-20 transition-opacity group-hover:opacity-100 hover:bg-muted hover:text-foreground">
+            <button
+              onClick={(e) => e.stopPropagation()}
+              className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground opacity-20 transition-opacity group-hover:opacity-100 hover:bg-muted hover:text-foreground"
+            >
               <HugeiconsIcon icon={MoreHorizontalIcon} size={16} />
             </button>
           </DropdownMenuTrigger>

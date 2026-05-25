@@ -12,8 +12,13 @@ interface OverviewTabProps {
   isPending: boolean
 }
 
-export function OverviewTab({ projectId, project, isPending }: OverviewTabProps) {
-  const { data: sources, isPending: sourcesPending } = useProjectSources(projectId)
+export function OverviewTab({
+  projectId,
+  project,
+  isPending,
+}: OverviewTabProps) {
+  const { data: sources, isPending: sourcesPending } =
+    useProjectSources(projectId)
   const { data: reviews } = useProjectReviews(projectId)
 
   return (
@@ -24,7 +29,7 @@ export function OverviewTab({ projectId, project, isPending }: OverviewTabProps)
         reviews={reviews}
         isPending={isPending}
       />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[45%_15%]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[45%_35%]">
         {/* Left column: Summary */}
         <div className="flex min-w-0 flex-col">
           <SummaryCard project={project} isPending={isPending} />
