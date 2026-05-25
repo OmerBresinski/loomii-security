@@ -51,7 +51,7 @@ export async function processContextAssembly(
 
   // Overall 2-minute timeout
   const assemblyResult = await Promise.race([
-    assembleContext({ eventId, tenantId, sourceType, sourceId, projectId: projectId ?? null, childLogger }),
+    assembleContext({ eventId, tenantId, sourceType, sourceId, projectId: projectId ?? null, siblingContext, childLogger }),
     createOverallTimeout(OVERALL_TIMEOUT_MS),
   ]);
 
@@ -80,11 +80,12 @@ interface AssembleParams {
   sourceType: "linear" | "notion";
   sourceId: string;
   projectId: string | null;
+  siblingContext?: string;
   childLogger: typeof logger;
 }
 
 async function assembleContext(params: AssembleParams): Promise<"DONE"> {
-  const { eventId, tenantId, sourceType, sourceId, projectId, childLogger } = params;
+  const { eventId, tenantId, sourceType, sourceId, projectId, siblingContext, childLogger } = params;
 
   // 1. Look up the event
   const event = await db.event.findUnique({
