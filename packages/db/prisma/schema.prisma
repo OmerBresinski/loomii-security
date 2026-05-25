@@ -76,20 +76,17 @@ enum Severity {
 }
 
 enum ReviewStatus {
-  PENDING
   GENERATING
-  DRAFT
-  IN_REVIEW
-  APPROVED
-  REJECTED
+  READY
   PUBLISHED
   ERROR
 }
 
-enum ReviewMode {
-  AUTOMATED
-  MANUAL
-  HYBRID
+enum DismissalReason {
+  FALSE_POSITIVE
+  NOT_APPLICABLE
+  DUPLICATE
+  ALREADY_MITIGATED
 }
 
 enum FindingType {
@@ -100,11 +97,8 @@ enum FindingType {
 }
 
 enum FindingStatus {
-  OPEN
-  ACCEPTED
-  REJECTED
-  RESOLVED
-  DEFERRED
+  DISMISSED
+  CONFIRMED
 }
 
 enum Effort {
@@ -389,14 +383,18 @@ model Review {
   id              String       @id @default(cuid())
   tenantId        String       @map("tenant_id")
   contextBundleId String       @unique @map("context_bundle_id")
-  status          ReviewStatus @default(PENDING)
-  mode            ReviewMode   @default(AUTOMATED)
+  status          ReviewStatus @default(GENERATING)
   severity        Severity?
   confidence      Float? // 0-1 confidence score
   summary         String?
   modelUsed       String?      @map("model_used")
+  riskLevel       String?      @map("risk_level")
   currentVersion  Int          @default(1) @map("current_version")
   errorMessage    String?      @map("error_message")
+  publishedAt     DateTime?    @map("published_at")
+  publishedBy     String?      @map("published_by")
+  commentText     String?      @map("comment_text")
+  commentPostedTo String[]     @default([]) @map("comment_posted_to")
   createdAt       DateTime     @default(now()) @map("created_at")
   updatedAt       DateTime     @updatedAt @map("updated_at")
 
@@ -432,22 +430,24 @@ model ReviewVersion {
 }
 
 model Finding {
-  id             String          @id @default(cuid())
-  reviewId       String          @map("review_id")
-  type           FindingType
-  title          String
-  description    String?
-  severity       Severity
-  confidence     Float? // 0-1 confidence score
-  strideCategory StrideCategory? @map("stride_category")
-  policyId       String?         @map("policy_id")
-  policyName     String?         @map("policy_name")
-  effortEstimate Effort?         @map("effort_estimate")
-  status         FindingStatus   @default(OPEN)
-  resolvedBy     String?         @map("resolved_by")
-  resolvedAt     DateTime?       @map("resolved_at")
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
+  id              String           @id @default(cuid())
+  reviewId        String           @map("review_id")
+  type            FindingType
+  title           String
+  description     String?
+  severity        Severity
+  confidence      Float? // 0-1 confidence score
+  strideCategory  StrideCategory?  @map("stride_category")
+  policyId        String?          @map("policy_id")
+  policyName      String?          @map("policy_name")
+  effortEstimate  Effort?          @map("effort_estimate")
+  status          FindingStatus?
+  dismissalReason DismissalReason? @map("dismissal_reason")
+  dismissedBy     String?          @map("dismissed_by")
+  dismissedAt     DateTime?        @map("dismissed_at")
+  confirmedAt     DateTime?        @map("confirmed_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
 
   // Relations
   review            Review            @relation(fields: [reviewId], references: [id], onDelete: Cascade)
