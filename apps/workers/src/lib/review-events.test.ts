@@ -52,7 +52,6 @@ mock.module("./logger", () => ({
 // Import after mocking
 const {
   publishReviewPublished,
-  publishReviewPendingApproval,
   publishReviewCompleted,
   publishReviewFailed,
   publishFindingStatusChanged,
@@ -114,33 +113,6 @@ describe("Review Events", () => {
       const [, payload] = mockEventsQueueAdd.mock.calls[0] as any;
       expect(payload.data.publishedVia).toBe("manual_approval");
       expect(payload.data.durationMs).toBeNull(); // Not provided for manual
-    });
-  });
-
-  describe("publishReviewPendingApproval", () => {
-    it("publishes review.pending_approval to events queue (AC2)", async () => {
-      await publishReviewPendingApproval({
-        tenantId: "tenant_1",
-        reviewId: "review_789",
-        contextBundleId: "ctx_abc",
-        severity: "CRITICAL",
-        confidence: 90,
-        findingCount: 7,
-        reason: "Critical risk level requires human approval",
-      });
-
-      expect(mockEventsQueueAdd).toHaveBeenCalledTimes(1);
-      const [name, payload] = mockEventsQueueAdd.mock.calls[0] as any;
-      expect(name).toBe("review.pending_approval");
-      expect(payload.tenantId).toBe("tenant_1");
-      expect(payload.eventType).toBe("review.pending_approval");
-      expect(payload.data.reviewId).toBe("review_789");
-      expect(payload.data.contextBundleId).toBe("ctx_abc");
-      expect(payload.data.severity).toBe("CRITICAL");
-      expect(payload.data.confidence).toBe(90);
-      expect(payload.data.findingCount).toBe(7);
-      expect(payload.data.reason).toBe("Critical risk level requires human approval");
-      expect(payload.timestamp).toBeTruthy();
     });
   });
 

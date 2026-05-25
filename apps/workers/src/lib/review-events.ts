@@ -50,17 +50,6 @@ export interface ReviewPublishedEvent {
   projectName: string | null;
 }
 
-export interface ReviewPendingApprovalEvent {
-  tenantId: string;
-  reviewId: string;
-  contextBundleId: string;
-  severity: string;
-  confidence: number;
-  findingCount: number;
-  /** Why it requires approval */
-  reason: string;
-}
-
 export interface ReviewCompletedEvent {
   tenantId: string;
   reviewId: string;
@@ -188,43 +177,6 @@ export async function publishReviewPublished(
   childLogger.info(
     { publishedVia: event.publishedVia, severity: event.severity },
     "Published review.published event"
-  );
-}
-
-/**
- * Publish "review.pending_approval" event.
- *
- * Emitted when an assisted review finishes generation and awaits human review.
- * Triggers notification to security leads.
- *
- * Consumed by: Dashboard (notification + queue display)
- */
-export async function publishReviewPendingApproval(
-  event: ReviewPendingApprovalEvent
-): Promise<void> {
-  const childLogger = logger.child({
-    module: "review-events",
-    tenantId: event.tenantId,
-    reviewId: event.reviewId,
-  });
-
-  await eventsQueue.add("review.pending_approval", {
-    tenantId: event.tenantId,
-    eventType: "review.pending_approval",
-    data: {
-      reviewId: event.reviewId,
-      contextBundleId: event.contextBundleId,
-      severity: event.severity,
-      confidence: event.confidence,
-      findingCount: event.findingCount,
-      reason: event.reason,
-    },
-    timestamp: new Date().toISOString(),
-  });
-
-  childLogger.info(
-    { severity: event.severity, reason: event.reason },
-    "Published review.pending_approval event"
   );
 }
 

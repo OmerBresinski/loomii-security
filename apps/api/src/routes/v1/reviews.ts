@@ -119,7 +119,7 @@ reviewRoutes.get("/", async (c) => {
     id: bundle.id,
     eventId: bundle.eventId,
     status: bundle.status,
-    reviewStatus: bundle.review?.status ?? (bundle.status === "READY" ? "GENERATING" : "PENDING"),
+    reviewStatus: bundle.review?.status ?? "GENERATING",
     riskLevel: bundle.riskLevel,
     title: bundle.title,
     summary: bundle.summary,
@@ -188,7 +188,7 @@ reviewRoutes.get("/:id", async (c) => {
     source: bundle.event.source,
     externalId: bundle.event.externalId,
     reviewId: bundle.review?.id ?? null,
-    reviewStatus: bundle.review?.status ?? (bundle.status === "READY" ? "GENERATING" : "PENDING"),
+    reviewStatus: bundle.review?.status ?? "GENERATING",
     createdAt: bundle.createdAt.toISOString(),
     findings: bundle.review?.findings ?? [],
   });
@@ -334,7 +334,7 @@ reviewRoutes.post("/:id/confirm-publish", async (c) => {
 
     await threatModelQueue.add(
       "update",
-      { tenantId, triggeredBy: reviewId, changeType: "review_published" } as any,
+      { tenantId, designDocId: review.contextBundleId, changeType: "updated" },
       { removeOnComplete: true }
     );
   }
@@ -342,7 +342,12 @@ reviewRoutes.post("/:id/confirm-publish", async (c) => {
   // 5. Emit review.published event
   await eventsQueue.add(
     "review.published",
-    { type: "review.published", tenantId, reviewId, publishedVia: "manual" } as any,
+    {
+      tenantId,
+      eventType: "review.published",
+      data: { reviewId, publishedVia: "manual", projectId: projectId ?? null },
+      timestamp: new Date().toISOString(),
+    },
     { removeOnComplete: true }
   );
 
