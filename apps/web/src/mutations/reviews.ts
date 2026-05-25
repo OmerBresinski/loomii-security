@@ -48,7 +48,33 @@ export function useDismissFinding(reviewId: string) {
         `/api/v1/findings/${findingId}/dismiss`,
         { method: "PATCH", body: { reason } }
       ),
-    onSuccess: () => {
+    onMutate: async ({ findingId, reason }) => {
+      // Cancel outgoing refetches to avoid overwriting optimistic update
+      await queryClient.cancelQueries({ queryKey: reviewKeys.detail(reviewId) })
+      // Snapshot previous value for rollback
+      const previous = queryClient.getQueryData(reviewKeys.detail(reviewId))
+      // Optimistically update the cache
+      queryClient.setQueryData(reviewKeys.detail(reviewId), (old: any) => {
+        if (!old) return old
+        return {
+          ...old,
+          findings: old.findings.map((f: any) =>
+            f.id === findingId
+              ? { ...f, status: "DISMISSED", dismissalReason: reason }
+              : f
+          ),
+        }
+      })
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      // Rollback on error
+      if (context?.previous) {
+        queryClient.setQueryData(reviewKeys.detail(reviewId), context.previous)
+      }
+    },
+    onSettled: () => {
+      // Refetch to ensure server consistency
       queryClient.invalidateQueries({ queryKey: reviewKeys.detail(reviewId) })
     },
   })
@@ -66,7 +92,28 @@ export function useRestoreFinding(reviewId: string) {
         `/api/v1/findings/${findingId}/restore`,
         { method: "PATCH" }
       ),
-    onSuccess: () => {
+    onMutate: async ({ findingId }) => {
+      await queryClient.cancelQueries({ queryKey: reviewKeys.detail(reviewId) })
+      const previous = queryClient.getQueryData(reviewKeys.detail(reviewId))
+      queryClient.setQueryData(reviewKeys.detail(reviewId), (old: any) => {
+        if (!old) return old
+        return {
+          ...old,
+          findings: old.findings.map((f: any) =>
+            f.id === findingId
+              ? { ...f, status: null, dismissalReason: null }
+              : f
+          ),
+        }
+      })
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(reviewKeys.detail(reviewId), context.previous)
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: reviewKeys.detail(reviewId) })
     },
   })
