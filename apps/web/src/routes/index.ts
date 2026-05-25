@@ -108,6 +108,7 @@ const reviewsRoute = createRoute({
   beforeLoad: requireAuth,
   validateSearch: reviewSearchSchema,
   loader: ({ search }) => {
+    if (!search) return
     queryClient.prefetchInfiniteQuery(reviewsInfiniteQueryOptions({
       status: search.status ? search.status.split(",") : undefined,
       riskLevel: search.riskLevel ? search.riskLevel.split(",") : undefined,
