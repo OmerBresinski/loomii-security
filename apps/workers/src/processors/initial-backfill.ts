@@ -21,12 +21,13 @@ import { db, insertEmbedding } from "@loomii/db";
 import { decrypt } from "@loomii/shared";
 import {
   createRedisConnection,
-  reviewQueue,
+  contextAssemblyQueue,
   type InitialBackfillPayload,
 } from "@loomii/queue";
 import type { Redis } from "ioredis";
 import { generateEmbeddings } from "../lib/embeddings";
 import { clusterByCosineSimilarity, cosineSimilarity } from "../lib/clustering";
+import { getSiblingSummaries } from "../lib/sibling-context";
 import {
   createProjectsFromBackfill,
   type LinearProjectMapping,
@@ -593,82 +594,63 @@ export async function processInitialBackfill(job: Job<InitialBackfillPayload>): 
 
     await job.updateProgress(85);
 
-    // ─── Step 10: Create ContextBundles + enqueue reviews per project ──────
-    // Each project gets a single review covering all its aggregated sources.
+    // ─── Step 10: Enqueue per-source context-assembly jobs ────────────────
+    // Each source event gets its own review via the standard pipeline.
+    // Sibling context is injected for cross-document awareness.
 
     const itemMap = new Map(allItems.map((item) => [item.externalId, item]));
 
+    // Build a lookup: projectId -> items in that project
+    const projectItemsMap = new Map<string, typeof allItems>();
     for (const created of projectResult.created) {
-      // Build aggregated content from all items in this project
       const projectItems = created.itemIds
         .map((id) => itemMap.get(id))
         .filter((item): item is BackfillItem => item !== undefined);
+      projectItemsMap.set(created.projectId, projectItems);
+    }
 
-      const aggregatedContent = projectItems
-        .map((item) => `## ${item.title}\n\n${item.content}`)
-        .join("\n\n---\n\n");
+    // Enqueue one context-assembly job per source event
+    let reviewsEnqueued = 0;
+    for (const created of projectResult.created) {
+      const projectItems = projectItemsMap.get(created.projectId) ?? [];
 
-      // Upsert synthetic event (idempotent on re-run)
-      const syntheticEvent = await db.event.upsert({
-        where: {
-          tenantId_source_externalId_type: {
-            tenantId,
-            source: "LINEAR",
-            externalId: `backfill-project-${created.projectId}`,
-            type: "project.backfill_review",
-          },
-        },
-        update: {
-          status: "COMPLETED",
-          payload: {
+      for (const item of projectItems) {
+        // Find the event record for this item
+        const event = await db.event.findFirst({
+          where: { tenantId, externalId: item.externalId },
+          select: { id: true, source: true },
+        });
+
+        if (!event) continue;
+
+        // Generate sibling context for cross-document awareness
+        const siblingContext = getSiblingSummaries(
+          projectItems.map((i) => ({
+            id: i.externalId,
+            title: i.title,
+            content: i.content,
             projectId: created.projectId,
-            projectName: created.name,
-            sourceCount: created.itemIds.length,
-          },
-        },
-        create: {
-          tenantId,
-          integrationId: linearIntegrationId ?? notionIntegrationId!,
-          source: "LINEAR",
-          externalId: `backfill-project-${created.projectId}`,
-          type: "project.backfill_review",
-          status: "COMPLETED",
-          payload: {
-            projectId: created.projectId,
-            projectName: created.name,
-            sourceCount: created.itemIds.length,
-          },
-        },
-      });
+          })),
+          item.externalId,
+          created.projectId
+        );
 
-      // Create ContextBundle with aggregated content
-      const bundle = await db.contextBundle.create({
-        data: {
+        // Enqueue through standard pipeline (context-assembly -> risk-classification -> review-generation)
+        await contextAssemblyQueue.add("backfill-source", {
+          eventId: event.id,
           tenantId,
-          eventId: syntheticEvent.id,
+          sourceType: event.source.toLowerCase() as "linear" | "notion",
+          sourceId: item.externalId,
           projectId: created.projectId,
-          status: "READY",
-          title: created.name,
-          content: {
-            projectName: created.name,
-            sourceCount: created.itemIds.length,
-            aggregatedContent: aggregatedContent.slice(0, 50000), // Cap at 50k chars
-            reviewType: "backfill_initial_scan",
-          },
-        },
-      });
+        });
 
-      // Enqueue review generation
-      await reviewQueue.add("review", {
-        tenantId,
-        contextId: bundle.id,
-        reviewType: "design-review",
-      });
+        reviewsEnqueued++;
+      }
     }
 
     childLogger.info(
-      { reviewsEnqueued: projectResult.created.length },
-      "Project reviews enqueued"
+      { reviewsEnqueued },
+      "Per-source reviews enqueued via context-assembly pipeline"
     );
 
     await job.updateProgress(90);
@@ -680,12 +662,12 @@ export async function processInitialBackfill(job: Job<InitialBackfillPayload>): 
       projects: String(projectResult.created.length),
       classified: String(allItems.length),
       highRisk: String(projectResult.created.length),
-      message: `Scan complete! ${projectResult.created.length} projects discovered, reviews generating.`,
+      message: `Scan complete! ${projectResult.created.length} projects discovered, ${reviewsEnqueued} source reviews generating.`,
     });
 
     childLogger.info(
-      { total: allItems.length, projects: projectResult.created.length, reviewsEnqueued: projectResult.created.length },
-      "Backfill Phase 1 complete - reviews enqueued"
+      { total: allItems.length, projects: projectResult.created.length, reviewsEnqueued },
+      "Backfill Phase 1 complete - per-source reviews enqueued"
     );
     await job.updateProgress(100);
   } catch (err) {
