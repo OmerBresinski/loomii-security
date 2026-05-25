@@ -32,7 +32,7 @@ import { MODELS } from "../lib/bedrock";
 const SONNET_MODEL_ID = MODELS.CLAUDE_SONNET;
 
 /** Maximum tokens for the generated summary */
-const MAX_OUTPUT_TOKENS = 1500;
+const MAX_OUTPUT_TOKENS = 600;
 
 /** Overall timeout for the entire job */
 const OVERALL_TIMEOUT_MS = 30_000;
