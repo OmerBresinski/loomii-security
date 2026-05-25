@@ -306,6 +306,7 @@ async function assignUnclusteredToProjects(
           projectId: bestProjectId,
           sourceType: orphan.item.source === "LINEAR" ? "LINEAR_ISSUE" : "NOTION_PAGE",
           sourceId: orphan.item.externalId,
+          sourceUrl: orphan.item.url,
           linkedBy: "AUTO",
           linkReason: {
             method: "embedding_nearest_project",

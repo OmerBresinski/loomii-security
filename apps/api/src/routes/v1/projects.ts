@@ -396,6 +396,7 @@ projectRoutes.get("/:id/sources", async (c) => {
     : [];
 
   const titleMap = new Map<string, string>();
+  const urlMap = new Map<string, string>();
   for (const event of events) {
     const payload = event.payload as Record<string, unknown> | null;
     const title =
@@ -404,11 +405,16 @@ projectRoutes.get("/:id/sources", async (c) => {
     if (title && !titleMap.has(event.externalId)) {
       titleMap.set(event.externalId, title);
     }
+    const url = payload?.url as string | undefined;
+    if (url && !urlMap.has(event.externalId)) {
+      urlMap.set(event.externalId, url);
+    }
   }
 
   const enrichedSources = sources.map((source) => ({
     ...source,
     title: titleMap.get(source.sourceId) ?? null,
+    sourceUrl: source.sourceUrl ?? urlMap.get(source.sourceId) ?? null,
   }));
 
   return c.json({ sources: enrichedSources });
