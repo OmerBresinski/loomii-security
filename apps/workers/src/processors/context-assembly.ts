@@ -34,7 +34,7 @@ const OVERALL_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 export async function processContextAssembly(
   job: Job<ContextAssemblyPayload>
 ): Promise<void> {
-  const { eventId, tenantId, sourceType, sourceId, projectId } = job.data;
+  const { eventId, tenantId, sourceType, sourceId, projectId, siblingContext } = job.data;
 
   const childLogger = logger.child({
     queue: "context-assembly",
@@ -239,6 +239,7 @@ async function assembleContext(params: AssembleParams): Promise<"DONE"> {
         ...content,
         missingItems,
         ...(projectContextData ? { projectContext: projectContextData.formatted } : {}),
+        ...(siblingContext ? { siblingContext } : {}),
       },
       projectId: projectId ?? null,
       updatedAt: new Date(),
@@ -252,6 +253,7 @@ async function assembleContext(params: AssembleParams): Promise<"DONE"> {
         ...content,
         missingItems,
         ...(projectContextData ? { projectContext: projectContextData.formatted } : {}),
+        ...(siblingContext ? { siblingContext } : {}),
       },
       projectId: projectId ?? null,
     },

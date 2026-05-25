@@ -642,6 +642,7 @@ export async function processInitialBackfill(job: Job<InitialBackfillPayload>): 
           sourceType: event.source.toLowerCase() as "linear" | "notion",
           sourceId: item.externalId,
           projectId: created.projectId,
+          siblingContext: siblingContext || undefined,
         });
 
         reviewsEnqueued++;

@@ -10,6 +10,8 @@ export interface ContextAssemblyPayload {
   sourceId: string;
   /** Resolved project ID from project-matching worker (null if no match) */
   projectId?: string | null;
+  /** Optional sibling source summaries for cross-document awareness (backfill) */
+  siblingContext?: string;
 }
 
 export interface RiskClassificationPayload {
