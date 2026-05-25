@@ -107,7 +107,7 @@ export function reviewsInfiniteQueryOptions(filters: ReviewFilters) {
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     staleTime: 10_000,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
     refetchIntervalInBackground: false,
     placeholderData: keepPreviousData,
   })
