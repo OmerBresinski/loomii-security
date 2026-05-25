@@ -1,7 +1,9 @@
 import { Hono } from "hono";
 import { db } from "@loomii/db";
-import { summaryGenerationQueue } from "@loomii/queue";
+import { summaryGenerationQueue, threatModelQueue, eventsQueue } from "@loomii/queue";
 import type { AppEnv } from "../../lib/types";
+import { generateReviewComment } from "../../lib/comment-generator";
+import { getCommentTargets, postCommentToSources } from "../../lib/comment-poster";
 
 export const reviewRoutes = new Hono<AppEnv>();
 
@@ -192,41 +194,25 @@ reviewRoutes.get("/:id", async (c) => {
   });
 });
 
-// ─── PATCH /:id — Update review status (approve/reject) ────────────────────
+// ─── POST /:id/publish — Generate comment preview ──────────────────────────
 
-const VALID_REVIEW_STATUSES = [
-  "PENDING", "GENERATING", "DRAFT", "IN_REVIEW", "APPROVED", "REJECTED", "PUBLISHED", "ERROR"
-] as const;
-type ReviewStatus = (typeof VALID_REVIEW_STATUSES)[number];
-
-reviewRoutes.patch("/:id", async (c) => {
+reviewRoutes.post("/:id/publish", async (c) => {
   const tenantId = c.get("tenantId");
   const requestId = c.get("requestId");
   const reviewId = c.req.param("id");
 
-  const body = await c.req.json().catch(() => null);
-  if (!body || !body.status) {
-    return c.json(
-      { error: { code: "INVALID_BODY", message: "Request body must include 'status'", requestId } },
-      400
-    );
-  }
-
-  const newStatus = body.status as string;
-  if (!VALID_REVIEW_STATUSES.includes(newStatus as ReviewStatus)) {
-    return c.json(
-      { error: { code: "INVALID_STATUS", message: `Invalid status: ${newStatus}`, requestId } },
-      400
-    );
-  }
-
-  // Find review (tenant-scoped via the review's tenant relation)
+  // Find review (tenant-scoped)
   const review = await db.review.findFirst({
     where: { id: reviewId, tenantId },
     select: {
       id: true,
       status: true,
       contextBundleId: true,
+      findings: {
+        where: { status: { not: "DISMISSED" } },
+        select: { title: true, severity: true },
+        orderBy: { severity: "asc" },
+      },
     },
   });
 
@@ -237,34 +223,133 @@ reviewRoutes.patch("/:id", async (c) => {
     );
   }
 
-  // Update status
-  const updated = await db.review.update({
+  // Only READY reviews can be published
+  if (review.status !== "READY") {
+    return c.json(
+      { error: { code: "INVALID_STATE", message: "Review must be in READY state to publish", requestId } },
+      400
+    );
+  }
+
+  // Get non-dismissed findings for comment
+  const confirmedFindings = review.findings;
+  if (confirmedFindings.length === 0) {
+    return c.json(
+      { error: { code: "INVALID_STATE", message: "No findings to publish (all dismissed)", requestId } },
+      400
+    );
+  }
+
+  // Generate comment text via LLM
+  const commentText = await generateReviewComment(
+    confirmedFindings.map((f) => ({ title: f.title, severity: f.severity })),
+    review.id
+  );
+
+  // Get target sources
+  const targets = await getCommentTargets(tenantId, review.contextBundleId);
+
+  // Store generated comment on the review for the confirm step
+  await db.review.update({
     where: { id: reviewId },
-    data: { status: newStatus as any },
+    data: { commentText },
+  });
+
+  return c.json({
+    commentText,
+    targets: targets.map((t) => ({
+      sourceType: t.sourceType.toLowerCase(),
+      sourceId: t.sourceId,
+      sourceTitle: t.sourceTitle,
+    })),
+    findingsCount: confirmedFindings.length,
+  });
+});
+
+// ─── POST /:id/confirm-publish — Post comment & finalize ───────────────────
+
+reviewRoutes.post("/:id/confirm-publish", async (c) => {
+  const tenantId = c.get("tenantId");
+  const userId = c.get("userId");
+  const requestId = c.get("requestId");
+  const reviewId = c.req.param("id");
+
+  // Find review with stored comment text
+  const review = await db.review.findFirst({
+    where: { id: reviewId, tenantId },
     select: {
       id: true,
       status: true,
-      contextBundle: {
-        select: { projectId: true },
-      },
+      commentText: true,
+      contextBundleId: true,
+      contextBundle: { select: { projectId: true } },
     },
   });
 
-  // Trigger immediate summary regeneration on approval
-  if (newStatus === "APPROVED" || newStatus === "PUBLISHED") {
-    const projectId = updated.contextBundle?.projectId;
-    if (projectId) {
-      // No jobId and no delay — immediate, non-debounced regeneration
-      await summaryGenerationQueue.add(
-        "regenerate",
-        { projectId, trigger: "review_approved" },
-        { removeOnComplete: true }
-      );
-    }
+  if (!review) {
+    return c.json(
+      { error: { code: "NOT_FOUND", message: "Review not found", requestId } },
+      404
+    );
   }
 
+  // Must be in READY state with a generated comment (from /publish step)
+  if (review.status !== "READY" || !review.commentText) {
+    return c.json(
+      { error: { code: "INVALID_STATE", message: "Must call /publish first to generate preview", requestId } },
+      400
+    );
+  }
+
+  // 1. Bulk confirm all non-dismissed findings
+  const confirmResult = await db.finding.updateMany({
+    where: { review: { id: reviewId }, status: null },
+    data: { status: "CONFIRMED", confirmedAt: new Date() },
+  });
+
+  // 2. Post comment to external sources (graceful degradation)
+  const targets = await getCommentTargets(tenantId, review.contextBundleId);
+  const postResults = await postCommentToSources(tenantId, targets, review.commentText);
+  const commentPostedTo = postResults.filter((r) => r.success).map((r) => r.sourceId);
+
+  // 3. Mark review as PUBLISHED
+  await db.review.update({
+    where: { id: reviewId },
+    data: {
+      status: "PUBLISHED",
+      publishedAt: new Date(),
+      publishedBy: userId,
+      commentPostedTo,
+    },
+  });
+
+  // 4. Trigger downstream effects
+  const projectId = review.contextBundle?.projectId;
+  if (projectId) {
+    await summaryGenerationQueue.add(
+      "regenerate",
+      { projectId, trigger: "review_published" },
+      { removeOnComplete: true }
+    );
+
+    await threatModelQueue.add(
+      "update",
+      { tenantId, triggeredBy: reviewId, changeType: "review_published" } as any,
+      { removeOnComplete: true }
+    );
+  }
+
+  // 5. Emit review.published event
+  await eventsQueue.add(
+    "review.published",
+    { type: "review.published", tenantId, reviewId, publishedVia: "manual" } as any,
+    { removeOnComplete: true }
+  );
+
   return c.json({
-    id: updated.id,
-    status: updated.status,
+    status: "PUBLISHED" as const,
+    publishedAt: new Date().toISOString(),
+    commentPostedTo,
+    findingsConfirmed: confirmResult.count,
   });
 });
