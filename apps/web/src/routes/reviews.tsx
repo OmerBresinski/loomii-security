@@ -41,11 +41,11 @@ export default function ReviewsPage() {
       const current = searchRef.current
       navigate({
         search: {
-          ...(next.status && next.status.length > 0 ? { status: next.status.join(",") } : {}),
-          ...(next.riskLevel && next.riskLevel.length > 0 ? { riskLevel: next.riskLevel.join(",") } : {}),
-          ...(next.search ? { q: next.search } : {}),
-          ...(current.review ? { review: current.review } : {}),
-        } as Record<string, string | undefined>,
+          status: next.status && next.status.length > 0 ? next.status.join(",") : undefined,
+          riskLevel: next.riskLevel && next.riskLevel.length > 0 ? next.riskLevel.join(",") : undefined,
+          q: next.search || undefined,
+          review: current.review,
+        },
         replace: true,
       })
     },
@@ -57,11 +57,11 @@ export default function ReviewsPage() {
       const current = searchRef.current
       navigate({
         search: {
-          ...(current.status ? { status: current.status } : {}),
-          ...(current.riskLevel ? { riskLevel: current.riskLevel } : {}),
-          ...(q ? { q } : {}),
-          ...(current.review ? { review: current.review } : {}),
-        } as Record<string, string | undefined>,
+          status: current.status,
+          riskLevel: current.riskLevel,
+          q: q || undefined,
+          review: current.review,
+        },
         replace: true,
       })
     },
@@ -75,11 +75,11 @@ export default function ReviewsPage() {
       const nextReviewId = reviewId === current.review ? undefined : reviewId
       navigate({
         search: {
-          ...(current.status ? { status: current.status } : {}),
-          ...(current.riskLevel ? { riskLevel: current.riskLevel } : {}),
-          ...(current.q ? { q: current.q } : {}),
-          ...(nextReviewId ? { review: nextReviewId } : {}),
-        } as Record<string, string | undefined>,
+          status: current.status,
+          riskLevel: current.riskLevel,
+          q: current.q,
+          review: nextReviewId,
+        },
         replace: true,
       })
     },
@@ -90,10 +90,11 @@ export default function ReviewsPage() {
     const current = searchRef.current
     navigate({
       search: {
-        ...(current.status ? { status: current.status } : {}),
-        ...(current.riskLevel ? { riskLevel: current.riskLevel } : {}),
-        ...(current.q ? { q: current.q } : {}),
-      } as Record<string, string | undefined>,
+        status: current.status,
+        riskLevel: current.riskLevel,
+        q: current.q,
+        review: undefined,
+      },
       replace: true,
     })
   }, [navigate])
