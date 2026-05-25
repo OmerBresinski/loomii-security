@@ -55,8 +55,17 @@ export const ReviewFindingSchema = z.object({
   /** Referenced policy name (must match a policy returned by searchPolicies) */
   policyReference: z.string().min(1),
 
-  /** Estimated effort to address (for MITIGATION findings) */
-  effortEstimate: z.enum(EFFORT_LEVELS).optional(),
+  /** Estimated effort to address (for MITIGATION findings) — coerces invalid values to LOW */
+  effortEstimate: z
+    .string()
+    .optional()
+    .transform((val) => {
+      if (!val) return undefined;
+      const upper = val.toUpperCase();
+      if (["LOW", "MEDIUM", "HIGH", "CRITICAL"].includes(upper))
+        return upper as "LOW" | "MEDIUM" | "HIGH" | "CRITICAL";
+      return "LOW" as const; // Map SMALL, TRIVIAL, etc. to LOW
+    }),
 
   /** Indices of related findings in this array (for building FindingRelations) */
   relatedFindingIndices: z.array(z.number()).default([]),
@@ -68,7 +77,7 @@ export type ReviewFinding = z.infer<typeof ReviewFindingSchema>;
 
 export const ReviewOutputSchema = z.object({
   /** Executive summary of the security review (markdown) */
-  summary: z.string().min(10).max(16000),
+  summary: z.string().min(10),
 
   /**
    * Whether this change has security implications.

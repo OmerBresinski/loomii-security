@@ -6,6 +6,7 @@ import { ProfileTab } from "@/components/settings/profile-tab"
 import { NotificationsTab } from "@/components/settings/notifications-tab"
 import { IntegrationsTab } from "@/components/settings/integrations-tab"
 import { TeamTab } from "@/components/settings/team-tab"
+import { UsageTab } from "@/components/settings/usage-tab"
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 
@@ -41,6 +42,7 @@ export default function SettingsPage() {
             <TabsTrigger value="integrations">Integrations</TabsTrigger>
           )}
           {isAdmin && <TabsTrigger value="team">Team</TabsTrigger>}
+          {isAdmin && <TabsTrigger value="usage">Usage</TabsTrigger>}
         </TabsList>
 
         <TabsContent value="profile" className="min-h-0 flex-1 overflow-y-auto pt-6">
@@ -60,6 +62,12 @@ export default function SettingsPage() {
         {isAdmin && (
           <TabsContent value="team" className="min-h-0 flex-1 overflow-y-auto pt-6">
             <TeamTab />
+          </TabsContent>
+        )}
+
+        {isAdmin && (
+          <TabsContent value="usage" className="min-h-0 flex-1 overflow-y-auto pt-6">
+            <UsageTab />
           </TabsContent>
         )}
       </Tabs>

@@ -12,6 +12,7 @@ import { findingRoutes } from "./findings";
 import { notificationRoutes } from "./notifications";
 import { teamRoutes } from "./team";
 import { onboardingRoutes } from "./onboarding";
+import { usageRoutes } from "./usage";
 
 export const v1Routes = new Hono<AppEnv>();
 
@@ -27,6 +28,7 @@ v1Routes.route("/findings", findingRoutes);
 v1Routes.route("/notifications", notificationRoutes);
 v1Routes.route("/team", teamRoutes);
 v1Routes.route("/onboarding", onboardingRoutes);
+v1Routes.route("/usage", usageRoutes);
 
 /**
  * GET /api/v1/me - Return current authenticated user info.

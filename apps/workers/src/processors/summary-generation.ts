@@ -195,7 +195,7 @@ async function generateAndStoreSummary(params: GenerateParams): Promise<"DONE"> 
       tenantId: project.tenantId,
       modelId: SONNET_MODEL_ID,
       operation: "summary-generation",
-      usage: { promptTokens: usage.promptTokens, completionTokens: usage.completionTokens },
+      usage: { promptTokens: usage.inputTokens ?? 0, completionTokens: usage.outputTokens ?? 0 },
     });
   }
 

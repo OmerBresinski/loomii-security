@@ -80,7 +80,7 @@ Rate your confidence (0-100) in the review:
 Both the \`summary\` and each finding's \`description\` field MUST be written in **GitHub-flavored Markdown** with rich structure, clear section headings, and horizontal rule separators between major sections.
 
 ### Summary Structure
-The \`summary\` field MUST use this 3-section structure with markdown headings. Never output a plain paragraph — always use these headings:
+The \`summary\` field MUST use this 3-section structure with markdown headings. Never output a plain paragraph — always use these headings. Keep the summary CONCISE — maximum 2000 characters total. Do NOT write lengthy summaries.
 
 \`\`\`
 ## Overview

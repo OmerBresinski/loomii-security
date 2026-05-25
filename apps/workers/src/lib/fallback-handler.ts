@@ -254,8 +254,7 @@ async function tryGenerate(
       return null;
     }
 
-    // Truncate summary if it exceeds schema max (16000 chars)
-    // This prevents Haiku's verbosity from causing validation failures
+    // Truncate summary if excessively long (keeps DB size reasonable)
     const MAX_SUMMARY_LENGTH = 16000;
     if (
       result.object.summary &&
@@ -263,7 +262,7 @@ async function tryGenerate(
     ) {
       childLogger.warn(
         { originalLength: result.object.summary.length },
-        "Truncating summary to fit schema max"
+        "Truncating summary to keep DB size reasonable"
       );
       result.object.summary =
         result.object.summary.slice(0, MAX_SUMMARY_LENGTH - 3) + "...";

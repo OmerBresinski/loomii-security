@@ -84,7 +84,7 @@ async function generateProjectName(
         tenantId,
         modelId: MODELS.CLAUDE_HAIKU,
         operation: "project-naming",
-        usage: { promptTokens: usage.promptTokens, completionTokens: usage.completionTokens },
+        usage: { promptTokens: usage.inputTokens ?? 0, completionTokens: usage.outputTokens ?? 0 },
       });
     }
 
