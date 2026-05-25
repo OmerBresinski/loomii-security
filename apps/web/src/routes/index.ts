@@ -104,9 +104,12 @@ const reviewsRoute = createRoute({
   path: "/reviews",
   beforeLoad: requireAuth,
   validateSearch: reviewSearchSchema,
-  loader: () => {
-    // Prefetch the first page of reviews with no filters (default view)
-    queryClient.prefetchInfiniteQuery(reviewsInfiniteQueryOptions({}))
+  loader: ({ search }) => {
+    queryClient.prefetchInfiniteQuery(reviewsInfiniteQueryOptions({
+      status: search.status ? search.status.split(",") : undefined,
+      riskLevel: search.riskLevel ? search.riskLevel.split(",") : undefined,
+      search: search.q || undefined,
+    }))
   },
   component: lazyRouteComponent(() => import("@/routes/reviews")),
 })

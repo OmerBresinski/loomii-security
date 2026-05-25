@@ -69,7 +69,8 @@ export interface ReviewFilters {
 export const reviewKeys = {
   all: ["reviews"] as const,
   lists: () => [...reviewKeys.all, "list"] as const,
-  detail: (id: string) => [...reviewKeys.all, id] as const,
+  list: (filters: ReviewFilters) => [...reviewKeys.lists(), filters] as const,
+  detail: (id: string) => [...reviewKeys.all, "detail", id] as const,
 }
 
 // ─── Query Options ──────────────────────────────────────────────────────────
@@ -97,7 +98,7 @@ function buildQueryParams(filters: ReviewFilters, cursor: string | null): string
 
 export function reviewsInfiniteQueryOptions(filters: ReviewFilters) {
   return infiniteQueryOptions({
-    queryKey: ["reviews", filters] as const,
+    queryKey: reviewKeys.list(filters),
     queryFn: ({ pageParam, signal }) =>
       fetchApi<ReviewListResponse>(
         `/api/v1/reviews${buildQueryParams(filters, pageParam)}`,
