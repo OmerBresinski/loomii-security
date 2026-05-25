@@ -5,6 +5,7 @@ import {
   lazyRouteComponent,
   redirect,
 } from "@tanstack/react-router"
+import { z } from "zod"
 import { RootLayout } from "@/components/root-layout"
 import { getSessionToken, getStoredRole, getOnboardingCompleted } from "@/lib/api-client"
 import { queryClient } from "@/lib/query-client"
@@ -83,16 +84,18 @@ const authCallbackRoute = createRoute({
 
 // ─── Protected Routes (require auth) ───────────────────────────────────────
 
+const reviewSearchSchema = z.object({
+  status: z.string().optional(),
+  riskLevel: z.string().optional(),
+  q: z.string().optional(),
+  review: z.string().optional(),
+})
+
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   beforeLoad: requireAuth,
-  validateSearch: (search: Record<string, unknown>) => ({
-    status: search.status as string | undefined,
-    riskLevel: search.riskLevel as string | undefined,
-    q: search.q as string | undefined,
-    review: search.review as string | undefined,
-  }),
+  validateSearch: reviewSearchSchema,
   component: lazyRouteComponent(() => import("@/routes/reviews")),
 })
 
@@ -100,12 +103,7 @@ const reviewsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/reviews",
   beforeLoad: requireAuth,
-  validateSearch: (search: Record<string, unknown>) => ({
-    status: search.status as string | undefined,
-    riskLevel: search.riskLevel as string | undefined,
-    q: search.q as string | undefined,
-    review: search.review as string | undefined,
-  }),
+  validateSearch: reviewSearchSchema,
   loader: () => {
     // Prefetch the first page of reviews with no filters (default view)
     queryClient.prefetchInfiniteQuery(reviewsInfiniteQueryOptions({}))

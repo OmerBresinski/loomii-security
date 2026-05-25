@@ -17,7 +17,7 @@ import {
 // ─── Page ───────────────────────────────────────────────────────────────────
 
 export default function ReviewsPage() {
-  const search = useSearch({ strict: false }) as Record<string, string | undefined>
+  const search = useSearch({ from: "/reviews" })
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
