@@ -1,3 +1,4 @@
+import { useMemo } from "react"
 import Markdown from "react-markdown"
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -55,11 +56,15 @@ export function ReviewSummaryView({
   isRestoring,
   isPublishing,
 }: ReviewSummaryViewProps) {
-  // Split findings into active vs dismissed
-  const activeFindings =
-    review?.findings.filter((f) => f.status !== "DISMISSED") ?? []
-  const dismissedFindings =
-    review?.findings.filter((f) => f.status === "DISMISSED") ?? []
+  // Split findings into active vs dismissed (memoized to avoid recompute on unrelated re-renders)
+  const { activeFindings, dismissedFindings } = useMemo(() => {
+    const active: Finding[] = []
+    const dismissed: Finding[] = []
+    for (const f of review?.findings ?? []) {
+      ;(f.status === "DISMISSED" ? dismissed : active).push(f)
+    }
+    return { activeFindings: active, dismissedFindings: dismissed }
+  }, [review?.findings])
 
   const isPublished = review?.reviewStatus === "PUBLISHED"
   const isReady = review?.reviewStatus === "READY"

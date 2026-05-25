@@ -33,7 +33,8 @@ export interface Finding {
   severity: "CRITICAL" | "HIGH" | "MEDIUM" | "LOW" | null
   strideCategory: string | null
   effortEstimate: string | null
-  status: "OPEN" | "ACCEPTED" | "REJECTED" | "RESOLVED" | "DEFERRED"
+  status: "DISMISSED" | "CONFIRMED" | null
+  dismissalReason: string | null
 }
 
 export interface ReviewDetail {

@@ -54,7 +54,7 @@ export function DismissedSection({
               </span>
               <span className="shrink-0 text-[10px] text-muted-foreground/60">
                 {dismissalReasonLabels[
-                  (finding as any).dismissalReason as DismissalReason
+                  finding.dismissalReason as DismissalReason
                 ] ?? "Dismissed"}
               </span>
               <button

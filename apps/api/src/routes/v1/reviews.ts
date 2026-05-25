@@ -164,6 +164,7 @@ reviewRoutes.get("/:id", async (c) => {
               strideCategory: true,
               effortEstimate: true,
               status: true,
+              dismissalReason: true,
             },
           },
         },
