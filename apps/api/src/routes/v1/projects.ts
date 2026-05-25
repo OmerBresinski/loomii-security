@@ -384,7 +384,34 @@ projectRoutes.get("/:id/sources", async (c) => {
     },
   });
 
-  return c.json({ sources });
+  // Resolve human-readable titles from Event payload
+  const sourceIds = sources.map((s) => s.sourceId);
+  const events = sourceIds.length > 0
+    ? await db.event.findMany({
+        where: { tenantId, externalId: { in: sourceIds } },
+        orderBy: { createdAt: "desc" },
+        distinct: ["externalId"],
+        select: { externalId: true, payload: true },
+      })
+    : [];
+
+  const titleMap = new Map<string, string>();
+  for (const event of events) {
+    const payload = event.payload as Record<string, unknown> | null;
+    const title =
+      (payload?.title as string) ??
+      (payload?.data as Record<string, unknown>)?.title as string | undefined;
+    if (title && !titleMap.has(event.externalId)) {
+      titleMap.set(event.externalId, title);
+    }
+  }
+
+  const enrichedSources = sources.map((source) => ({
+    ...source,
+    title: titleMap.get(source.sourceId) ?? null,
+  }));
+
+  return c.json({ sources: enrichedSources });
 });
 
 /**

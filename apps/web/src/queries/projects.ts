@@ -12,6 +12,7 @@ export interface ProjectSource {
   sourceType: "NOTION_PAGE" | "LINEAR_ISSUE"
   sourceId: string
   sourceUrl: string | null
+  title: string | null
   linkedBy: "AUTO" | "MANUAL"
   linkReason: Record<string, unknown> | null
   isArchived: boolean

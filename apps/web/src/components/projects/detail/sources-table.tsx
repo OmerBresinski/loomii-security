@@ -94,7 +94,16 @@ function formatLinkReason(
   if (!reason) return null
   if (typeof reason.message === "string") return reason.message
   if (typeof reason.reason === "string") return reason.reason
-  return JSON.stringify(reason)
+  // Extract useful info from common link reason shapes
+  if (reason.method === "embedding_nearest_project" && typeof reason.similarity === "number") {
+    return `Matched (${Math.round((reason.similarity as number) * 100)}% similar)`
+  }
+  if (reason.method === "linear_project_mirror") return "Linear project sync"
+  if (reason.method === "notion_parent_match") return "Notion parent page"
+  if (reason.method === "manual") return "Manually linked"
+  // Fallback: don't show raw JSON
+  if (typeof reason.method === "string") return reason.method.replace(/_/g, " ")
+  return null
 }
 
 // ─── Loading Skeleton ───────────────────────────────────────────────────────
@@ -156,9 +165,11 @@ function SourceRow({
           className="shrink-0"
         />
 
-        {/* Source ID + external link */}
+        {/* Source name + external link */}
         <div className="flex min-w-0 flex-1 items-center gap-1.5">
-          <span className="truncate text-[13px]">{source.sourceId}</span>
+          <span className="truncate text-[13px]">
+            {source.title ?? source.sourceId}
+          </span>
           {source.sourceUrl ? (
             <Tooltip>
               <TooltipTrigger asChild>
@@ -264,7 +275,7 @@ function SourceRow({
           <AlertDialogHeader>
             <AlertDialogTitle>Unlink source</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently remove &ldquo;{source.sourceId}&rdquo; from
+              This will permanently remove &ldquo;{source.title ?? source.sourceId}&rdquo; from
               this project. The source itself won&apos;t be deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
