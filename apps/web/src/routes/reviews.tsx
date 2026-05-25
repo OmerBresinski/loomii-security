@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from "react"
-import { useSearch, useNavigate } from "@tanstack/react-router"
+import { getRouteApi, useNavigate } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -16,8 +16,13 @@ import {
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 
+const routeApi = getRouteApi("/reviews")
+
+const EMPTY_SEARCH = { status: undefined, riskLevel: undefined, q: undefined, review: undefined }
+
 export default function ReviewsPage() {
-  const search = useSearch({ from: "/reviews" })
+  const rawSearch = routeApi.useSearch()
+  const search = rawSearch ?? EMPTY_SEARCH
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
