@@ -6,6 +6,7 @@
     "build": "true",
     "dev": "bun run --watch src/index.ts",
     "test": "bun test --env-file=../../.env",
+    "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {

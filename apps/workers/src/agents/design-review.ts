@@ -201,7 +201,10 @@ Each finding's \`description\` field must follow this template. Be specific and 
 - Every section must contain concrete, specific content — never leave placeholders or generic advice
 
 ## Output Format
-Generate a structured JSON object matching the ReviewOutputSchema exactly.`;
+Generate a structured JSON object matching the ReviewOutputSchema exactly.
+
+## CRITICAL: Tool-Call Budget
+You have a STRICT budget of 2 tool calls total. Call \`searchPolicies\` ONCE and \`fetchReviewHistory\` ONCE, then IMMEDIATELY produce your final structured output. Do NOT call any tool more than once. Do NOT call tools after your initial two calls. If a tool returns empty results, proceed with your review using your security expertise — do NOT retry.`;
 
 // ─── Agent Definition ─────────────────────────────────────────────────────────
 

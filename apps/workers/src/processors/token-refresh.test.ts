@@ -16,8 +16,8 @@ import { describe, it, expect, beforeEach, afterAll, mock } from "bun:test";
 // Mock setup
 // =========================================
 
-const mockFindMany = mock((_args: any) => Promise.resolve([]));
-const mockUpdate = mock((_args: any) => Promise.resolve({}));
+const mockFindMany = mock((_args: any) => Promise.resolve([] as Record<string, unknown>[]));
+const mockUpdate = mock((_args: any) => Promise.resolve({} as Record<string, unknown>));
 
 const mockDb = {
   integration: {

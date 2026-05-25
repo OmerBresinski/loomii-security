@@ -8,6 +8,7 @@
     "test": "bun run test:unit && bun run test:e2e",
     "test:unit": "find src -name '*.test.ts' ! -name '*.e2e.test.ts' -exec bun test --env-file=../../.env {} \\;",
     "test:e2e": "bun test --env-file=../../.env $(find src -name '*.e2e.test.ts')",
+    "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist"
   },
   "dependencies": {

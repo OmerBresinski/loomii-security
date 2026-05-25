@@ -60,7 +60,7 @@ export const fetchHistoryTool = createTool({
       return { reviews: [], totalHistorical: 0 };
     }
 
-    const { lookbackDays } = inputData;
+    const { lookbackDays = 30 } = inputData;
     const lookbackDate = new Date();
     lookbackDate.setDate(lookbackDate.getDate() - lookbackDays);
 

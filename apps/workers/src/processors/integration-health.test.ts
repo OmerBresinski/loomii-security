@@ -19,9 +19,9 @@ import type { IntegrationHealthPayload } from "@loomii/queue";
 // Mock setup
 // =========================================
 
-const mockFindMany = mock((_args: any) => Promise.resolve([]));
-const mockFindUnique = mock((_args: any) => Promise.resolve(null));
-const mockUpdate = mock((_args: any) => Promise.resolve({}));
+const mockFindMany = mock((_args: any) => Promise.resolve([] as Record<string, unknown>[]));
+const mockFindUnique = mock((_args: any) => Promise.resolve(null as Record<string, unknown> | null));
+const mockUpdate = mock((_args: any) => Promise.resolve({} as Record<string, unknown>));
 
 const mockDb = {
   integration: {

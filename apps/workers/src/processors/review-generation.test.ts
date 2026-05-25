@@ -59,14 +59,14 @@ mock.module("@loomii/queue", () => ({
 }));
 
 // Mock the DB
-const mockReviewFindUnique = mock(async () => null);
+const mockReviewFindUnique = mock(async () => null as Record<string, unknown> | null);
 const mockContextBundleFindUnique = mock(async () => ({
   id: "ctx_123",
   title: "Add payment endpoint",
   content: JSON.stringify({ type: "linear_issue", title: "Add /api/payments endpoint" }),
   riskLevel: "MEDIUM",
   tenantId: "tenant_1",
-}));
+}) as Record<string, unknown> | null);
 const mockReviewUpsert = mock(async (_args: any) => ({
   id: "review_123",
   contextBundleId: "ctx_123",

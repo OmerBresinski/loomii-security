@@ -12,6 +12,19 @@
 import "../test-setup";
 import { describe, it, expect, beforeEach, mock } from "bun:test";
 
+// Helper type for searchPolicies result in tests (success case only)
+interface PolicySearchResult {
+  policies: Array<{
+    name: string;
+    id: string;
+    content: string;
+    framework: string;
+    identifier: string;
+    relevanceReason: string;
+  }>;
+  totalRetrieved: number;
+}
+
 // =========================================
 // Mock setup
 // =========================================
@@ -180,7 +193,7 @@ describe("searchPolicies Tool", () => {
     const result = await searchPoliciesTool.execute!(
       { contextSummary: "user authentication and access control" },
       { requestContext: new Map([["tenantId", "tenant_123"]]) } as any
-    );
+    ) as PolicySearchResult;
 
     expect(result.policies).toHaveLength(1);
     expect(result.policies[0].name).toContain("Broken Access Control");
@@ -219,7 +232,7 @@ describe("searchPolicies Tool", () => {
     const result = await searchPoliciesTool.execute!(
       { contextSummary: "implementing OAuth login with session management" },
       { requestContext: new Map([["tenantId", "tenant_123"]]) } as any
-    );
+    ) as PolicySearchResult;
 
     expect(result.policies.length).toBeGreaterThanOrEqual(2);
     const names = result.policies.map((p) => p.name);
@@ -278,7 +291,7 @@ describe("searchPolicies Tool", () => {
     const result = await searchPoliciesTool.execute!(
       { contextSummary: "access control and authorization check" },
       { requestContext: new Map([["tenantId", "tenant_123"]]) } as any
-    );
+    ) as PolicySearchResult;
 
     // Should be deduplicated — only 1 result, not 2
     expect(result.policies).toHaveLength(1);
@@ -315,7 +328,7 @@ describe("searchPolicies Tool", () => {
     const result = await searchPoliciesTool.execute!(
       { contextSummary: "login flow with authentication" },
       { requestContext: new Map([["tenantId", "tenant_123"]]) } as any
-    );
+    ) as PolicySearchResult;
 
     expect(result.policies).toHaveLength(1);
     expect(result.policies[0].framework).toBe("CUSTOM");
@@ -381,7 +394,7 @@ describe("searchPolicies Tool", () => {
     const result = await searchPoliciesTool.execute!(
       { contextSummary: "some context" },
       { requestContext: new Map() } as any
-    );
+    ) as PolicySearchResult;
 
     expect(result.policies).toHaveLength(0);
   });

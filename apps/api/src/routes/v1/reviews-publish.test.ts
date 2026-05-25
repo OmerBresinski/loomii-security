@@ -68,7 +68,7 @@ const mockGetCommentTargets = mock((_tenantId: string, _bundleId: string) =>
   Promise.resolve([{ sourceType: "LINEAR", sourceId: "LIN-123", sourceTitle: "Auth Flow" }])
 );
 const mockPostCommentToSources = mock((_tenantId: string, _targets: unknown, _text: string) =>
-  Promise.resolve([{ sourceId: "LIN-123", success: true }])
+  Promise.resolve([{ sourceId: "LIN-123", success: true } as { sourceId: string; success: boolean; error?: string }])
 );
 
 mock.module("../../lib/comment-poster", () => ({

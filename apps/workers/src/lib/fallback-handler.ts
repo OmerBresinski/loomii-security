@@ -28,6 +28,7 @@ import {
 } from "../agents/design-review-fallback";
 import { MODELS } from "./bedrock";
 import { logger } from "./logger";
+import type { Logger } from "pino";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -212,7 +213,7 @@ async function tryGenerate(
   agent: { generate: Function },
   tools: Record<string, any>,
   input: FallbackInput,
-  childLogger: ReturnType<typeof logger.child>
+  childLogger: Logger
 ): Promise<ReviewOutput | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), ATTEMPT_TIMEOUT_MS);
@@ -229,19 +230,37 @@ async function tryGenerate(
       structuredOutput: {
         schema: ReviewOutputSchema,
       },
-      maxSteps: 5,
+      maxSteps: 4,
       requestContext: new Map([["tenantId", input.tenantId]]),
       modelSettings: {
         temperature: 0.1,
-        maxOutputTokens: 16000,
+        maxOutputTokens: 24000,
         maxRetries: 1,
       },
       abortSignal: controller.signal,
     } as any) as Promise<{ object: ReviewOutput | null; text: string }>);
 
     if (!result.object) {
-      childLogger.warn("Attempt returned null output");
+      childLogger.warn(
+        { textLength: result.text?.length ?? 0 },
+        "Attempt returned null output"
+      );
       return null;
+    }
+
+    // Truncate summary if it exceeds schema max (16000 chars)
+    // This prevents Haiku's verbosity from causing validation failures
+    const MAX_SUMMARY_LENGTH = 16000;
+    if (
+      result.object.summary &&
+      result.object.summary.length > MAX_SUMMARY_LENGTH
+    ) {
+      childLogger.warn(
+        { originalLength: result.object.summary.length },
+        "Truncating summary to fit schema max"
+      );
+      result.object.summary =
+        result.object.summary.slice(0, MAX_SUMMARY_LENGTH - 3) + "...";
     }
 
     // Validate with Zod

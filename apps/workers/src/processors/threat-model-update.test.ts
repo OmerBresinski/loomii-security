@@ -35,7 +35,7 @@ const mockThreatModelFindUnique = mock(async () => ({
   id: "tm_123",
   status: "ACTIVE",
   version: 2,
-}));
+}) as Record<string, unknown> | null);
 
 const mockReviewFindFirst = mock(async () => ({
   id: "review_456",
@@ -45,7 +45,7 @@ const mockReviewFindFirst = mock(async () => ({
     { type: "THREAT", strideCategory: "SPOOFING" },
     { type: "REQUIREMENT", strideCategory: null },
   ],
-}));
+}) as Record<string, unknown> | null);
 
 // Mock $transaction to execute the function directly
 const mockTmComponentFindMany = mock(async () => [

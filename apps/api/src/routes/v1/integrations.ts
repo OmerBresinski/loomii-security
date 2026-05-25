@@ -14,6 +14,7 @@ import { db } from "@loomii/db";
 import { requireRole } from "../../middleware/rbac";
 import { linearRoutes } from "./integrations/linear";
 import { notionRoutes } from "./integrations/notion";
+import { notionPollingQueue } from "@loomii/queue";
 
 export const integrationRoutes = new Hono<AppEnv>();
 
@@ -104,6 +105,20 @@ integrationRoutes.delete("/:id", requireRole("ADMIN"), async (c) => {
       tokenExpiresAt: null,
     },
   });
+
+  // Remove the repeatable polling job for Notion integrations
+  if (integration.provider === "NOTION") {
+    const jobKey = `notion-poll-${tenantId}`;
+    try {
+      const repeatableJobs = await notionPollingQueue.getRepeatableJobs();
+      const matchingJob = repeatableJobs.find((j) => j.id === jobKey);
+      if (matchingJob) {
+        await notionPollingQueue.removeRepeatableByKey(matchingJob.key);
+      }
+    } catch {
+      // Non-critical: job will early-return due to DISCONNECTED status check
+    }
+  }
 
   return c.json({ success: true }, 200);
 });
