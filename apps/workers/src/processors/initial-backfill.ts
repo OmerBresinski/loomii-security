@@ -648,7 +648,7 @@ export async function processInitialBackfill(job: Job<InitialBackfillPayload>): 
           eventId: syntheticEvent.id,
           projectId: created.projectId,
           status: "READY",
-          title: `Security Review: ${created.name}`,
+          title: created.name,
           content: {
             projectName: created.name,
             sourceCount: created.itemIds.length,
