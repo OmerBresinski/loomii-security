@@ -18,11 +18,8 @@ import {
 
 const routeApi = getRouteApi("/reviews")
 
-const EMPTY_SEARCH = { status: undefined, riskLevel: undefined, q: undefined, review: undefined }
-
 export default function ReviewsPage() {
-  const rawSearch = routeApi.useSearch()
-  const search = rawSearch ?? EMPTY_SEARCH
+  const search = routeApi.useSearch()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
 
