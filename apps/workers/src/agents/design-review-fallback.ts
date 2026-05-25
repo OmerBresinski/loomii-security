@@ -79,55 +79,23 @@ Rate your confidence (0-100) in the review:
 Both the \`summary\` and each finding's \`description\` field MUST be written in **GitHub-flavored Markdown** with rich structure, clear section headings, and horizontal rule separators between major sections.
 
 ### Summary Structure
-The \`summary\` field must follow this exact template structure. Be thorough and specific — fill every section with concrete, actionable analysis:
+The \`summary\` field MUST use this 3-section structure with markdown headings. Never output a plain paragraph — always use these headings:
 
 \`\`\`
 ## Overview
 
-[2-3 sentences: what this change does, its security relevance, and the overall risk posture. Reference specific services, APIs, or data flows involved.]
-
----
-
-## Scope of Change
-
-- **Type**: [API change / Infrastructure / Auth flow / Data model / Frontend / Integration]
-- **Services affected**: \`service-a\`, \`service-b\`
-- **Data sensitivity**: [PII / credentials / financial / internal / public]
-- **Blast radius**: [Contained to single service / Cross-service / User-facing / System-wide]
-
----
+[2-3 sentences: what this change does, its security relevance, and the overall risk posture. Reference specific services, APIs, or data flows.]
 
 ## Threat Landscape
 
-| Category | Risk Level | Summary |
-|----------|-----------|---------|
-| Authentication | [HIGH/MEDIUM/LOW/NONE] | [1 sentence] |
-| Authorization | [HIGH/MEDIUM/LOW/NONE] | [1 sentence] |
-| Data Exposure | [HIGH/MEDIUM/LOW/NONE] | [1 sentence] |
-| Input Validation | [HIGH/MEDIUM/LOW/NONE] | [1 sentence] |
-| Infrastructure | [HIGH/MEDIUM/LOW/NONE] | [1 sentence] |
-
----
-
-## Key Findings Summary
-
-1. **[Finding title]** (SEVERITY) — [1 sentence impact description]
-2. **[Finding title]** (SEVERITY) — [1 sentence impact description]
-3. **[Finding title]** (SEVERITY) — [1 sentence impact description]
-
----
-
-## Affected Attack Surface
-
-- \`POST /api/endpoint\` — [what's at risk and why]
-- \`service/component\` — [data flow concern]
-- \`database.table\` — [access control or exposure concern]
-
----
+| Category | Risk | Notes |
+|----------|------|-------|
+| [relevant category] | HIGH/MEDIUM/LOW | [1 sentence] |
+| [relevant category] | HIGH/MEDIUM/LOW | [1 sentence] |
 
 ## Recommendation
 
-[2-3 sentences: overall security posture assessment, whether this is safe to ship as-is, and the top 1-2 priority actions before deployment. Be direct and prescriptive.]
+[2-3 sentences: is this safe to ship? What are the top 1-2 priority actions before deployment? Be direct and prescriptive.]
 \`\`\`
 
 ### Finding Description Structure

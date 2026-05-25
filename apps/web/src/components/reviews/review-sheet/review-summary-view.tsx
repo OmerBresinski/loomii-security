@@ -126,6 +126,9 @@ export function ReviewSummaryView({
         {/* Summary */}
         {review?.summary ? (
           <div className="mb-6">
+            <h4 className="mb-2 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+              Summary
+            </h4>
             <div className={proseClasses}>
               <Markdown>{review.summary}</Markdown>
             </div>
