@@ -1,64 +1,103 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { fetchApi } from "@/lib/api-client"
 import { reviewKeys } from "@/queries/reviews"
+import type { DismissalReason } from "@/components/reviews/review-sheet/constants"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-interface UpdateFindingStatusResponse {
+interface DismissFindingResponse {
   id: string
-  status: string
+  status: "DISMISSED"
+  dismissalReason: string
+  dismissedAt: string
 }
 
-interface UpdateReviewStatusResponse {
+interface RestoreFindingResponse {
   id: string
-  status: string
+  status: null
 }
 
-// ─── Update Finding Status ──────────────────────────────────────────────────
+interface PublishPreviewResponse {
+  commentText: string
+  targets: Array<{ sourceType: string; sourceId: string; sourceTitle: string }>
+  findingsCount: number
+}
 
-export function useUpdateFindingStatus(reviewId: string) {
+interface ConfirmPublishResponse {
+  status: "PUBLISHED"
+  publishedAt: string
+  commentPostedTo: string[]
+  findingsConfirmed: number
+}
+
+// ─── Dismiss Finding ────────────────────────────────────────────────────────
+
+export function useDismissFinding(reviewId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationKey: ["findings", "updateStatus"],
+    mutationKey: ["findings", "dismiss"],
     mutationFn: ({
       findingId,
-      status,
+      reason,
     }: {
       findingId: string
-      status: "OPEN" | "ACCEPTED" | "REJECTED" | "RESOLVED" | "DEFERRED"
+      reason: DismissalReason
     }) =>
-      fetchApi<UpdateFindingStatusResponse>(`/api/v1/findings/${findingId}`, {
-        method: "PATCH",
-        body: { status },
-      }),
+      fetchApi<DismissFindingResponse>(
+        `/api/v1/findings/${findingId}/dismiss`,
+        { method: "PATCH", body: { reason } }
+      ),
     onSuccess: () => {
-      // Invalidate the review detail to refetch with updated finding status
       queryClient.invalidateQueries({ queryKey: reviewKeys.detail(reviewId) })
     },
   })
 }
 
-// ─── Update Review Status (Approve/Reject) ──────────────────────────────────
+// ─── Restore Finding ────────────────────────────────────────────────────────
 
-export function useUpdateReviewStatus(reviewId: string) {
+export function useRestoreFinding(reviewId: string) {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationKey: ["reviews", "updateStatus", reviewId],
-    mutationFn: ({
-      reviewDbId,
-      status,
-    }: {
-      reviewDbId: string
-      status: "APPROVED" | "REJECTED"
-    }) =>
-      fetchApi<UpdateReviewStatusResponse>(`/api/v1/reviews/${reviewDbId}`, {
-        method: "PATCH",
-        body: { status },
-      }),
+    mutationKey: ["findings", "restore"],
+    mutationFn: ({ findingId }: { findingId: string }) =>
+      fetchApi<RestoreFindingResponse>(
+        `/api/v1/findings/${findingId}/restore`,
+        { method: "PATCH" }
+      ),
     onSuccess: () => {
-      // Invalidate both the detail and list queries
+      queryClient.invalidateQueries({ queryKey: reviewKeys.detail(reviewId) })
+    },
+  })
+}
+
+// ─── Publish Review (generate preview) ──────────────────────────────────────
+
+export function usePublishReview() {
+  return useMutation({
+    mutationKey: ["reviews", "publish"],
+    mutationFn: ({ reviewDbId }: { reviewDbId: string }) =>
+      fetchApi<PublishPreviewResponse>(
+        `/api/v1/reviews/${reviewDbId}/publish`,
+        { method: "POST" }
+      ),
+  })
+}
+
+// ─── Confirm Publish (post comment & finalize) ──────────────────────────────
+
+export function useConfirmPublish(reviewId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationKey: ["reviews", "confirmPublish"],
+    mutationFn: ({ reviewDbId }: { reviewDbId: string }) =>
+      fetchApi<ConfirmPublishResponse>(
+        `/api/v1/reviews/${reviewDbId}/confirm-publish`,
+        { method: "POST" }
+      ),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: reviewKeys.detail(reviewId) })
       queryClient.invalidateQueries({ queryKey: reviewKeys.all })
     },

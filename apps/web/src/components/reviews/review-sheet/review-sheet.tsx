@@ -6,11 +6,15 @@ import {
   type Finding,
 } from "@/queries/reviews"
 import {
-  useUpdateFindingStatus,
-  useUpdateReviewStatus,
+  useDismissFinding,
+  useRestoreFinding,
+  usePublishReview,
+  useConfirmPublish,
 } from "@/mutations/reviews"
 import { FindingDetailView } from "./finding-detail-view"
 import { ReviewSummaryView } from "./review-summary-view"
+import { CommentPreviewModal } from "./comment-preview-modal"
+import type { DismissalReason } from "./constants"
 
 // ─── ReviewSheet Component ──────────────────────────────────────────────────
 
@@ -55,57 +59,88 @@ interface ReviewSheetContentProps {
 
 function ReviewSheetContent({ reviewId, listReview }: ReviewSheetContentProps) {
   const [activeFindingId, setActiveFindingId] = useState<string | null>(null)
+  const [publishPreview, setPublishPreview] = useState<{
+    commentText: string
+    targets: Array<{ sourceType: string; sourceId: string; sourceTitle: string }>
+  } | null>(null)
 
   const { data: review, isPending } = useReviewDetail(reviewId, listReview)
 
-  const findingMutation = useUpdateFindingStatus(reviewId)
-  const reviewStatusMutation = useUpdateReviewStatus(reviewId)
+  const dismissMutation = useDismissFinding(reviewId)
+  const restoreMutation = useRestoreFinding(reviewId)
+  const publishMutation = usePublishReview()
+  const confirmMutation = useConfirmPublish(reviewId)
 
-  function handleFindingStatusChange(
-    findingId: string,
-    status: Finding["status"]
-  ) {
-    findingMutation.mutate({ findingId, status })
+  function handleDismiss(findingId: string, reason: DismissalReason) {
+    dismissMutation.mutate({ findingId, reason })
+    // If we're viewing the dismissed finding, go back to summary
+    if (activeFindingId === findingId) {
+      setActiveFindingId(null)
+    }
   }
 
-  function handleAdvance(nextStatus: string) {
+  function handleRestore(findingId: string) {
+    restoreMutation.mutate({ findingId })
+  }
+
+  async function handlePublish() {
     if (!review?.reviewId) return
-    reviewStatusMutation.mutate({
+    const result = await publishMutation.mutateAsync({
       reviewDbId: review.reviewId,
-      status: nextStatus as "APPROVED" | "REJECTED",
+    })
+    setPublishPreview({
+      commentText: result.commentText,
+      targets: result.targets,
     })
   }
 
-  function handleReject() {
+  async function handleConfirmPublish() {
     if (!review?.reviewId) return
-    reviewStatusMutation.mutate({
-      reviewDbId: review.reviewId,
-      status: "REJECTED",
-    })
+    await confirmMutation.mutateAsync({ reviewDbId: review.reviewId })
+    setPublishPreview(null)
   }
+
+  const isReadOnly = review?.reviewStatus === "PUBLISHED"
 
   const activeFinding = activeFindingId
     ? (review?.findings.find((f) => f.id === activeFindingId) ?? null)
     : null
 
-  return activeFinding ? (
-    <FindingDetailView
-      finding={activeFinding}
-      onBack={() => setActiveFindingId(null)}
-      onStatusChange={handleFindingStatusChange}
-      isUpdating={
-        findingMutation.isPending &&
-        findingMutation.variables?.findingId === activeFinding.id
-      }
-    />
-  ) : (
-    <ReviewSummaryView
-      review={review}
-      isPending={isPending}
-      onAdvance={handleAdvance}
-      onReject={handleReject}
-      isStatusUpdating={reviewStatusMutation.isPending}
-      onFindingClick={setActiveFindingId}
-    />
+  return (
+    <>
+      {activeFinding ? (
+        <FindingDetailView
+          finding={activeFinding}
+          onBack={() => setActiveFindingId(null)}
+          onDismiss={handleDismiss}
+          isDismissing={dismissMutation.isPending}
+          isReadOnly={isReadOnly}
+        />
+      ) : (
+        <ReviewSummaryView
+          review={review}
+          isPending={isPending}
+          onFindingClick={setActiveFindingId}
+          onDismiss={handleDismiss}
+          onRestore={handleRestore}
+          onPublish={handlePublish}
+          isDismissing={dismissMutation.isPending}
+          isRestoring={restoreMutation.isPending}
+          isPublishing={publishMutation.isPending}
+        />
+      )}
+
+      {/* Comment preview modal */}
+      {publishPreview ? (
+        <CommentPreviewModal
+          open={!!publishPreview}
+          onClose={() => setPublishPreview(null)}
+          commentText={publishPreview.commentText}
+          targets={publishPreview.targets}
+          onConfirm={handleConfirmPublish}
+          isConfirming={confirmMutation.isPending}
+        />
+      ) : null}
+    </>
   )
 }

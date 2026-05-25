@@ -1,14 +1,9 @@
 import Markdown from "react-markdown"
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select"
 import type { Finding } from "@/queries/reviews"
-import { FINDING_STATUSES, findingStatusLabels } from "./constants"
+import { DismissButton } from "./dismiss-button"
 import { FindingTypeIcon, FindingSeverityIcon } from "./finding-icons"
+import type { DismissalReason } from "./constants"
 
 // ─── Prose class for markdown content ───────────────────────────────────────
 
@@ -35,15 +30,17 @@ function formatEffort(raw: string): string {
 interface FindingDetailViewProps {
   finding: Finding
   onBack: () => void
-  onStatusChange: (findingId: string, status: Finding["status"]) => void
-  isUpdating: boolean
+  onDismiss: (findingId: string, reason: DismissalReason) => void
+  isDismissing: boolean
+  isReadOnly: boolean
 }
 
 export function FindingDetailView({
   finding,
   onBack,
-  onStatusChange,
-  isUpdating,
+  onDismiss,
+  isDismissing,
+  isReadOnly,
 }: FindingDetailViewProps) {
   return (
     <>
@@ -72,7 +69,7 @@ export function FindingDetailView({
           </SheetTitle>
         </div>
 
-        {/* Bottom row: metadata left + status select right */}
+        {/* Bottom row: metadata left + dismiss button right */}
         <div className="flex items-center justify-between gap-3">
           {/* Left: severity + stride + effort */}
           <div className="flex items-center gap-2.5">
@@ -96,28 +93,13 @@ export function FindingDetailView({
             ) : null}
           </div>
 
-          {/* Right: status select */}
-          <Select
-            value={finding.status}
-            onValueChange={(val) =>
-              onStatusChange(finding.id, val as Finding["status"])
-            }
-            disabled={isUpdating}
-          >
-            <SelectTrigger
-              size="sm"
-              className="h-7 w-fit min-w-[100px] text-[11px]"
-            >
-              {findingStatusLabels[finding.status] ?? finding.status}
-            </SelectTrigger>
-            <SelectContent>
-              {FINDING_STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {findingStatusLabels[s]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {/* Right: dismiss button (only if not read-only and not already confirmed) */}
+          {!isReadOnly && finding.status !== "CONFIRMED" ? (
+            <DismissButton
+              onDismiss={(reason) => onDismiss(finding.id, reason)}
+              disabled={isDismissing}
+            />
+          ) : null}
         </div>
       </SheetHeader>
 

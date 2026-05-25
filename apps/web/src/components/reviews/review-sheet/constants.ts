@@ -8,29 +8,28 @@ import {
 
 // ─── Review Steps ───────────────────────────────────────────────────────────
 
-export const REVIEW_STEPS = [
-  { key: "DRAFT", label: "Draft" },
-  { key: "IN_REVIEW", label: "Review" },
-  { key: "APPROVED", label: "Approved" },
-  { key: "PUBLISHED", label: "Published" },
-] as const
+// REMOVED: REVIEW_STEPS (stepper deleted in lifecycle redesign)
 
 // ─── Finding Statuses ───────────────────────────────────────────────────────
 
-export const FINDING_STATUSES = [
-  "OPEN",
-  "ACCEPTED",
-  "REJECTED",
-  "RESOLVED",
-  "DEFERRED",
+// REMOVED: FINDING_STATUSES (old 5-status dropdown deleted)
+
+// ─── Dismissal Reasons (new) ────────────────────────────────────────────────
+
+export const DISMISSAL_REASONS = [
+  "FALSE_POSITIVE",
+  "NOT_APPLICABLE",
+  "DUPLICATE",
+  "ALREADY_MITIGATED",
 ] as const
 
-export const findingStatusLabels: Record<string, string> = {
-  OPEN: "Open",
-  ACCEPTED: "Accepted",
-  REJECTED: "Rejected",
-  RESOLVED: "Resolved",
-  DEFERRED: "Deferred",
+export type DismissalReason = (typeof DISMISSAL_REASONS)[number]
+
+export const dismissalReasonLabels: Record<DismissalReason, string> = {
+  FALSE_POSITIVE: "False positive",
+  NOT_APPLICABLE: "Not applicable",
+  DUPLICATE: "Duplicate",
+  ALREADY_MITIGATED: "Already mitigated",
 }
 
 // ─── Finding Type Mappings ──────────────────────────────────────────────────

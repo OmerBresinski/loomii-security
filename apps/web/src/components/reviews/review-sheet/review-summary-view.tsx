@@ -1,10 +1,13 @@
 import Markdown from "react-markdown"
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
-import type { ReviewDetail } from "@/queries/reviews"
+import { Button } from "@/components/ui/button"
+import type { ReviewDetail, Finding } from "@/queries/reviews"
 import { RiskIcon } from "./risk-icon"
-import { ReviewStepper } from "./review-stepper"
 import { FindingListItem } from "./finding-list-item"
+import { DismissButton } from "./dismiss-button"
+import { DismissedSection } from "./dismissed-section"
+import type { DismissalReason } from "./constants"
 
 // ─── Prose class for markdown content ───────────────────────────────────────
 
@@ -32,20 +35,35 @@ function FindingsLoadingSkeleton() {
 interface ReviewSummaryViewProps {
   review: ReviewDetail | undefined
   isPending: boolean
-  onAdvance: (nextStatus: string) => void
-  onReject: () => void
-  isStatusUpdating: boolean
   onFindingClick: (findingId: string) => void
+  onDismiss: (findingId: string, reason: DismissalReason) => void
+  onRestore: (findingId: string) => void
+  onPublish: () => void
+  isDismissing: boolean
+  isRestoring: boolean
+  isPublishing: boolean
 }
 
 export function ReviewSummaryView({
   review,
   isPending,
-  onAdvance,
-  onReject,
-  isStatusUpdating,
   onFindingClick,
+  onDismiss,
+  onRestore,
+  onPublish,
+  isDismissing,
+  isRestoring,
+  isPublishing,
 }: ReviewSummaryViewProps) {
+  // Split findings into active vs dismissed
+  const activeFindings =
+    review?.findings.filter((f) => f.status !== "DISMISSED") ?? []
+  const dismissedFindings =
+    review?.findings.filter((f) => f.status === "DISMISSED") ?? []
+
+  const isPublished = review?.reviewStatus === "PUBLISHED"
+  const isReady = review?.reviewStatus === "READY"
+
   return (
     <>
       {/* Header */}
@@ -70,19 +88,28 @@ export function ReviewSummaryView({
               ) : null}
             </div>
           </div>
-        </div>
 
-        {/* Review-level actions */}
-        {review?.reviewId ? (
-          <div className="mt-3">
-            <ReviewStepper
-              status={review.reviewStatus}
-              onAdvance={onAdvance}
-              onReject={onReject}
-              isUpdating={isStatusUpdating}
-            />
-          </div>
-        ) : null}
+          {/* Publish button (only in READY state) */}
+          {isReady && review?.reviewId ? (
+            <Button
+              size="sm"
+              onClick={onPublish}
+              disabled={isPublishing || activeFindings.length === 0}
+            >
+              {isPublishing ? "Generating..." : "Publish Review"}
+            </Button>
+          ) : null}
+
+          {/* Published badge */}
+          {isPublished ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-1 text-[11px] font-medium text-green-400">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M2.5 6.5L5 9L9.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Published
+            </span>
+          ) : null}
+        </div>
       </SheetHeader>
 
       {/* Body */}
@@ -99,26 +126,53 @@ export function ReviewSummaryView({
         {/* Findings list */}
         <div>
           <h4 className="mb-2 text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-            Findings ({review?.findings.length ?? 0})
+            {isPublished ? "Confirmed" : ""} Findings ({activeFindings.length})
           </h4>
 
           {isPending && !review ? (
             <FindingsLoadingSkeleton />
-          ) : review?.findings.length === 0 ? (
+          ) : activeFindings.length === 0 ? (
             <p className="py-4 text-center text-[12px] text-muted-foreground">
               No findings yet.
             </p>
           ) : (
             <div className="flex flex-col">
-              {review?.findings.map((finding) => (
-                <FindingListItem
-                  key={finding.id}
-                  finding={finding}
-                  onClick={() => onFindingClick(finding.id)}
-                />
+              {activeFindings.map((finding) => (
+                <div key={finding.id} className="group flex items-center">
+                  <div className="min-w-0 flex-1">
+                    <FindingListItem
+                      finding={finding}
+                      onClick={() => onFindingClick(finding.id)}
+                    />
+                  </div>
+                  {/* Dismiss icon — only show for untriaged findings in READY state */}
+                  {isReady && finding.status !== "CONFIRMED" ? (
+                    <div className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+                      <DismissButton
+                        onDismiss={(reason) => onDismiss(finding.id, reason)}
+                        disabled={isDismissing}
+                      />
+                    </div>
+                  ) : null}
+                  {/* Checkmark for confirmed findings */}
+                  {isPublished ? (
+                    <div className="shrink-0 pr-3 text-green-400">
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                        <path d="M3 7.5L5.5 10L11 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </div>
+                  ) : null}
+                </div>
               ))}
             </div>
           )}
+
+          {/* Dismissed section (collapsed) */}
+          <DismissedSection
+            findings={dismissedFindings}
+            onRestore={onRestore}
+            isRestoring={isRestoring}
+          />
         </div>
       </div>
     </>
