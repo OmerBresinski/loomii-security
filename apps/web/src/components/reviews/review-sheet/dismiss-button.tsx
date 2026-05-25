@@ -1,4 +1,6 @@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Cancel01Icon } from "@hugeicons/core-free-icons"
 import {
   DISMISSAL_REASONS,
   dismissalReasonLabels,
@@ -23,14 +25,7 @@ export function DismissButton({ findingId, onDismiss, disabled }: DismissButtonP
           className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-50"
           title="Dismiss finding"
         >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path
-              d="M3.5 3.5L10.5 10.5M10.5 3.5L3.5 10.5"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-            />
-          </svg>
+          <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={1.5} />
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-48 p-1">

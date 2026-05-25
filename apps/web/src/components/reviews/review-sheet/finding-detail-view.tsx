@@ -1,5 +1,7 @@
 import Markdown from "react-markdown"
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { ArrowLeft01Icon } from "@hugeicons/core-free-icons"
 import type { Finding } from "@/queries/reviews"
 import { DismissButton } from "./dismiss-button"
 import { FindingTypeIcon, FindingSeverityIcon } from "./finding-icons"
@@ -51,15 +53,7 @@ export function FindingDetailView({
             onClick={onBack}
             className="flex shrink-0 items-center justify-center rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path
-                d="M10 12L6 8l4-4"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <HugeiconsIcon icon={ArrowLeft01Icon} size={16} strokeWidth={1.5} />
           </button>
           <div className="shrink-0">
             <FindingTypeIcon type={finding.type} />

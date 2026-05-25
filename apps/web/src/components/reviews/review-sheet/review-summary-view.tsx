@@ -3,6 +3,8 @@ import Markdown from "react-markdown"
 import { SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
+import { HugeiconsIcon } from "@hugeicons/react"
+import { Tick02Icon } from "@hugeicons/core-free-icons"
 import type { ReviewDetail, Finding } from "@/queries/reviews"
 import { RiskIcon } from "./risk-icon"
 import { FindingListItem } from "./finding-list-item"
@@ -108,9 +110,7 @@ export function ReviewSummaryView({
           {/* Published badge */}
           {isPublished ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-1 text-[11px] font-medium text-green-400">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M2.5 6.5L5 9L9.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <HugeiconsIcon icon={Tick02Icon} size={12} strokeWidth={1.5} />
               Published
             </span>
           ) : null}
@@ -163,9 +163,7 @@ export function ReviewSummaryView({
                   {/* Checkmark for confirmed findings */}
                   {isPublished ? (
                     <div className="shrink-0 pr-3 text-green-400">
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                        <path d="M3 7.5L5.5 10L11 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
+                      <HugeiconsIcon icon={Tick02Icon} size={14} strokeWidth={1.5} />
                     </div>
                   ) : null}
                 </div>
