@@ -1,6 +1,6 @@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Cancel01Icon } from "@hugeicons/core-free-icons"
+import { ThumbsDownIcon } from "@hugeicons/core-free-icons"
 import {
   DISMISSAL_REASONS,
   dismissalReasonLabels,
@@ -25,7 +25,7 @@ export function DismissButton({ findingId, onDismiss, disabled }: DismissButtonP
           className="flex size-6 shrink-0 items-center justify-center rounded text-muted-foreground/50 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:pointer-events-none disabled:opacity-50"
           title="Dismiss finding"
         >
-          <HugeiconsIcon icon={Cancel01Icon} size={14} strokeWidth={1.5} />
+          <HugeiconsIcon icon={ThumbsDownIcon} size={14} strokeWidth={1.5} />
         </button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-48 p-1">
