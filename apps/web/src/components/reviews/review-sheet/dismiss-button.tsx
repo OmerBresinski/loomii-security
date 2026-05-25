@@ -1,5 +1,4 @@
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Button } from "@/components/ui/button"
 import {
   DISMISSAL_REASONS,
   dismissalReasonLabels,
@@ -8,11 +7,12 @@ import {
 import { useState } from "react"
 
 interface DismissButtonProps {
-  onDismiss: (reason: DismissalReason) => void
+  findingId?: string
+  onDismiss: (findingId: string, reason: DismissalReason) => void
   disabled?: boolean
 }
 
-export function DismissButton({ onDismiss, disabled }: DismissButtonProps) {
+export function DismissButton({ findingId, onDismiss, disabled }: DismissButtonProps) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -39,7 +39,7 @@ export function DismissButton({ onDismiss, disabled }: DismissButtonProps) {
             <button
               key={reason}
               onClick={() => {
-                onDismiss(reason)
+                if (findingId) onDismiss(findingId, reason)
                 setOpen(false)
               }}
               className="rounded px-2.5 py-1.5 text-left text-[12px] text-foreground/90 transition-colors hover:bg-muted"

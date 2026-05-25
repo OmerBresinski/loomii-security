@@ -96,7 +96,8 @@ export function FindingDetailView({
           {/* Right: dismiss button (only if not read-only and not already confirmed) */}
           {!isReadOnly && finding.status !== "CONFIRMED" ? (
             <DismissButton
-              onDismiss={(reason) => onDismiss(finding.id, reason)}
+              findingId={finding.id}
+              onDismiss={onDismiss}
               disabled={isDismissing}
             />
           ) : null}

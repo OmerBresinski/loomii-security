@@ -147,14 +147,15 @@ export function ReviewSummaryView({
                   <div className="min-w-0 flex-1">
                     <FindingListItem
                       finding={finding}
-                      onClick={() => onFindingClick(finding.id)}
+                      onClick={onFindingClick}
                     />
                   </div>
                   {/* Dismiss icon — only show for untriaged findings in READY state */}
                   {isReady && finding.status !== "CONFIRMED" ? (
                     <div className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
                       <DismissButton
-                        onDismiss={(reason) => onDismiss(finding.id, reason)}
+                        findingId={finding.id}
+                        onDismiss={onDismiss}
                         disabled={isDismissing}
                       />
                     </div>

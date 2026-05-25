@@ -13,14 +13,14 @@ import { FindingTypeIcon, FindingSeverityIcon } from "./finding-icons"
 
 interface FindingListItemProps {
   finding: Finding
-  onClick: () => void
+  onClick: (findingId: string) => void
 }
 
 export function FindingListItem({ finding, onClick }: FindingListItemProps) {
   return (
     <div
       className="group flex h-11 cursor-pointer items-center gap-2.5 border-b border-border/30 px-3 last:border-b-0 hover:bg-accent/50 dark:hover:bg-[#25262A]/50"
-      onClick={onClick}
+      onClick={() => onClick(finding.id)}
     >
       {/* Type Icon with tooltip */}
       <Tooltip>
