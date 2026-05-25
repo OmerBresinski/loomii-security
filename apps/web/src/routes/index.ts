@@ -94,9 +94,12 @@ const reviewSearchSchema = z.object({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  beforeLoad: requireAuth,
-  validateSearch: reviewSearchSchema,
-  component: lazyRouteComponent(() => import("@/routes/reviews")),
+  beforeLoad: ({ search }) => {
+    throw redirect({
+      to: "/reviews",
+      search,
+    })
+  },
 })
 
 const reviewsRoute = createRoute({
