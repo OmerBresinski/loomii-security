@@ -3,6 +3,7 @@
  *
  * Generates a concise security review comment for posting to Linear/Notion.
  * Uses Claude Haiku via Bedrock for speed (2-3s generation).
+ * Falls back to a deterministic template if LLM is unavailable.
  *
  * Format (Option B from TDD):
  *   Security Review — N findings:
@@ -43,24 +44,72 @@ interface FindingSummary {
   severity: string;
 }
 
+// Severity ordering for deterministic fallback (lower = higher priority)
+const SEVERITY_ORDER: Record<string, number> = {
+  CRITICAL: 0,
+  HIGH: 1,
+  MEDIUM: 2,
+  LOW: 3,
+};
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
+/**
+ * Deterministic fallback comment when LLM is unavailable.
+ * Produces identical format to the LLM output — just without AI polish.
+ */
+function generateFallbackComment(
+  findings: FindingSummary[],
+  reviewId: string
+): string {
+  const url = `https://app.loomii.ai/reviews?review=${reviewId}`;
+  const sorted = [...findings].sort(
+    (a, b) => (SEVERITY_ORDER[a.severity] ?? 99) - (SEVERITY_ORDER[b.severity] ?? 99)
+  );
+  const bullets = sorted
+    .map((f) => `• ${f.title} (${capitalize(f.severity)})`)
+    .join("\n");
+  return `Security Review \u2014 ${findings.length} findings:\n${bullets}\n\nView full details \u2192 ${url}`;
+}
+
+/**
+ * Generate a review comment for posting to external sources.
+ * Attempts LLM generation first, falls back to deterministic template on failure.
+ */
 export async function generateReviewComment(
   findings: FindingSummary[],
   reviewId: string
 ): Promise<string> {
   const reviewUrl = `https://app.loomii.ai/reviews?review=${reviewId}`;
 
-  const { text } = await generateText({
-    model: bedrock(HAIKU_MODEL_ID),
-    system: COMMENT_SYSTEM_PROMPT,
-    prompt: JSON.stringify({
-      findings: findings.map((f) => ({
-        title: f.title,
-        severity: f.severity,
-      })),
-      reviewUrl,
-    }),
-    abortSignal: AbortSignal.timeout(10_000),
-  });
+  try {
+    const { text } = await generateText({
+      model: bedrock(HAIKU_MODEL_ID),
+      system: COMMENT_SYSTEM_PROMPT,
+      prompt: JSON.stringify({
+        findings: findings.map((f) => ({
+          title: f.title,
+          severity: f.severity,
+        })),
+        reviewUrl,
+      }),
+      abortSignal: AbortSignal.timeout(10_000),
+    });
 
-  return text.trim();
+    const trimmed = text.trim();
+
+    // Guard against empty LLM responses
+    if (!trimmed) {
+      console.warn("[comment-generator] LLM returned empty response, using fallback");
+      return generateFallbackComment(findings, reviewId);
+    }
+
+    return trimmed;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    console.warn(`[comment-generator] LLM generation failed (${message}), using fallback`);
+    return generateFallbackComment(findings, reviewId);
+  }
 }
