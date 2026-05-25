@@ -6,21 +6,33 @@
  * - Threat Model Agent (via threat-model-update queue): triggers model re-evaluation
  *
  * Events:
- * - "review.published"        - review auto-published (autonomous mode) or manually approved
- * - "review.pending_approval" - assisted review ready for human review
- * - "review.completed"        - generation finished (any mode) -> threat model queue
+ * - "review.ready"            - review generated and awaiting human triage
+ * - "review.published"        - review published (always via human confirm)
+ * - "review.completed"        - generation finished -> threat model queue
  * - "review.failed"           - all LLM attempts failed
- * - "finding.status_changed"  - developer resolved/dismissed/deferred a finding
+ * - "finding.status_changed"  - finding dismissed/restored
  *
  * This is a utility module called by:
- * - review-generation worker (after routing)
- * - approval API endpoints (approve/reject)
- * - finding actions API (resolve/dismiss)
+ * - review-generation worker (after saving)
+ * - publish API endpoints (confirm-publish)
+ * - finding actions API (dismiss/restore)
  */
 import { eventsQueue, threatModelQueue } from "@loomii/queue";
 import { logger } from "./logger";
 
 // ─── Event Payload Types ──────────────────────────────────────────────────────
+
+export interface ReviewReadyEvent {
+  tenantId: string;
+  reviewId: string;
+  contextBundleId: string;
+  severity: string;
+  confidence: number;
+  riskLevel: string;
+  findingCount: number;
+  projectId: string | null;
+  projectName: string | null;
+}
 
 export interface ReviewPublishedEvent {
   tenantId: string;
@@ -98,6 +110,45 @@ export interface FindingStatusChangedEvent {
 }
 
 // ─── Publishing Functions ─────────────────────────────────────────────────────
+
+/**
+ * Publish "review.ready" event.
+ *
+ * Emitted when a review has been generated and saved in READY state,
+ * awaiting human triage (dismiss false positives, then publish).
+ *
+ * Consumed by: Dashboard (notification to security engineer)
+ */
+export async function publishReviewReady(
+  event: ReviewReadyEvent
+): Promise<void> {
+  const childLogger = logger.child({
+    module: "review-events",
+    tenantId: event.tenantId,
+    reviewId: event.reviewId,
+  });
+
+  await eventsQueue.add("review.ready", {
+    tenantId: event.tenantId,
+    eventType: "review.ready",
+    data: {
+      reviewId: event.reviewId,
+      contextBundleId: event.contextBundleId,
+      severity: event.severity,
+      confidence: event.confidence,
+      riskLevel: event.riskLevel,
+      findingCount: event.findingCount,
+      projectId: event.projectId,
+      projectName: event.projectName,
+    },
+    timestamp: new Date().toISOString(),
+  });
+
+  childLogger.info(
+    { riskLevel: event.riskLevel, severity: event.severity },
+    "Published review.ready event"
+  );
+}
 
 /**
  * Publish "review.published" event.

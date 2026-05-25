@@ -23,13 +23,10 @@
  */
 import type { Job } from "bullmq";
 import { db } from "@loomii/db";
-import { type ReviewGenerationPayload, summaryGenerationQueue } from "@loomii/queue";
-import { type ReviewOutput } from "@loomii/shared/schemas";
-import { routeReview, type RiskLevel } from "../lib/review-router";
+import { type ReviewGenerationPayload } from "@loomii/queue";
 import { saveReviewAtomically, markReviewError } from "../lib/review-saver";
 import {
-  publishReviewPublished,
-  publishReviewPendingApproval,
+  publishReviewReady,
   publishReviewCompleted,
   publishReviewFailed,
 } from "../lib/review-events";
@@ -103,7 +100,7 @@ export async function processReviewGeneration(
       throw new Error(`Context bundle has no content: ${contextId}`);
     }
 
-    const riskLevel = (contextBundle.riskLevel ?? "MEDIUM") as RiskLevel;
+    const riskLevel = (contextBundle.riskLevel ?? "MEDIUM") as string;
     const bundleContent =
       typeof contextBundle.content === "string"
         ? contextBundle.content
@@ -116,7 +113,6 @@ export async function processReviewGeneration(
         tenantId,
         contextBundleId: contextId,
         status: "GENERATING",
-        mode: "AUTOMATED",
       },
       update: {
         status: "GENERATING",
@@ -149,23 +145,16 @@ export async function processReviewGeneration(
       );
     }
 
-    // ─── 5. Route the review ────────────────────────────────────────────────
-    const routing = routeReview(riskLevel, reviewOutput.confidence);
-    childLogger.info(
-      { mode: routing.mode, status: routing.status, reason: routing.reason },
-      "Review routed"
-    );
-
-    // ─── 6. Save atomically ─────────────────────────────────────────────────
+    // ─── 5. Save as READY (all reviews require human triage) ─────────────
     const saveResult = await saveReviewAtomically({
       tenantId,
       contextBundleId: contextId,
       reviewOutput,
-      routing,
+      riskLevel,
       modelUsed,
     });
 
-    // ─── 7. Publish events ──────────────────────────────────────────────────
+    // ─── 6. Publish events ──────────────────────────────────────────────────
     const durationMs = Date.now() - startTime;
 
     // Count findings by type for the completed event
@@ -183,64 +172,40 @@ export async function processReviewGeneration(
     const projectId = bundle?.projectId ?? null;
     const projectName = bundle?.project?.name ?? null;
 
-    // 7a. Publish routing-specific event (non-critical - swallow errors)
+    // 6a. Publish review.ready event (notifies security engineer)
     try {
-      if (routing.mode === "AUTONOMOUS") {
-        await publishReviewPublished({
-          tenantId,
-          reviewId: saveResult.reviewId,
-          contextBundleId: contextId,
-          severity: reviewOutput.severity,
-          confidence: reviewOutput.confidence,
-          findingCount: saveResult.findingCount,
-          publishedVia: "autonomous",
-          durationMs,
-          projectId,
-          projectName,
-        });
-
-        // Trigger immediate summary regeneration for autonomous approvals
-        if (projectId) {
-          await summaryGenerationQueue.add(
-            "regenerate",
-            { projectId, trigger: "review_approved" },
-            { removeOnComplete: true }
-          );
-        }
-      } else {
-        await publishReviewPendingApproval({
-          tenantId,
-          reviewId: saveResult.reviewId,
-          contextBundleId: contextId,
-          severity: reviewOutput.severity,
-          confidence: reviewOutput.confidence,
-          findingCount: saveResult.findingCount,
-          reason: routing.reason,
-        });
-      }
+      await publishReviewReady({
+        tenantId,
+        reviewId: saveResult.reviewId,
+        contextBundleId: contextId,
+        severity: reviewOutput.severity,
+        confidence: reviewOutput.confidence,
+        riskLevel,
+        findingCount: saveResult.findingCount,
+        projectId,
+        projectName,
+      });
     } catch (err: any) {
       childLogger.warn(
         { error: err.message },
-        "Routing event publishing failed (non-critical, review already saved)"
+        "review.ready event publishing failed (non-critical, review already saved)"
       );
     }
 
-    // 7b. Publish review.completed (critical - Threat Model Agent depends on this)
-    // Separated from the routing event so a failure there doesn't block this.
+    // 6b. Publish review.completed (Threat Model Agent depends on this)
     try {
       await publishReviewCompleted({
         tenantId,
         reviewId: saveResult.reviewId,
         contextBundleId: contextId,
         severity: reviewOutput.severity,
-        mode: routing.mode,
+        mode: "ASSISTED", // All reviews now go through human triage
         findingCount: saveResult.findingCount,
         findingSummary,
         projectId,
         projectName,
       });
     } catch (err: any) {
-      // Log as error (not warn) since the Threat Model Agent may miss this
       childLogger.error(
         { error: err.message, reviewId: saveResult.reviewId },
         "review.completed event publishing failed - Threat Model Agent may not re-evaluate"
@@ -252,8 +217,8 @@ export async function processReviewGeneration(
         reviewId: saveResult.reviewId,
         findingCount: saveResult.findingCount,
         relationCount: saveResult.relationCount,
-        mode: routing.mode,
-        status: routing.status,
+        status: "READY",
+        riskLevel,
         durationMs,
       },
       "Review generation completed successfully"

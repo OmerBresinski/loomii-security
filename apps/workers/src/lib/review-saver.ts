@@ -6,15 +6,13 @@
  * fully saved or not at all.
  *
  * Flow:
- * 1. Create/update Review record (status: GENERATING -> final status)
+ * 1. Create/update Review record (status: GENERATING -> READY)
  * 2. Create ReviewVersion (v1, editorType: "agent")
  * 3. Create all Findings
  * 4. Create FindingRelations (from relatedFindingIndices)
- * 5. Update Review with final status based on routing decision
  */
 import { db } from "@loomii/db";
 import type { ReviewOutput } from "@loomii/shared/schemas";
-import type { RoutingDecision } from "./review-router";
 import { logger } from "./logger";
 
 export interface SaveReviewResult {
@@ -31,8 +29,8 @@ export interface SaveReviewInput {
   contextBundleId: string;
   /** The validated agent output */
   reviewOutput: ReviewOutput;
-  /** Routing decision (determines final status and mode) */
-  routing: RoutingDecision;
+  /** Risk level from context bundle (stored as metadata) */
+  riskLevel: string;
   /** Model that produced the review */
   modelUsed: string;
 }
@@ -46,7 +44,7 @@ export interface SaveReviewInput {
 export async function saveReviewAtomically(
   input: SaveReviewInput
 ): Promise<SaveReviewResult> {
-  const { tenantId, contextBundleId, reviewOutput, routing, modelUsed } = input;
+  const { tenantId, contextBundleId, reviewOutput, riskLevel, modelUsed } = input;
 
   const childLogger = logger.child({
     module: "review-saver",
@@ -61,8 +59,8 @@ export async function saveReviewAtomically(
       create: {
         tenantId,
         contextBundleId,
-        status: routing.status,
-        mode: routing.reviewMode,
+        status: "READY",
+        riskLevel,
         severity: reviewOutput.severity,
         confidence: reviewOutput.confidence / 100, // Convert 0-100 to 0-1 for DB
         summary: reviewOutput.summary,
@@ -70,8 +68,8 @@ export async function saveReviewAtomically(
         currentVersion: 1,
       },
       update: {
-        status: routing.status,
-        mode: routing.reviewMode,
+        status: "READY",
+        riskLevel,
         severity: reviewOutput.severity,
         confidence: reviewOutput.confidence / 100,
         summary: reviewOutput.summary,
@@ -126,7 +124,7 @@ export async function saveReviewAtomically(
           policyId: null, // We don't resolve policy ID here; could be enhanced later
           policyName: finding.policyReference,
           effortEstimate: finding.effortEstimate ?? null,
-          status: "OPEN",
+          // status is NULL by default (untriaged)
         },
       });
       findingIds.push(created.id);
@@ -196,7 +194,7 @@ export async function saveReviewAtomically(
   });
 
   childLogger.info(
-    { ...result, status: routing.status, mode: routing.reviewMode },
+    { ...result, status: "READY", riskLevel },
     "Review saved atomically"
   );
 
@@ -219,7 +217,6 @@ export async function markReviewError(
         tenantId,
         contextBundleId,
         status: "ERROR",
-        mode: "AUTOMATED",
         errorMessage: errorMessage.slice(0, 1000),
       },
       update: {
