@@ -101,13 +101,25 @@ export default function ReviewsPage() {
     })
   }, [navigate])
 
-  // Prefetch review detail on hover
-  const prefetchReview = useCallback(
+  // Prefetch review detail on hover (debounced to avoid spam during fast scroll)
+  const prefetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const handleMouseEnter = useCallback(
     (reviewId: string) => {
-      queryClient.prefetchQuery(reviewDetailQueryOptions(reviewId))
+      if (prefetchTimerRef.current) clearTimeout(prefetchTimerRef.current)
+      prefetchTimerRef.current = setTimeout(() => {
+        queryClient.prefetchQuery(reviewDetailQueryOptions(reviewId))
+      }, 150)
     },
     [queryClient]
   )
+
+  const handleMouseLeave = useCallback(() => {
+    if (prefetchTimerRef.current) {
+      clearTimeout(prefetchTimerRef.current)
+      prefetchTimerRef.current = null
+    }
+  }, [])
 
   // Query
   const {
@@ -214,7 +226,8 @@ export default function ReviewsPage() {
                       transform: `translateY(${virtualRow.start}px)`,
                     }}
                     onClick={() => openSheet(review.id)}
-                    onMouseEnter={() => prefetchReview(review.id)}
+                    onMouseEnter={() => handleMouseEnter(review.id)}
+                    onMouseLeave={handleMouseLeave}
                   >
                     <ReviewRow review={review} />
                   </div>
