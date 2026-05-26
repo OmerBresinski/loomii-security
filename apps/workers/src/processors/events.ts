@@ -9,9 +9,10 @@
  * 2. Resolve project context (fallback for missing fields)
  * 3. Resolve recipients (role-based + project-scoped)
  * 4. Filter by user notification preferences
- * 5. Build notification content from templates
- * 6. Build deduplication key
- * 7. Batch insert notifications with skipDuplicates
+ * 5. Apply per-project cooldown (suppress duplicates within time window)
+ * 6. Build notification content from templates
+ * 7. Build deduplication key
+ * 8. Batch insert notifications with skipDuplicates
  *
  * Events that don't map to a notification type are skipped silently.
  */
@@ -29,6 +30,19 @@ import {
   buildSourceEventId,
   resolveProjectContext,
 } from "../lib/notification-templates";
+
+/**
+ * Cooldown period per notification type + project + user.
+ * If a user already received this notification type for this project
+ * within this window, the new notification is suppressed.
+ */
+const NOTIFICATION_COOLDOWN_MS: Record<string, number> = {
+  high_risk_detected: 5 * 60 * 1000, // 5 minutes
+  summary_updated: 5 * 60 * 1000, // 5 minutes
+};
+
+/** Default cooldown (0 = no cooldown) for types not explicitly listed */
+const DEFAULT_COOLDOWN_MS = 0;
 
 /**
  * Main processor for the events queue.
@@ -83,19 +97,62 @@ export async function processEvents(job: Job<EventsPayload>): Promise<void> {
       return;
     }
 
-    // 5. Build notification content from template
+    // 5. Apply per-project cooldown to suppress notification floods
+    const cooldownMs =
+      NOTIFICATION_COOLDOWN_MS[notificationType] ?? DEFAULT_COOLDOWN_MS;
+    let finalRecipients = eligibleRecipients;
+
+    if (cooldownMs > 0 && projectId) {
+      const cooldownThreshold = new Date(Date.now() - cooldownMs);
+      const recentNotifications = await db.notification.findMany({
+        where: {
+          userId: { in: eligibleRecipients },
+          type: notificationType,
+          projectId,
+          createdAt: { gte: cooldownThreshold },
+        },
+        select: { userId: true },
+      });
+      const recentlyNotifiedUsers = new Set(
+        recentNotifications.map((n) => n.userId)
+      );
+      finalRecipients = eligibleRecipients.filter(
+        (id) => !recentlyNotifiedUsers.has(id)
+      );
+
+      if (finalRecipients.length < eligibleRecipients.length) {
+        childLogger.info(
+          {
+            suppressed: eligibleRecipients.length - finalRecipients.length,
+            cooldownMs,
+            projectId,
+          },
+          "Suppressed notifications due to cooldown"
+        );
+      }
+    }
+
+    if (finalRecipients.length === 0) {
+      childLogger.info(
+        { notificationType, projectId },
+        "All recipients suppressed by cooldown"
+      );
+      return;
+    }
+
+    // 6. Build notification content from template
     const content = buildNotificationContent(notificationType, enrichedData);
 
-    // 6. Build deduplication key
+    // 7. Build deduplication key
     const baseSourceEventId = buildSourceEventId(
       eventType,
       enrichedData,
       timestamp
     );
 
-    // 7. Batch insert (skipDuplicates handles retries)
+    // 8. Batch insert (skipDuplicates handles retries)
     await db.notification.createMany({
-      data: eligibleRecipients.map((userId) => ({
+      data: finalRecipients.map((userId) => ({
         userId,
         tenantId,
         type: notificationType,
@@ -117,6 +174,7 @@ export async function processEvents(job: Job<EventsPayload>): Promise<void> {
         notificationType,
         totalRecipients: allRecipients.length,
         eligibleRecipients: eligibleRecipients.length,
+        deliveredTo: finalRecipients.length,
         projectId,
       },
       `Notifications delivered: ${eventType}`
