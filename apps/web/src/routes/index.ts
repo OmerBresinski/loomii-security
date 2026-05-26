@@ -46,7 +46,7 @@ function requireOnboarding() {
     throw redirect({ to: "/login" })
   }
   if (getOnboardingCompleted()) {
-    throw redirect({ to: "/reviews" })
+    throw redirect({ to: "/projects" })
   }
 }
 
@@ -96,7 +96,7 @@ const indexRoute = createRoute({
   path: "/",
   beforeLoad: ({ search }) => {
     throw redirect({
-      to: "/reviews",
+      to: "/projects",
       search,
     })
   },
@@ -172,7 +172,7 @@ const onboardingRoute = createRoute({
       throw redirect({ to: "/login" })
     }
     if (getOnboardingCompleted()) {
-      throw redirect({ to: "/reviews" })
+      throw redirect({ to: "/projects" })
     }
     // Validate step param
     if (!VALID_ONBOARDING_STEPS.has(params.step)) {

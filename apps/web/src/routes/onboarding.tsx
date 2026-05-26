@@ -75,7 +75,7 @@ export default function OnboardingPage() {
     queryClient.invalidateQueries({
       queryKey: onboardingStateQueryOptions().queryKey,
     })
-    navigate({ to: "/reviews" })
+    navigate({ to: "/projects" })
   }
 
   return (

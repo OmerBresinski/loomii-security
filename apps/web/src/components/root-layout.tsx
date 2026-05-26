@@ -66,10 +66,12 @@ interface NavItem {
   icon?: typeof InboxIcon
   /** Roles that can see this link. If undefined, visible to all. */
   roles?: UserRole[]
+  /** If true, item is visible but non-interactive */
+  disabled?: boolean
 }
 
 const workspaceItems: NavItem[] = [
-  { title: "Reviews", href: "/reviews", icon: InboxIcon },
+  { title: "Reviews", href: "/reviews", icon: InboxIcon, disabled: true },
   { title: "Projects", href: "/projects", icon: Folder02Icon },
   { title: "Threat Models", href: "/threats", icon: AlertDiamondIcon },
 ]
