@@ -126,6 +126,20 @@ async function storeSummaryEmbedding(
   }
 }
 
+/**
+ * Generate a lightweight seed summary from source titles at project creation.
+ * This gives context-assembly immediate access to project context before
+ * the full AI-generated summary is ready (which is delayed by ~60s+).
+ *
+ * The seed summary is intentionally simple — it's replaced by the AI summary
+ * once the summary-generation job completes.
+ */
+function buildSeedSummary(projectName: string, titles: string[]): string {
+  const uniqueTitles = [...new Set(titles)].slice(0, 15);
+  const titleList = uniqueTitles.map((t) => `- ${t}`).join("\n");
+  return `Project "${projectName}" encompasses the following items:\n\n${titleList}\n\n_Full AI summary pending._`;
+}
+
 // ─── Main Function ───────────────────────────────────────────────────────────
 
 /**
@@ -179,6 +193,7 @@ export async function createProjectsFromBackfill(
         data: {
           tenantId,
           name: mapping.linearProjectName,
+          summary: buildSeedSummary(mapping.linearProjectName, [mapping.linearProjectName]),
         },
       });
 
@@ -244,6 +259,7 @@ export async function createProjectsFromBackfill(
         data: {
           tenantId,
           name,
+          summary: buildSeedSummary(name, cluster.titles),
         },
       });
 
