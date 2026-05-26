@@ -170,6 +170,7 @@ model User {
   // Relations
   tenant                  Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdProjects         Project[]                @relation("ProjectCreatedBy")
+  assignedProjects        Project[]                @relation("ProjectAssignee")
   linkedSources           ProjectSource[]          @relation("ProjectSourceLinkedBy")
   notificationPreferences NotificationPreference[]
   notifications           Notification[]
@@ -273,18 +274,21 @@ model Project {
   summaryEmbedding Unsupported("vector(1024)")? @map("summary_embedding")
   summaryUpdatedAt DateTime?                    @map("summary_updated_at")
   createdById      String?                      @map("created_by_id")
+  assignedToId     String?                      @map("assigned_to_id")
   createdAt        DateTime                     @default(now()) @map("created_at")
   updatedAt        DateTime                     @updatedAt @map("updated_at")
 
   // Relations
   tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdBy      User?           @relation("ProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  assignedTo     User?           @relation("ProjectAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
   sources        ProjectSource[]
   contextBundles ContextBundle[]
   notifications  Notification[]
 
   @@index([tenantId])
   @@index([tenantId, name])
+  @@index([assignedToId])
   @@map("projects")
 }
 
