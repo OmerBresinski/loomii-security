@@ -9,6 +9,7 @@ import {
 const reviewStatusLabels: Record<string, string> = {
   PENDING: "Pending",
   GENERATING: "Generating",
+  READY: "Ready",
   DRAFT: "Needs Review",
   IN_REVIEW: "In Review",
   APPROVED: "Approved",
@@ -47,6 +48,7 @@ function ReviewStatusIconSvg({ status }: { status: string | null }) {
           />
         </svg>
       )
+    case "READY":
     case "IN_REVIEW":
       // Soft lavender half-filled circle
       return (

@@ -240,6 +240,11 @@ async function tryGenerate(
         maxRetries: 1,
       },
       abortSignal: controller.signal,
+      // structuredOutput must be top-level — Mastra does not support it
+      // in prepareStep return values (it's not mapped by mapToProcessInputStepResult).
+      structuredOutput: {
+        schema: ReviewOutputSchema,
+      },
       prepareStep: async ({ stepNumber }: { stepNumber: number }) => {
         // Steps 0-1: tool-calling phase (gather context from policies + history)
         if (stepNumber < 2) {
@@ -248,19 +253,22 @@ async function tryGenerate(
             toolChoice: "auto" as const,
           };
         }
-        // Steps 2+: structured output phase (generate the review)
+        // Steps 2+: no tools available — forces the model to produce
+        // the final structured output instead of calling more tools.
         return {
-          tools: undefined,
-          structuredOutput: {
-            schema: ReviewOutputSchema,
-          },
+          tools: {},
+          toolChoice: "none" as const,
         };
       },
     } as any) as Promise<{ object: ReviewOutput | null; text: string; usage?: TokenUsage }>);
 
     if (!result.object) {
       childLogger.warn(
-        { textLength: result.text?.length ?? 0 },
+        {
+          textLength: result.text?.length ?? 0,
+          textPreview: result.text?.slice(0, 300) ?? "",
+          hasObject: result.object !== undefined,
+        },
         "Attempt returned null output"
       );
       return null;
