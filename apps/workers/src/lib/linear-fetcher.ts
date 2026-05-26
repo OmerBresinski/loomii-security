@@ -148,7 +148,7 @@ async function fetchSiblingIssues(
   // Fetch recent issues from the same team (excluding current issue)
   const issues = await team.issues({
     first: MAX_SIBLINGS + 1,
-    orderBy: { updatedAt: "DESC" } as any,
+    orderBy: "updatedAt" as any,
   });
 
   return issues.nodes
