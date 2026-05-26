@@ -598,14 +598,21 @@ export async function processInitialBackfill(job: Job<InitialBackfillPayload>): 
     // ─── Step 10: Enqueue per-source context-assembly jobs ────────────────
     // Each source event gets its own review via the standard pipeline.
     // Sibling context is injected for cross-document awareness.
+    //
+    // We query ProjectSource to get the full set of items per project,
+    // including items assigned in Step 9b (unclustered → nearest project).
 
     const itemMap = new Map(allItems.map((item) => [item.externalId, item]));
 
-    // Build a lookup: projectId -> items in that project
-    const projectItemsMap = new Map<string, typeof allItems>();
+    // Build a lookup: projectId -> items in that project (from DB, not just projectResult)
+    const projectItemsMap = new Map<string, BackfillItem[]>();
     for (const created of projectResult.created) {
-      const projectItems = created.itemIds
-        .map((id) => itemMap.get(id))
+      const projectSources = await db.projectSource.findMany({
+        where: { projectId: created.projectId, isArchived: false, unlinkedAt: null },
+        select: { sourceId: true },
+      });
+      const projectItems = projectSources
+        .map((ps) => itemMap.get(ps.sourceId))
         .filter((item): item is BackfillItem => item !== undefined);
       projectItemsMap.set(created.projectId, projectItems);
     }

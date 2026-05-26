@@ -227,7 +227,7 @@ async function assembleContext(params: AssembleParams): Promise<"DONE"> {
 
   // 6. Save ContextBundle
   childLogger.info(
-    { missingCount: missingItems.length },
+    { missingCount: missingItems.length, missingItems: missingItems.length > 0 ? missingItems : undefined },
     "Saving context bundle"
   );
 

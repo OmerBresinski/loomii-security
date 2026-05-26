@@ -234,10 +234,12 @@ export async function resolveCrossReferences(params: {
         }
       )
     );
-  } else if (notionUrls.length > 0 && !notionAccessToken) {
+  } else if (notionUrls.length > 0) {
     missingItems.push({
       item: "cross-ref:notion-docs",
-      reason: "Notion integration not active - cannot fetch referenced docs",
+      reason: !notionAccessToken
+        ? "Notion integration not active - cannot fetch referenced docs"
+        : "Notion integration ID missing - cannot rate-limit requests",
     });
   }
 
@@ -251,7 +253,7 @@ export async function resolveCrossReferences(params: {
         }
       )
     );
-  } else if (linearUrls.length > 0 && !linearAccessToken) {
+  } else if (linearUrls.length > 0) {
     missingItems.push({
       item: "cross-ref:linear-issues",
       reason: "Linear integration not active - cannot fetch referenced issues",
