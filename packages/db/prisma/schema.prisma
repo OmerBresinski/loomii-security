@@ -728,6 +728,7 @@ model Notification {
   @@unique([userId, sourceEventId]) // Dedup: PostgreSQL ignores NULLs in unique
   @@index([userId, readAt]) // "Show me unread" query
   @@index([userId, createdAt]) // Paginated history
+  @@index([userId, type, projectId, createdAt], map: "notifications_cooldown_idx") // Per-project cooldown check
   @@index([tenantId])
   @@map("notifications")
 }
