@@ -277,14 +277,25 @@ function AppSidebar() {
                 <SidebarMenu>
                   {workspaceItems.map((item) => (
                     <SidebarMenuItem key={item.href}>
-                      <SidebarMenuButton
-                        size="sm"
-                        render={<Link to={item.href} preload="intent" />}
-                        isActive={isActive(item.href)}
-                      >
-                        <NavIcon icon={item.icon} />
-                        <span>{item.title}</span>
-                      </SidebarMenuButton>
+                      {item.disabled ? (
+                        <SidebarMenuButton
+                          size="sm"
+                          disabled
+                          className="pointer-events-none opacity-40"
+                        >
+                          <NavIcon icon={item.icon} />
+                          <span>{item.title}</span>
+                        </SidebarMenuButton>
+                      ) : (
+                        <SidebarMenuButton
+                          size="sm"
+                          render={<Link to={item.href} preload="intent" />}
+                          isActive={isActive(item.href)}
+                        >
+                          <NavIcon icon={item.icon} />
+                          <span>{item.title}</span>
+                        </SidebarMenuButton>
+                      )}
                     </SidebarMenuItem>
                   ))}
                 </SidebarMenu>
