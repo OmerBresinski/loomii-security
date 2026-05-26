@@ -283,6 +283,7 @@ projectRoutes.get("/:id", async (c) => {
 // ===========================================
 projectRoutes.patch("/:id", async (c) => {
   const tenantId = c.get("tenantId");
+  const userId = c.get("userId");
   const requestId = c.get("requestId");
   const projectId = c.req.param("id");
 
@@ -305,7 +306,7 @@ projectRoutes.patch("/:id", async (c) => {
   // Verify project belongs to tenant
   const existing = await db.project.findFirst({
     where: { id: projectId, tenantId },
-    select: { id: true },
+    select: { id: true, name: true, assignedToId: true },
   });
 
   if (!existing) {
@@ -315,16 +316,60 @@ projectRoutes.patch("/:id", async (c) => {
     );
   }
 
+  // If assignedToId is being set, validate user belongs to same tenant
+  if (parsed.data.assignedToId !== undefined && parsed.data.assignedToId !== null) {
+    const assignee = await db.user.findFirst({
+      where: { id: parsed.data.assignedToId, tenantId },
+      select: { id: true },
+    });
+    if (!assignee) {
+      return c.json(
+        { error: { code: "VALIDATION_ERROR", message: "Assigned user not found in tenant", requestId } },
+        400
+      );
+    }
+  }
+
   const updated = await db.project.update({
     where: { id: projectId },
     data: { ...parsed.data },
+    include: {
+      assignedTo: {
+        select: { id: true, firstName: true, lastName: true, email: true },
+      },
+    },
   });
+
+  // Create notification if assigning a different user (not self-assigning or unassigning)
+  const newAssigneeId = parsed.data.assignedToId;
+  if (newAssigneeId && newAssigneeId !== userId && newAssigneeId !== existing.assignedToId) {
+    await db.notification.create({
+      data: {
+        userId: newAssigneeId,
+        tenantId,
+        type: "project_assigned",
+        title: "Assigned to project",
+        body: `You were assigned to "${existing.name}"`,
+        linkUrl: `/projects/${projectId}`,
+        projectId,
+        sourceEventId: `project_assigned:${projectId}:${newAssigneeId}`,
+      },
+    }).catch(() => {
+      // Swallow duplicate notification errors (sourceEventId unique constraint)
+    });
+  }
 
   return c.json({
     id: updated.id,
     name: updated.name,
     icon: updated.icon,
     color: updated.color,
+    assignedTo: updated.assignedTo ? {
+      id: updated.assignedTo.id,
+      firstName: updated.assignedTo.firstName,
+      lastName: updated.assignedTo.lastName,
+      email: updated.assignedTo.email,
+    } : null,
     updatedAt: updated.updatedAt.toISOString(),
   });
 });
