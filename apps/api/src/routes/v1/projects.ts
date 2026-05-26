@@ -209,6 +209,14 @@ projectRoutes.get("/:id", async (c) => {
           },
         },
       },
+      assignedTo: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+        },
+      },
     },
   });
 
@@ -220,6 +228,31 @@ projectRoutes.get("/:id", async (c) => {
   }
 
   const { sourceCount, reviewCount, highRiskCount, highestRisk, lastActivity } = computeAggregates(project);
+
+  // Aggregate findings by severity (exclude dismissed)
+  const findingsAggregation = await db.finding.groupBy({
+    by: ["severity"],
+    where: {
+      review: {
+        contextBundle: {
+          projectId: projectId,
+        },
+      },
+      OR: [
+        { status: null },
+        { status: "CONFIRMED" },
+      ],
+    },
+    _count: { id: true },
+  });
+
+  const findingsBySeverity = { critical: 0, high: 0, medium: 0, low: 0 };
+  for (const row of findingsAggregation) {
+    const key = row.severity.toLowerCase() as keyof typeof findingsBySeverity;
+    if (key in findingsBySeverity) {
+      findingsBySeverity[key] = row._count.id;
+    }
+  }
 
   return c.json({
     id: project.id,
@@ -233,6 +266,13 @@ projectRoutes.get("/:id", async (c) => {
     highRiskCount,
     highestRisk,
     lastActivity,
+    assignedTo: project.assignedTo ? {
+      id: project.assignedTo.id,
+      firstName: project.assignedTo.firstName,
+      lastName: project.assignedTo.lastName,
+      email: project.assignedTo.email,
+    } : null,
+    findingsBySeverity,
     createdAt: project.createdAt.toISOString(),
     updatedAt: project.updatedAt.toISOString(),
   });
