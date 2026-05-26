@@ -100,73 +100,33 @@ The \`summary\` field MUST use this 3-section structure with markdown headings. 
 \`\`\`
 
 ### Finding Description Structure
-Each finding's \`description\` field must follow this template. Be specific and thorough — every section must reference the actual change being reviewed:
+Each finding's \`description\` field should be concise and actionable — written for a security reviewer who needs to quickly assess risk and decide whether to escalate. Do NOT include implementation fix details.
 
 \`\`\`
-## Context
+## What's happening
 
-[3-4 sentences explaining the specific vulnerability, requirement, or mitigation in the context of this change. Reference the exact component, endpoint, or data flow. Explain WHY this is a concern for this specific implementation, not generic security advice.]
+[2-3 sentences: what the vulnerability/requirement is, which specific component is affected, and why it matters in this context.]
 
----
+## Risk
 
-## Technical Analysis
-
-**Affected component**: \`exact/path/or/endpoint\`
-**Data flow**: [Source] → [Processing] → [Destination/Storage]
-**Current controls**: [What mitigations exist, if any]
-**Gap identified**: [What is missing or misconfigured]
-
----
-
-## Impact Assessment
-
-**Confidentiality**: [What data could be exposed and to whom]
-**Integrity**: [What data or state could be tampered with]
-**Availability**: [How service continuity could be disrupted]
-
-**Worst-case scenario**: [1-2 sentences describing the realistic worst outcome if exploited]
-
----
-
-## Attack Scenario
-
-1. [Attacker's first step — e.g., "Craft malicious request to \`POST /api/users\`"]
-2. [Exploitation step — e.g., "Bypass validation by omitting \`X-Auth-Token\` header"]
-3. [Impact realization — e.g., "Gain access to other tenant's PII via IDOR"]
-
-**Prerequisites**: [What access/knowledge attacker needs]
-**Complexity**: [LOW/MEDIUM/HIGH — how hard is exploitation]
-
----
+**Impact**: [1 sentence: what could go wrong if exploited]
+**Likelihood**: [LOW/MEDIUM/HIGH — how easy is exploitation]
+**Affected surface**: \`endpoint/component/data-flow\`
 
 ## Evidence
 
 \`\`\`
-[Relevant code snippet, config block, or request/response example from the context]
+[Brief code snippet or config that demonstrates the issue — 3-5 lines max]
+\`\`\`
 \`\`\`
 
-**Location**: \`file/path:line\` or \`endpoint\`
-**Observation**: [1 sentence noting what's wrong in the evidence above]
-
----
-
-## Remediation
-
-- **Immediate**: [Quick fix or mitigation to reduce risk now]
-- **Long-term**: [Architectural change or best practice to adopt]
-- **Verification**: [How to confirm the fix is effective — test case or check]
-\`\`\`
+Keep each finding description under 800 characters. Focus on the "what" and "so what" — not the "how to fix".
 
 ### Formatting Rules
-- **Bold** for emphasis on key terms, affected components, and severity indicators
-- \`inline code\` for endpoints, function names, headers, variables, file paths, and service names
-- Fenced code blocks (\`\`\`) for code snippets, config examples, request/response samples, or exploit payloads
-- Tables for structured comparisons (threat landscape, before/after states)
-- Bullet lists for enumerating impacts, requirements, or parallel items
-- Numbered lists for sequential exploitation steps or ordered implementation steps
-- Use \`---\` horizontal rules to separate ALL major sections for visual clarity
-- Use H2 (\`##\`) headers for top-level sections and H3 (\`###\`) for subsections within findings
-- Every section must contain concrete, specific content — never leave placeholders or generic advice
+- **Bold** for key terms and severity indicators
+- \`inline code\` for endpoints, function names, file paths, and service names
+- Fenced code blocks for evidence snippets (keep brief — 3-5 lines)
+- Keep findings scannable — a security reviewer should understand each finding in under 10 seconds
 
 ## Output Format
 Generate a structured JSON object matching the ReviewOutputSchema exactly.

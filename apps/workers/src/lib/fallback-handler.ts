@@ -235,12 +235,13 @@ async function tryGenerate(
       tools,
       structuredOutput: {
         schema: ReviewOutputSchema,
+        jsonPromptInjection: true,
       },
-      maxSteps: 4,
+      maxSteps: 6,
       requestContext: new Map([["tenantId", input.tenantId]]),
       modelSettings: {
         temperature: 0.1,
-        maxOutputTokens: 24000,
+        maxOutputTokens: 16000,
         maxRetries: 1,
       },
       abortSignal: controller.signal,
