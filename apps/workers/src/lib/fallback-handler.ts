@@ -235,7 +235,6 @@ async function tryGenerate(
       tools,
       structuredOutput: {
         schema: ReviewOutputSchema,
-        jsonPromptInjection: true,
       },
       maxSteps: 6,
       requestContext: new Map([["tenantId", input.tenantId]]),
