@@ -232,10 +232,6 @@ async function tryGenerate(
     );
 
     const result = await (agent.generate(prompt, {
-      tools,
-      structuredOutput: {
-        schema: ReviewOutputSchema,
-      },
       maxSteps: 6,
       requestContext: new Map([["tenantId", input.tenantId]]),
       modelSettings: {
@@ -244,6 +240,22 @@ async function tryGenerate(
         maxRetries: 1,
       },
       abortSignal: controller.signal,
+      prepareStep: async ({ stepNumber }: { stepNumber: number }) => {
+        // Steps 0-1: tool-calling phase (gather context from policies + history)
+        if (stepNumber < 2) {
+          return {
+            tools,
+            toolChoice: "auto" as const,
+          };
+        }
+        // Steps 2+: structured output phase (generate the review)
+        return {
+          tools: undefined,
+          structuredOutput: {
+            schema: ReviewOutputSchema,
+          },
+        };
+      },
     } as any) as Promise<{ object: ReviewOutput | null; text: string; usage?: TokenUsage }>);
 
     if (!result.object) {
