@@ -284,7 +284,11 @@ async function tryGenerate(
         tenantId: input.tenantId,
         modelId,
         operation: "review-generation",
-        usage: result.usage,
+        usage: {
+          promptTokens: result.usage.promptTokens ?? 0,
+          completionTokens: result.usage.completionTokens ?? 0,
+          totalTokens: result.usage.totalTokens ?? 0,
+        },
       });
     }
 

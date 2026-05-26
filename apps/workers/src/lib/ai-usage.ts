@@ -62,6 +62,8 @@ export interface RecordUsageParams {
 
 /**
  * Calculate cost in USD cents for a given model and token usage.
+ * If promptTokens/completionTokens are 0 but totalTokens is set,
+ * estimates a 90/10 input/output split (typical for agent calls).
  */
 export function calculateCostCents(
   modelId: string,
@@ -70,9 +72,18 @@ export function calculateCostCents(
   const pricing = PRICING[modelId];
   if (!pricing) return 0;
 
+  let inputTokens = usage.promptTokens;
+  let outputTokens = usage.completionTokens;
+
+  // If we only have totalTokens, estimate the split
+  if (inputTokens === 0 && outputTokens === 0 && usage.totalTokens) {
+    inputTokens = Math.round(usage.totalTokens * 0.9);
+    outputTokens = usage.totalTokens - inputTokens;
+  }
+
   // Pricing is per 1K tokens in USD
-  const inputCostDollars = (usage.promptTokens / 1000) * pricing.input;
-  const outputCostDollars = (usage.completionTokens / 1000) * pricing.output;
+  const inputCostDollars = (inputTokens / 1000) * pricing.input;
+  const outputCostDollars = (outputTokens / 1000) * pricing.output;
   const totalDollars = inputCostDollars + outputCostDollars;
 
   // Convert to cents, round to 4 decimal places

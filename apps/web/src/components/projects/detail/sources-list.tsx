@@ -44,7 +44,7 @@ export function SourcesList({ sources, isPending }: SourcesListProps) {
       {activeSources.length === 0 ? (
         <p className="text-xs text-muted-foreground">No sources linked yet.</p>
       ) : (
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col">
           {activeSources.map((source) =>
             source.sourceUrl ? (
               <a
@@ -53,7 +53,7 @@ export function SourcesList({ sources, isPending }: SourcesListProps) {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`Open ${source.sourceId} in ${sourceTypeLabels[source.sourceType]}`}
-                className="group flex items-center gap-2 rounded-md px-1.5 py-1.5 transition-colors duration-[80ms] hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
+                className="group flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-2 transition-colors duration-[80ms] hover:bg-black/5 dark:hover:bg-white/10"
               >
                 <img
                   src={sourceFavicons[source.sourceType]}
