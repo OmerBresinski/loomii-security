@@ -73,7 +73,20 @@ const defaultSleep = (ms: number): Promise<void> => Bun.sleep(ms);
 
 // ─── Default Agents (used by the convenience wrapper) ─────────────────────────
 
-function getDefaultAgents(): FallbackAgents {
+function getDefaultAgents(riskLevel: string): FallbackAgents {
+  // MEDIUM risk: use Haiku as primary (cheaper, sufficient quality)
+  // HIGH/CRITICAL: use Sonnet as primary (higher capability)
+  if (riskLevel === "MEDIUM") {
+    return {
+      primary: fallbackReviewAgent,
+      primaryTools: fallbackReviewTools,
+      primaryModelId: MODELS.CLAUDE_HAIKU,
+      fallback: fallbackReviewAgent,
+      fallbackTools: fallbackReviewTools,
+      fallbackModelId: MODELS.CLAUDE_HAIKU,
+    };
+  }
+
   return {
     primary: designReviewAgent,
     primaryTools: designReviewTools,
@@ -93,7 +106,7 @@ function getDefaultAgents(): FallbackAgents {
 export async function generateWithFallback(
   input: FallbackInput
 ): Promise<FallbackResult> {
-  return generateWithFallbackAgents(input, getDefaultAgents());
+  return generateWithFallbackAgents(input, getDefaultAgents(input.riskLevel));
 }
 
 /**

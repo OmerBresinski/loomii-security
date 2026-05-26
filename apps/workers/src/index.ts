@@ -14,6 +14,8 @@ let isShuttingDown = false;
 const workerOptions: Partial<Record<QueueName, Partial<WorkerOptions>>> = {
   [QUEUE_NAMES.EVENTS]: { lockDuration: 30000 },
   [QUEUE_NAMES.INITIAL_BACKFILL]: { lockDuration: 300000 }, // 5 minutes
+  [QUEUE_NAMES.REVIEW_GENERATION]: { lockDuration: 360000 }, // 6 minutes (4 attempts × 90s + delays)
+  [QUEUE_NAMES.SUMMARY_GENERATION]: { lockDuration: 120000 }, // 2 minutes
 };
 
 async function startWorkers(): Promise<void> {
