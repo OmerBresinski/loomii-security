@@ -21,14 +21,20 @@ export const bedrock = createAmazonBedrock({
  * Model IDs available for Loomii agents.
  * These must be enabled in AWS Bedrock Model Access console.
  * Using cross-region inference profile IDs (us. prefix).
+ *
+ * In development (NODE_ENV !== "production"), all models resolve to Haiku
+ * to minimize costs during local testing.
  */
+const HAIKU_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0" as const;
+const isDev = process.env.NODE_ENV !== "production";
+
 export const MODELS = {
   /** Primary model for design reviews - highest capability */
-  CLAUDE_OPUS: "us.anthropic.claude-opus-4-5-20251101-v1:0",
+  CLAUDE_OPUS: isDev ? HAIKU_ID : "us.anthropic.claude-opus-4-5-20251101-v1:0",
   /** Balanced model for design reviews - high capability, lower cost than Opus */
-  CLAUDE_SONNET: "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+  CLAUDE_SONNET: isDev ? HAIKU_ID : "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
   /** Fast model for risk classification and lightweight tasks - lowest cost */
-  CLAUDE_HAIKU: "us.anthropic.claude-haiku-4-5-20251001-v1:0",
+  CLAUDE_HAIKU: HAIKU_ID,
 } as const;
 
 /**

@@ -790,10 +790,6 @@ projectRoutes.get("/:id/reviews", async (c) => {
     review: { isNot: null },
   };
 
-  if (cursor) {
-    bundleWhere.createdAt = { lt: new Date(cursor) };
-  }
-
   if (statusParam) {
     const statuses = statusParam.split(",");
     bundleWhere.status = { in: statuses };
@@ -805,8 +801,9 @@ projectRoutes.get("/:id/reviews", async (c) => {
 
   const bundles = await db.contextBundle.findMany({
     where: bundleWhere,
-    orderBy: { createdAt: "desc" },
+    orderBy: [{ riskLevel: "asc" }, { createdAt: "desc" }],
     take: limit + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     include: {
       event: {
         select: { source: true, externalId: true },
@@ -827,7 +824,7 @@ projectRoutes.get("/:id/reviews", async (c) => {
 
   const hasMore = bundles.length > limit;
   const page = hasMore ? bundles.slice(0, limit) : bundles;
-  const nextCursor = hasMore ? page[page.length - 1].createdAt.toISOString() : null;
+  const nextCursor = hasMore ? page[page.length - 1].id : null;
 
   const reviews = page
     .filter((b) => b.review)

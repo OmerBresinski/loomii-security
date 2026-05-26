@@ -154,7 +154,7 @@ reviewRoutes.get("/:id", async (c) => {
       review: {
         include: {
           findings: {
-            orderBy: { createdAt: "asc" },
+            orderBy: [{ severity: "asc" }, { createdAt: "asc" }],
             select: {
               id: true,
               type: true,
