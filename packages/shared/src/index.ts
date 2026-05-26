@@ -38,6 +38,8 @@ export {
   RelinkSourceRequestSchema,
   ProjectListItemSchema,
   ProjectListResponseSchema,
+  ProjectAssigneeSchema,
+  FindingsBySeveritySchema,
   ProjectDetailSchema,
 } from "./schemas";
 
@@ -63,6 +65,8 @@ export type {
   RelinkSourceRequest,
   ProjectListItem,
   ProjectListResponse,
+  ProjectAssignee,
+  FindingsBySeverity,
   ProjectDetail,
 } from "./schemas";
 

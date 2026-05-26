@@ -32,6 +32,7 @@ export const UpdateProjectRequestSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   icon: z.string().optional(),
   color: z.string().optional(),
+  assignedToId: z.string().nullable().optional(),
 });
 export type UpdateProjectRequest = z.infer<typeof UpdateProjectRequestSchema>;
 
@@ -80,6 +81,22 @@ export const ProjectListResponseSchema = z.object({
 export type ProjectListResponse = z.infer<typeof ProjectListResponseSchema>;
 
 /** GET /api/v1/projects/:id response */
+export const ProjectAssigneeSchema = z.object({
+  id: z.string(),
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+  email: z.string(),
+});
+export type ProjectAssignee = z.infer<typeof ProjectAssigneeSchema>;
+
+export const FindingsBySeveritySchema = z.object({
+  critical: z.number(),
+  high: z.number(),
+  medium: z.number(),
+  low: z.number(),
+});
+export type FindingsBySeverity = z.infer<typeof FindingsBySeveritySchema>;
+
 export const ProjectDetailSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -92,6 +109,8 @@ export const ProjectDetailSchema = z.object({
   highRiskCount: z.number(),
   highestRisk: z.string().nullable(),
   lastActivity: z.string().nullable(),
+  assignedTo: ProjectAssigneeSchema.nullable(),
+  findingsBySeverity: FindingsBySeveritySchema,
   createdAt: z.string(),
   updatedAt: z.string(),
 });

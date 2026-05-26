@@ -97,6 +97,8 @@ export {
   RelinkSourceRequestSchema,
   ProjectListItemSchema,
   ProjectListResponseSchema,
+  ProjectAssigneeSchema,
+  FindingsBySeveritySchema,
   ProjectDetailSchema,
 } from "./project";
 export type {
@@ -108,5 +110,7 @@ export type {
   RelinkSourceRequest,
   ProjectListItem,
   ProjectListResponse,
+  ProjectAssignee,
+  FindingsBySeverity,
   ProjectDetail,
 } from "./project";
