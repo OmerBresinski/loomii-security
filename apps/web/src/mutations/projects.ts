@@ -7,6 +7,7 @@ import type {
   LinkSourcesRequest,
   ProjectListResponse,
   ProjectDetail,
+  ProjectAssignee,
 } from "@loomii/shared"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -273,6 +274,77 @@ export function useRelinkSource(projectId: string) {
       })
       queryClient.invalidateQueries({
         queryKey: projectKeys.detail(variables.targetProjectId),
+      })
+      queryClient.invalidateQueries({ queryKey: projectKeys.all })
+    },
+  })
+}
+
+// ─── Assign Project (Optimistic) ────────────────────────────────────────────
+
+interface AssignProjectResponse {
+  project: ProjectDetail
+}
+
+export function useAssignProject(projectId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationKey: ["projects", "assign", projectId],
+    mutationFn: ({ assignedToId }: { assignedToId: string | null }) =>
+      fetchApi<AssignProjectResponse>(`/api/v1/projects/${projectId}`, {
+        method: "PATCH",
+        body: { assignedToId },
+      }),
+    onMutate: async ({ assignedToId }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({
+        queryKey: projectKeys.detail(projectId),
+      })
+
+      // Snapshot for rollback
+      const previousDetail = queryClient.getQueryData<ProjectDetail>(
+        projectKeys.detail(projectId)
+      )
+
+      // Optimistically update the detail cache
+      if (previousDetail) {
+        // Build the optimistic assignee value
+        let optimisticAssignee: ProjectAssignee | null = null
+        if (assignedToId && previousDetail.assignedTo?.id === assignedToId) {
+          // Same assignee, keep current
+          optimisticAssignee = previousDetail.assignedTo
+        } else if (assignedToId) {
+          // We set a placeholder - the server response will correct it
+          optimisticAssignee = {
+            id: assignedToId,
+            firstName: null,
+            lastName: null,
+            email: "",
+          }
+        }
+
+        queryClient.setQueryData<ProjectDetail>(
+          projectKeys.detail(projectId),
+          { ...previousDetail, assignedTo: optimisticAssignee }
+        )
+      }
+
+      return { previousDetail }
+    },
+    onError: (_err, _vars, context) => {
+      // Rollback on error
+      if (context?.previousDetail) {
+        queryClient.setQueryData(
+          projectKeys.detail(projectId),
+          context.previousDetail
+        )
+      }
+    },
+    onSettled: () => {
+      // Refetch to sync with server
+      queryClient.invalidateQueries({
+        queryKey: projectKeys.detail(projectId),
       })
       queryClient.invalidateQueries({ queryKey: projectKeys.all })
     },
