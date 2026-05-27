@@ -68,15 +68,19 @@ export function OverviewTab({
         reviews={reviews}
         isPending={isPending}
       />
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
-        {/* Left column: Summary + Sources */}
-        <div className="flex min-w-0 flex-col space-y-6 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[2fr_1.5fr_280px]">
+        {/* Left column: Summary */}
+        <div className="min-w-0 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
           <SummaryCard project={project} isPending={isPending} />
+        </div>
+
+        {/* Middle column: Sources */}
+        <div className="min-w-0 lg:min-h-0 lg:overflow-y-auto">
           <SourcesList sources={sources} isPending={sourcesPending} />
         </div>
 
         {/* Right column: Properties */}
-        <div className="flex flex-col gap-4">
+        <div className="lg:self-start">
           {project && <PropertiesPanelContainer project={project} />}
         </div>
       </div>
