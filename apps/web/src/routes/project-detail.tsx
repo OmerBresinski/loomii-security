@@ -69,7 +69,7 @@ export default function ProjectDetailPage() {
           </div>
         </TabsList>
 
-        <TabsContent value="overview" className="min-h-0 flex-1 overflow-y-auto pt-6">
+        <TabsContent value="overview" className="min-h-0 flex-1 overflow-hidden pt-6">
           <OverviewTab projectId={projectId} project={project} isPending={isPending} />
         </TabsContent>
 

@@ -1,8 +1,47 @@
+import { useCallback } from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { useProjectSources, useProjectReviews } from "@/queries/projects"
+import { teamMembersQueryOptions } from "@/queries/settings"
+import { useAssignProject } from "@/mutations/projects"
 import { SummaryCard } from "./summary-card"
 import { StatsRow } from "./stats-row"
 import { SourcesList } from "./sources-list"
+import { PropertiesPanel, AssigneeDisplay } from "./properties-panel"
+import { UserPickerPopover } from "@/components/ui/user-picker-popover"
 import type { ProjectDetail } from "@loomii/shared"
+
+// ─── Properties Panel Container ─────────────────────────────────────────────
+
+function PropertiesPanelContainer({ project }: { project: ProjectDetail }) {
+  const queryClient = useQueryClient()
+  const assignMutation = useAssignProject(project.id)
+
+  const handlePrefetch = useCallback(() => {
+    queryClient.prefetchQuery(teamMembersQueryOptions())
+  }, [queryClient])
+
+  const handleAssign = useCallback(
+    (userId: string | null) => {
+      assignMutation.mutate({ assignedToId: userId })
+    },
+    [assignMutation]
+  )
+
+  return (
+    <PropertiesPanel
+      project={project}
+      onAssigneeHover={handlePrefetch}
+      assigneePickerContent={
+        <UserPickerPopover
+          selectedUserId={project.assignedTo?.id ?? null}
+          onSelect={handleAssign}
+        >
+          <AssigneeDisplay assignee={project.assignedTo} />
+        </UserPickerPopover>
+      }
+    />
+  )
+}
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
@@ -22,22 +61,23 @@ export function OverviewTab({
   const { data: reviews } = useProjectReviews(projectId)
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex h-full flex-col gap-6">
       <StatsRow
         project={project}
         sources={sources}
         reviews={reviews}
         isPending={isPending}
       />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[45%_35%]">
-        {/* Left column: Summary */}
-        <div className="flex min-w-0 flex-col">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[1fr_280px]">
+        {/* Left column: Summary + Sources */}
+        <div className="flex min-w-0 flex-col space-y-6 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
           <SummaryCard project={project} isPending={isPending} />
+          <SourcesList sources={sources} isPending={sourcesPending} />
         </div>
 
-        {/* Right column: Sources (15%) */}
+        {/* Right column: Properties */}
         <div className="flex flex-col gap-4">
-          <SourcesList sources={sources} isPending={sourcesPending} />
+          {project && <PropertiesPanelContainer project={project} />}
         </div>
       </div>
     </div>
