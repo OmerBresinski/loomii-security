@@ -32,6 +32,7 @@ const mockDb = {
       Promise.resolve({ id: "bundle_123", content: {} } as any)
     ),
     findUnique: mock((_args: any) => Promise.resolve(null as any)),
+    findFirst: mock((_args: any) => Promise.resolve(null as any)),
   },
 };
 

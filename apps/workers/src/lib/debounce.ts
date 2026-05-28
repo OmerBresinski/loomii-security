@@ -56,13 +56,15 @@ export async function enqueueWithDebounce(
   // Deterministic jobId ensures BullMQ deduplicates for the same entity
   const jobId = `match:${tenantId}:${sourceId}`;
 
-  // Remove the existing delayed job if present (so we can replace with new payload)
-  // BullMQ doesn't natively "update" a delayed job's data, so we remove + re-add
+  // Remove the existing job if present (so we can replace with new payload)
+  // BullMQ doesn't natively "update" a delayed job's data, so we remove + re-add.
+  // We also remove completed/failed jobs since BullMQ won't create a new job
+  // with the same jobId if a completed one exists.
   const existingJob = await projectMatchingQueue.getJob(jobId);
   if (existingJob) {
     const state = await existingJob.getState();
-    // Only remove if it's still waiting (delayed/waiting), not if it's already active
-    if (state === "delayed" || state === "waiting") {
+    // Remove unless actively being processed
+    if (state !== "active") {
       await existingJob.remove();
     }
   }

@@ -232,9 +232,20 @@ async function assembleContext(params: AssembleParams): Promise<"DONE"> {
     "Saving context bundle"
   );
 
-  // Check for existing bundle + review (for incremental review branching)
-  const existingBundle = await db.contextBundle.findUnique({
-    where: { eventId },
+  // Check for existing bundle + review for same source (incremental review branching)
+  // Each source change creates a new Event, so we look up by externalId (sourceId)
+  // to find any previous ContextBundle that already has a completed review.
+  const existingBundle = await db.contextBundle.findFirst({
+    where: {
+      tenantId,
+      event: {
+        externalId: sourceId,
+        source: sourceType === "linear" ? "LINEAR" : "NOTION",
+      },
+      review: {
+        status: { in: ["READY", "PUBLISHED"] },
+      },
+    },
     select: {
       id: true,
       content: true,
@@ -242,13 +253,10 @@ async function assembleContext(params: AssembleParams): Promise<"DONE"> {
         select: { id: true, status: true },
       },
     },
+    orderBy: { updatedAt: "desc" },
   });
 
-  const hasExistingReview =
-    existingBundle?.review != null &&
-    existingBundle.review.status !== "GENERATING" &&
-    existingBundle.review.status !== "ERROR";
-
+  const hasExistingReview = existingBundle?.review != null;
   const previousContent = hasExistingReview ? existingBundle.content : null;
 
   const bundle = await db.contextBundle.upsert({
@@ -292,7 +300,7 @@ async function assembleContext(params: AssembleParams): Promise<"DONE"> {
   if (hasExistingReview && previousContent && existingBundle) {
     // Source already has a completed review — run incremental update
     childLogger.info(
-      { reviewId: existingBundle.review!.id },
+      { reviewId: existingBundle.review!.id, previousBundleId: existingBundle.id },
       "Existing review detected, enqueueing incremental-review"
     );
 
@@ -301,7 +309,7 @@ async function assembleContext(params: AssembleParams): Promise<"DONE"> {
         "incremental",
         {
           tenantId,
-          contextBundleId: existingBundle.id,
+          contextBundleId: bundle.id,
           reviewId: existingBundle.review!.id,
           previousContent: previousContent as Record<string, unknown>,
           newContent: content as Record<string, unknown>,

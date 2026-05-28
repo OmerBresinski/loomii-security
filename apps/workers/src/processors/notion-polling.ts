@@ -88,8 +88,13 @@ async function fetchChangedPages(
       const page = result as any;
       const lastEditedTime = page.last_edited_time;
 
-      // Stop if we've gone past our time window
-      if (lastEditedTime <= since) {
+      // Stop if we've gone past our time window.
+      // Notion rounds last_edited_time to the nearest minute (e.g., "2026-05-28T20:58:00.000Z")
+      // but our `since` has millisecond precision. To avoid missing edits within the same
+      // minute window, we truncate both to minute-level before comparing.
+      const editMinute = lastEditedTime.slice(0, 16); // "2026-05-28T20:58"
+      const sinceMinute = since.slice(0, 16);
+      if (editMinute < sinceMinute) {
         hasMore = false;
         break;
       }
