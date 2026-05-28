@@ -72,7 +72,7 @@ export function OverviewTab({
     <div className="flex h-full flex-col gap-6">
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[1fr_400px] lg:gap-x-40">
         {/* Left column: Summary */}
-        <div className="min-w-0 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
+        <div className="min-w-0 pt-14 pl-24 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
           <SummaryCard project={project} isPending={isPending} />
         </div>
 
