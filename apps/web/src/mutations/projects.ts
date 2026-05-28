@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { fetchApi } from "@/lib/api-client"
 import { projectKeys } from "@/queries/projects"
+import { settingsKeys, type TeamMembersResponse } from "@/queries/settings"
 import type {
   CreateProjectRequest,
   UpdateProjectRequest,
@@ -315,12 +316,24 @@ export function useAssignProject(projectId: string) {
           // Same assignee, keep current
           optimisticAssignee = previousDetail.assignedTo
         } else if (assignedToId) {
-          // We set a placeholder - the server response will correct it
-          optimisticAssignee = {
-            id: assignedToId,
-            firstName: null,
-            lastName: null,
-            email: "",
+          // Try to resolve from team members cache
+          const teamData = queryClient.getQueryData<TeamMembersResponse>(settingsKeys.team())
+          const member = teamData?.members.find((m) => m.id === assignedToId)
+          if (member) {
+            optimisticAssignee = {
+              id: member.id,
+              firstName: member.firstName,
+              lastName: member.lastName,
+              email: member.email,
+            }
+          } else {
+            // Fallback placeholder - server response will correct it
+            optimisticAssignee = {
+              id: assignedToId,
+              firstName: null,
+              lastName: null,
+              email: "user",
+            }
           }
         }
 
