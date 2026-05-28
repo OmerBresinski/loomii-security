@@ -27,7 +27,7 @@ import {
 } from "../agents/incremental-review";
 import { logger } from "../lib/logger";
 import type { Logger } from "pino";
-import { recordUsage, type TokenUsage } from "../lib/ai-usage";
+import { recordUsage } from "../lib/ai-usage";
 import { MODELS } from "../lib/bedrock";
 
 /** Timeout for the LLM call (90 seconds) */
@@ -193,7 +193,7 @@ async function invokeAgent({
       structuredOutput: {
         schema: IncrementalReviewOutputSchema,
       },
-    })) as { object: unknown; text: string; usage?: TokenUsage };
+    })) as { object: unknown; text: string; usage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number } };
 
     if (!result.object) {
       childLogger.warn(
@@ -213,12 +213,18 @@ async function invokeAgent({
     }
 
     // Record AI usage (fire-and-forget)
+    // Mastra may return usage with only totalTokens (no promptTokens/completionTokens)
     if (result.usage) {
+      const u = result.usage;
       recordUsage({
         tenantId,
         modelId: MODELS.CLAUDE_SONNET,
         operation: "incremental-review",
-        usage: result.usage,
+        usage: {
+          promptTokens: u.promptTokens ?? 0,
+          completionTokens: u.completionTokens ?? 0,
+          totalTokens: u.totalTokens ?? (u.promptTokens ?? 0) + (u.completionTokens ?? 0),
+        },
       });
     }
 
