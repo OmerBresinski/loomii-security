@@ -64,7 +64,7 @@ export function SourcesList({ sources, isPending }: SourcesListProps) {
                   decoding="async"
                   className="shrink-0"
                 />
-                <span className="min-w-0 flex-1 truncate text-xs text-foreground/80 group-hover:text-foreground">
+                <span className="min-w-0 flex-1 truncate text-[13px] text-foreground/80 group-hover:text-foreground">
                   {source.title ?? source.sourceId}
                 </span>
                 <HugeiconsIcon
@@ -87,7 +87,7 @@ export function SourcesList({ sources, isPending }: SourcesListProps) {
                   decoding="async"
                   className="shrink-0"
                 />
-                <span className="truncate text-xs text-foreground/80">
+                <span className="truncate text-[13px] text-foreground/80">
                   {source.title ?? source.sourceId}
                 </span>
               </div>
