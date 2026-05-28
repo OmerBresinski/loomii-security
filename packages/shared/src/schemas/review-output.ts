@@ -18,8 +18,6 @@ export const FINDING_TYPES = ["THREAT", "REQUIREMENT", "MITIGATION"] as const;
 export const REVIEW_SEVERITY_LEVELS = [
   "CRITICAL",
   "HIGH",
-  "MEDIUM",
-  "LOW",
 ] as const;
 
 export const REVIEW_STRIDE_CATEGORIES = [

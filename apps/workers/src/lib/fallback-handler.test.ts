@@ -51,7 +51,7 @@ const mockSleep = mock(async (_ms: number) => {});
 const VALID_REVIEW_OUTPUT: ReviewOutput = {
   summary: "This change introduces a payment endpoint that requires security review.",
   hasSecurityImplications: true,
-  severity: "MEDIUM",
+  severity: "HIGH",
   confidence: 75,
   findings: [
     {

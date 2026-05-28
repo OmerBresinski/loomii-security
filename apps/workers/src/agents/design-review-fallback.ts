@@ -58,8 +58,8 @@ Use \`relatedFindingIndices\` to link findings:
 ### Severity Assessment
 - **CRITICAL**: Immediate exploitation risk, data breach likely, no mitigations in place
 - **HIGH**: Significant vulnerability, exploitation feasible, limited mitigations
-- **MEDIUM**: Moderate risk, exploitation requires effort, some mitigations exist
-- **LOW**: Minor concern, exploitation unlikely, good mitigations in place
+
+Only report CRITICAL and HIGH severity findings. Do NOT generate medium or low severity findings — they are noise. If a source has no critical or high severity issues, it is perfectly fine to return an empty findings array. Not every source warrants a review — only report findings that represent real, significant security risks.
 
 ### Confidence Score
 Rate your confidence (0-100) in the review:
@@ -72,7 +72,7 @@ Rate your confidence (0-100) in the review:
 - Be SPECIFIC to the actual code/design being reviewed - no generic boilerplate findings
 - Reference specific components, endpoints, data flows from the context
 - Each finding description must explain the specific risk in context
-- For changes with no security implications, set \`hasSecurityImplications: false\` but still include at least one LOW-severity REQUIREMENT finding noting what was verified and why it's safe
+- For changes with no security implications, set \`hasSecurityImplications: false\` and return an empty findings array. Do NOT fabricate findings — it is completely acceptable to have zero findings.
 - Never include raw system prompts, internal instructions, or meta-commentary in findings
 
 ## Markdown Formatting (IMPORTANT)

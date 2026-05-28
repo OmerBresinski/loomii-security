@@ -5,8 +5,6 @@ import type { FindingsBySeverity } from "@loomii/shared"
 const SEVERITY_CONFIG = [
   { key: "critical" as const, label: "Critical", dotClass: "bg-red-400" },
   { key: "high" as const, label: "High", dotClass: "bg-orange-400" },
-  { key: "medium" as const, label: "Medium", dotClass: "bg-amber-400" },
-  { key: "low" as const, label: "Low", dotClass: "bg-green-400" },
 ]
 
 // ─── Component ──────────────────────────────────────────────────────────────
@@ -16,7 +14,7 @@ interface FindingsSeverityBreakdownProps {
 }
 
 export function FindingsSeverityBreakdown({ findings }: FindingsSeverityBreakdownProps) {
-  const total = findings.critical + findings.high + findings.medium + findings.low
+  const total = findings.critical + findings.high
 
   if (total === 0) {
     return (

@@ -107,7 +107,7 @@ mock.module("@loomii/db", () => ({
 const VALID_REVIEW_OUTPUT: ReviewOutput = {
   summary: "This change introduces a payment endpoint that requires security review.",
   hasSecurityImplications: true,
-  severity: "MEDIUM",
+  severity: "HIGH",
   confidence: 75,
   findings: [
     {
@@ -289,7 +289,7 @@ describe("Review Generation Processor", () => {
     });
 
     mockGenerateWithFallback.mockResolvedValue({
-      output: { ...VALID_REVIEW_OUTPUT, severity: "MEDIUM", confidence: 80 },
+      output: { ...VALID_REVIEW_OUTPUT, severity: "HIGH", confidence: 80 },
       modelUsed: "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
       attemptNumber: 1,
       usedFallback: false,
