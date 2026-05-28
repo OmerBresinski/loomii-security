@@ -68,7 +68,7 @@ export function OverviewTab({
         reviews={reviews}
         isPending={isPending}
       />
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[2fr_1.5fr_280px]">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[2fr_1.5fr_320px]">
         {/* Left column: Summary */}
         <div className="min-w-0 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
           <SummaryCard project={project} isPending={isPending} />

@@ -1,5 +1,6 @@
 import type { ProjectDetail } from "@loomii/shared"
 import { FindingsSeverityBreakdown } from "./findings-severity-breakdown"
+import { FindingSeverityIcon } from "@/components/reviews/review-sheet/finding-icons"
 import { UserAvatar, getDisplayName } from "@/components/ui/user-avatar"
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
@@ -22,18 +23,14 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString()
 }
 
-function getRiskBadgeClasses(risk: string | null): string {
+function getRiskTextClass(risk: string): string {
   switch (risk) {
     case "CRITICAL":
-      return "text-red-400 bg-red-400/10"
+      return "text-red-400"
     case "HIGH":
-      return "text-orange-400 bg-orange-400/10"
-    case "MEDIUM":
-      return "text-amber-400 bg-amber-400/10"
-    case "LOW":
-      return "text-green-400 bg-green-400/10"
+      return "text-orange-400"
     default:
-      return "text-muted-foreground bg-muted"
+      return "text-muted-foreground"
   }
 }
 
@@ -47,16 +44,12 @@ interface PropertiesPanelProps {
 
 export function PropertiesPanel({ project, onAssigneeHover, assigneePickerContent }: PropertiesPanelProps) {
   return (
-    <div className="rounded-md border border-border bg-[#26272B] p-4 space-y-4">
+    <div className="rounded-md border border-border bg-[#26272B] p-5 space-y-5">
       {/* Properties Section */}
-      <div className="space-y-3">
-        <h3 className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-          Properties
-        </h3>
-
+      <div className="space-y-4">
         {/* Assignee */}
         <div className="flex items-center justify-between">
-          <span className="text-[13px] text-muted-foreground">Assignee</span>
+          <span className="text-sm text-muted-foreground">Assignee</span>
           <div onMouseEnter={onAssigneeHover}>
             {assigneePickerContent}
           </div>
@@ -64,30 +57,40 @@ export function PropertiesPanel({ project, onAssigneeHover, assigneePickerConten
 
         {/* Risk Level */}
         <div className="flex items-center justify-between">
-          <span className="text-[13px] text-muted-foreground">Risk</span>
-          <span className={`px-1.5 py-0.5 rounded text-[11px] font-medium ${getRiskBadgeClasses(project.highestRisk)}`}>
-            {project.highestRisk ?? "None"}
-          </span>
+          <span className="text-sm text-muted-foreground">Risk</span>
+          {project.highestRisk ? (
+            <div className="flex items-center gap-1.5">
+              <FindingSeverityIcon severity={project.highestRisk} />
+              <span className={`text-sm font-medium ${getRiskTextClass(project.highestRisk)}`}>
+                {project.highestRisk.charAt(0) + project.highestRisk.slice(1).toLowerCase()}
+              </span>
+            </div>
+          ) : (
+            <span className="text-sm text-muted-foreground">None</span>
+          )}
         </div>
 
         {/* Created */}
         <div className="flex items-center justify-between">
-          <span className="text-[13px] text-muted-foreground">Created</span>
-          <span className="text-[13px] text-foreground">{timeAgo(project.createdAt)}</span>
+          <span className="text-sm text-muted-foreground">Created</span>
+          <span className="text-sm text-foreground">{timeAgo(project.createdAt)}</span>
         </div>
 
         {/* Last Activity */}
         {project.lastActivity && (
           <div className="flex items-center justify-between">
-            <span className="text-[13px] text-muted-foreground">Last Activity</span>
-            <span className="text-[13px] text-foreground">{timeAgo(project.lastActivity)}</span>
+            <span className="text-sm text-muted-foreground">Last Activity</span>
+            <span className="text-sm text-foreground">{timeAgo(project.lastActivity)}</span>
           </div>
         )}
       </div>
 
+      {/* Divider */}
+      <div className="border-t border-border" />
+
       {/* Findings Section */}
       <div className="space-y-3">
-        <h3 className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+        <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
           Findings
         </h3>
         <FindingsSeverityBreakdown findings={project.findingsBySeverity} />
@@ -105,16 +108,16 @@ interface AssigneeDisplayProps {
 export function AssigneeDisplay({ assignee }: AssigneeDisplayProps) {
   if (!assignee) {
     return (
-      <span className="cursor-pointer text-[13px] text-muted-foreground hover:text-foreground">
+      <span className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
         Unassigned
       </span>
     )
   }
 
   return (
-    <div className="flex cursor-pointer items-center gap-1.5 hover:opacity-80">
+    <div className="flex cursor-pointer items-center gap-2 hover:opacity-80">
       <UserAvatar user={assignee} size="sm" />
-      <span className="text-[13px] text-foreground">{getDisplayName(assignee)}</span>
+      <span className="text-sm text-foreground">{getDisplayName(assignee)}</span>
     </div>
   )
 }
