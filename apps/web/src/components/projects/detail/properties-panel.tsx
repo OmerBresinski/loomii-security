@@ -49,7 +49,7 @@ export function PropertiesPanel({
 }: PropertiesPanelProps) {
   return (
     <div
-      className="space-y-5 rounded-2xl bg-[#26272B] p-2"
+      className="space-y-5 rounded-2xl bg-[#26272B] p-3.5"
       style={{ border: "0.5px solid lch(24.136 3.913 272.695)" }}
     >
       {/* Properties Section */}
@@ -123,14 +123,14 @@ interface AssigneeDisplayProps {
 export function AssigneeDisplay({ assignee }: AssigneeDisplayProps) {
   if (!assignee) {
     return (
-      <span className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+      <span className="text-xs text-muted-foreground hover:text-foreground">
         Unassigned
       </span>
     )
   }
 
   return (
-    <div className="flex cursor-pointer items-center gap-2 hover:opacity-80">
+    <div className="flex items-center gap-2 hover:opacity-80">
       <UserAvatar user={assignee} size="sm" />
       <span className="text-xs text-foreground">
         {getDisplayName(assignee)}
