@@ -103,7 +103,7 @@ interface AssigneeDisplayProps {
 export function AssigneeDisplay({ assignee }: AssigneeDisplayProps) {
   if (!assignee) {
     return (
-      <span className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
+      <span className="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
         Unassigned
       </span>
     )
@@ -112,7 +112,7 @@ export function AssigneeDisplay({ assignee }: AssigneeDisplayProps) {
   return (
     <div className="flex cursor-pointer items-center gap-2 hover:opacity-80">
       <UserAvatar user={assignee} size="sm" />
-      <span className="text-sm text-foreground">{getDisplayName(assignee)}</span>
+      <span className="text-xs text-foreground">{getDisplayName(assignee)}</span>
     </div>
   )
 }
