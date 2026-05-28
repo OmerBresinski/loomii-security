@@ -5,6 +5,10 @@ import { teamMembersQueryOptions } from "@/queries/settings"
 import { useAssignProject } from "@/mutations/projects"
 import { SummaryCard } from "./summary-card"
 import { PropertiesPanel, AssigneeDisplay } from "./properties-panel"
+import {
+  ProjectIconDisplay,
+  IconPicker,
+} from "@/components/projects/icon-picker"
 import { UserPickerPopover } from "@/components/ui/user-picker-popover"
 import type { ProjectDetail } from "@loomii/shared"
 
@@ -69,11 +73,34 @@ export function OverviewTab({
     ).length ?? 0
 
   return (
-    <div className="flex h-full flex-col gap-6">
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[1fr_400px] lg:gap-x-40">
-        {/* Left column: Summary */}
-        <div className="min-w-0 pt-14 pl-24 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
-          <SummaryCard project={project} isPending={isPending} />
+    <div className="flex h-full flex-col">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[1fr_400px]">
+        {/* Left column: Summary (centered horizontally) */}
+        <div className="flex min-w-0 justify-center lg:min-h-0 lg:overflow-y-auto">
+          <div className="flex w-full max-w-3xl flex-col gap-5 pt-12">
+            {/* Project icon + name */}
+            {project && (
+              <div className="flex items-center gap-3 pb-6">
+                <IconPicker
+                  projectId={projectId}
+                  icon={project.icon}
+                  color={project.color}
+                >
+                  <button className="flex size-8 items-center justify-center rounded-md hover:bg-accent">
+                    <ProjectIconDisplay
+                      icon={project.icon}
+                      color={project.color}
+                      size={20}
+                    />
+                  </button>
+                </IconPicker>
+                <h1 className="font-heading text-2xl font-semibold">
+                  {project.name}
+                </h1>
+              </div>
+            )}
+            <SummaryCard project={project} isPending={isPending} />
+          </div>
         </div>
 
         {/* Right column: Properties (full height) */}

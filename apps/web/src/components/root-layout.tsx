@@ -53,7 +53,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ProjectIconDisplay, IconPicker } from "@/components/projects/icon-picker"
+import { ProjectIconDisplay } from "@/components/projects/icon-picker"
 import { useProjectDetail } from "@/queries/projects"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/hooks/use-auth"
@@ -169,18 +169,16 @@ function AppBreadcrumb() {
   )
 }
 
-/** Reactive project breadcrumb segment — subscribes to project query for live icon/color updates */
+/** Reactive project breadcrumb segment — subscribes to project query for live updates */
 function ProjectBreadcrumbSegment({ projectId }: { projectId: string }) {
   const { data: project } = useProjectDetail(projectId)
 
   return (
     <span className="flex items-center gap-2">
       {project && (
-        <IconPicker projectId={projectId} icon={project.icon} color={project.color}>
-          <button className="flex size-5 items-center justify-center rounded hover:bg-accent">
-            <ProjectIconDisplay icon={project.icon} color={project.color} size={14} />
-          </button>
-        </IconPicker>
+        <div className="flex size-5 items-center justify-center">
+          <ProjectIconDisplay icon={project.icon} color={project.color} size={14} />
+        </div>
       )}
       <BreadcrumbPage>{project?.name ?? projectId}</BreadcrumbPage>
       {project?.summaryUpdatedAt && (
