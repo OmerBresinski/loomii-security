@@ -68,13 +68,12 @@ interface UserAvatarProps {
 export function UserAvatar({ user, size = "sm", className }: UserAvatarProps) {
   const initials = getInitials(user.firstName, user.lastName, user.email)
   const bgColor = getColorFromString(user.id)
-  const sizeClass =
-    size === "sm" ? "h-4.5 w-4.5 text-[10px]" : "h-8 w-8 text-xs"
+  const sizeClass = size === "sm" ? "size-4.5 text-[10px]" : "h-8 w-8 text-xs"
 
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-full font-medium text-white",
+        "font-sm flex shrink-0 items-center justify-center rounded-full text-white",
         sizeClass,
         className
       )}
