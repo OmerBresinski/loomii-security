@@ -44,12 +44,12 @@ interface PropertiesPanelProps {
 
 export function PropertiesPanel({ project, onAssigneeHover, assigneePickerContent }: PropertiesPanelProps) {
   return (
-    <div className="rounded-md border border-border bg-[#26272B] p-5 space-y-5">
+    <div className="rounded-2xl bg-[#26272B] p-5 space-y-5" style={{ border: '0.5px solid lch(24.136 3.913 272.695)' }}>
       {/* Properties Section */}
-      <div className="space-y-3">
+      <div className="space-y-[18px]">
         {/* Assignee */}
         <div className="flex items-center">
-          <span className="w-[120px] shrink-0 text-[13px] text-muted-foreground">Assignee</span>
+          <span className="w-[150px] shrink-0 text-xs text-muted-foreground">Assignee</span>
           <div onMouseEnter={onAssigneeHover}>
             {assigneePickerContent}
           </div>
@@ -57,30 +57,30 @@ export function PropertiesPanel({ project, onAssigneeHover, assigneePickerConten
 
         {/* Risk Level */}
         <div className="flex items-center">
-          <span className="w-[120px] shrink-0 text-[13px] text-muted-foreground">Risk</span>
+          <span className="w-[150px] shrink-0 text-xs text-muted-foreground">Risk</span>
           {project.highestRisk ? (
             <div className="flex items-center gap-1.5">
               <FindingSeverityIcon severity={project.highestRisk} />
-              <span className={`text-[13px] font-medium ${getRiskTextClass(project.highestRisk)}`}>
+              <span className={`text-xs font-medium ${getRiskTextClass(project.highestRisk)}`}>
                 {project.highestRisk.charAt(0) + project.highestRisk.slice(1).toLowerCase()}
               </span>
             </div>
           ) : (
-            <span className="text-[13px] text-muted-foreground">None</span>
+            <span className="text-xs text-muted-foreground">None</span>
           )}
         </div>
 
         {/* Created */}
         <div className="flex items-center">
-          <span className="w-[120px] shrink-0 text-[13px] text-muted-foreground">Created</span>
-          <span className="text-[13px] text-foreground">{timeAgo(project.createdAt)}</span>
+          <span className="w-[150px] shrink-0 text-xs text-muted-foreground">Created</span>
+          <span className="text-xs text-foreground">{timeAgo(project.createdAt)}</span>
         </div>
 
         {/* Last Activity */}
         {project.lastActivity && (
           <div className="flex items-center">
-            <span className="w-[120px] shrink-0 text-[13px] text-muted-foreground">Last Activity</span>
-            <span className="text-[13px] text-foreground">{timeAgo(project.lastActivity)}</span>
+            <span className="w-[150px] shrink-0 text-xs text-muted-foreground">Last Activity</span>
+            <span className="text-xs text-foreground">{timeAgo(project.lastActivity)}</span>
           </div>
         )}
       </div>

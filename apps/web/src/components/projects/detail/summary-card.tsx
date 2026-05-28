@@ -34,7 +34,7 @@ export function SummaryCard({ project, isPending }: SummaryCardProps) {
       {/* Content */}
       {hasSummary ? (
         <div className="flex flex-col gap-2">
-          <div className="prose prose-sm max-w-none overflow-hidden text-[12px] leading-relaxed text-foreground/90 dark:prose-invert [&_h2]:mt-6 [&_h2]:mb-2 [&_h2]:font-[family-name:var(--font-heading)] [&_h2]:text-[14px] [&_h2]:font-medium [&_h2]:normal-case [&_h2]:tracking-normal [&_h2]:text-foreground [&_h2:first-child]:mt-0 [&_li]:my-1 [&_p]:my-1.5 [&_ul]:my-2 [&_ul]:pl-5">
+          <div className="prose prose-sm max-w-none overflow-hidden text-[14px] leading-relaxed text-foreground/90 dark:prose-invert [&_h2]:mt-6 [&_h2]:mb-2 [&_h2]:font-[family-name:var(--font-heading)] [&_h2]:text-[16px] [&_h2]:font-medium [&_h2]:normal-case [&_h2]:tracking-normal [&_h2]:text-foreground [&_h2:first-child]:mt-0 [&_li]:my-1 [&_p]:my-1.5 [&_ul]:my-2 [&_ul]:pl-5">
             <Markdown>{project.summary}</Markdown>
           </div>
         </div>

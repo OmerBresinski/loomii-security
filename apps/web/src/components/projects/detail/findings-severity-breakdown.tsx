@@ -24,13 +24,13 @@ export function FindingsSeverityBreakdown({ findings }: FindingsSeverityBreakdow
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-[18px]">
       {SEVERITY_CONFIG.map(({ key, label }) => {
         const count = findings[key]
         if (count === 0) return null
         return (
           <div key={key} className="flex items-center">
-            <span className="w-[120px] shrink-0 text-[13px] text-muted-foreground">{label}</span>
+            <span className="w-[150px] shrink-0 text-[13px] text-muted-foreground">{label}</span>
             <FindingSeverityIcon severity={key.toUpperCase()} />
             <span className="ml-1.5 text-[13px] font-medium tabular-nums text-foreground">{count}</span>
           </div>
