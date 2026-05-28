@@ -149,7 +149,7 @@ export default function ReviewsPage() {
   const virtualizer = useVirtualizer({
     count: rowCount,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 48,
+    estimateSize: () => 44,
     overscan: 5,
   })
 
@@ -193,7 +193,7 @@ export default function ReviewsPage() {
       {isPending ? (
         <div className="flex flex-col rounded-md">
           {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="flex h-12 items-center px-4">
+            <div key={i} className="flex h-[44px] items-center px-4">
               <Skeleton className="h-4 w-full max-w-md" />
             </div>
           ))}
@@ -235,7 +235,7 @@ export default function ReviewsPage() {
               })}
             </div>
             {isFetchingNextPage && (
-              <div className="flex h-12 items-center justify-center text-xs text-muted-foreground">
+              <div className="flex h-[44px] items-center justify-center text-xs text-muted-foreground">
                 Loading more...
               </div>
             )}

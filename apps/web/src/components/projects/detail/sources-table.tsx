@@ -114,7 +114,7 @@ export function SourcesTableSkeleton() {
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
-          className="flex h-12 items-center gap-3 pr-3 pl-[18px]"
+          className="flex h-[44px] items-center gap-3 pr-3 pl-[18px]"
         >
           <Skeleton className="size-5 rounded" />
           <Skeleton className="h-3.5 w-[50px]" />
@@ -154,7 +154,7 @@ function SourceRow({
   return (
     <>
       <div
-        className="group flex h-12 items-center gap-3 pr-3 pl-[20px] hover:bg-accent/50 dark:hover:bg-[#25262A]/50 cursor-pointer"
+        className="group flex h-[44px] items-center gap-3 pr-3 pl-[20px] hover:bg-accent/50 dark:hover:bg-[#25262A]/50 cursor-pointer"
         onClick={() => {
           if (source.sourceUrl) window.open(source.sourceUrl, "_blank", "noopener,noreferrer")
         }}

@@ -82,7 +82,7 @@ export default function ProjectsPage() {
       {isPending ? (
         <div className="flex flex-col rounded-md">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="flex h-12 items-center px-4">
+            <div key={i} className="flex h-[44px] items-center px-4">
               <Skeleton className="h-4 w-full max-w-md" />
             </div>
           ))}

@@ -132,10 +132,14 @@ interface ProjectReviewRowProps {
   onMouseEnter?: () => void
 }
 
-function ProjectReviewRow({ review, onClick, onMouseEnter }: ProjectReviewRowProps) {
+function ProjectReviewRow({
+  review,
+  onClick,
+  onMouseEnter,
+}: ProjectReviewRowProps) {
   return (
     <div
-      className="flex h-12 cursor-pointer items-center px-4 hover:bg-accent dark:hover:bg-[#25262A]"
+      className="flex h-[44px] cursor-pointer items-center px-4 hover:bg-accent dark:hover:bg-[#25262A]"
       onClick={onClick}
       onMouseEnter={onMouseEnter}
     >
@@ -209,7 +213,10 @@ export function ReviewsTab({ projectId }: ReviewsTabProps) {
   const [filters] = useState<ReviewFilters>({})
   const { data, isPending } = useProjectReviews(projectId, filters)
   const queryClient = useQueryClient()
-  const search = useSearch({ strict: false }) as Record<string, string | undefined>
+  const search = useSearch({ strict: false }) as Record<
+    string,
+    string | undefined
+  >
   const navigate = useNavigate()
 
   const reviews = useMemo(() => data?.reviews ?? [], [data?.reviews])
@@ -276,7 +283,7 @@ export function ReviewsTab({ projectId }: ReviewsTabProps) {
       {isPending ? (
         <div className="flex flex-col">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="flex h-12 items-center gap-3 px-4">
+            <div key={i} className="flex h-[44px] items-center gap-3 px-4">
               <Skeleton className="size-4 rounded" />
               <Skeleton className="h-3 w-12" />
               <Skeleton className="size-4 rounded-full" />

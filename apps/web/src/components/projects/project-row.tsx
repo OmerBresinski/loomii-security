@@ -116,7 +116,7 @@ export function ProjectRow({ project }: ProjectRowProps) {
       to="/projects/$projectId"
       params={{ projectId: project.id }}
       preload="intent"
-      className="flex h-12 items-center px-4 hover:bg-accent dark:hover:bg-[#25262A]"
+      className="flex h-[44px] items-center px-4 hover:bg-accent dark:hover:bg-[#25262A]"
     >
       {/* Risk */}
       <Tooltip>

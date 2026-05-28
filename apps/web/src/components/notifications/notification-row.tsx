@@ -63,7 +63,7 @@ export function NotificationRow({ notification }: NotificationRowProps) {
 
   return (
     <div
-      className={`flex h-12 cursor-pointer items-center px-4 hover:bg-accent dark:hover:bg-[#25262A] ${
+      className={`flex h-[44px] cursor-pointer items-center px-4 hover:bg-accent dark:hover:bg-[#25262A] ${
         !notification.read ? "bg-accent/30" : ""
       }`}
     >

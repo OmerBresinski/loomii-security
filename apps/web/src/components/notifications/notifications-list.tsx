@@ -27,7 +27,7 @@ export function NotificationsList({
   const virtualizer = useVirtualizer({
     count: notifications.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 48,
+    estimateSize: () => 44,
     overscan: 5,
   })
 
@@ -65,7 +65,7 @@ export function NotificationsList({
           })}
         </div>
         {isFetchingNextPage && (
-          <div className="flex h-12 items-center justify-center text-xs text-muted-foreground">
+          <div className="flex h-[44px] items-center justify-center text-xs text-muted-foreground">
             Loading more...
           </div>
         )}

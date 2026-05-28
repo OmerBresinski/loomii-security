@@ -102,7 +102,7 @@ export function ActivityEvent({ event, isLast }: ActivityEventProps) {
   const description = config.label(event.data)
 
   return (
-    <div className="relative ml-[20px] flex h-12 items-center gap-3">
+    <div className="relative ml-[20px] flex h-[44px] items-center gap-3">
       {/* Timeline line */}
       {!isLast ? (
         <div className="absolute top-full left-[6px] h-full w-px bg-border/60" />
