@@ -79,7 +79,7 @@ export function teamMembersQueryOptions() {
   return queryOptions({
     queryKey: settingsKeys.team(),
     queryFn: ({ signal }) =>
-      fetchApi<TeamMembersResponse>("/api/v1/settings/team", { signal }),
+      fetchApi<TeamMembersResponse>("/api/v1/team", { signal }),
     staleTime: 30_000,
   })
 }
