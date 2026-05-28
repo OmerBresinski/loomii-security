@@ -2,7 +2,6 @@ import { getRouteApi, useNavigate } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useProjectDetail, projectReviewsQueryOptions, projectSourcesQueryOptions, projectActivityQueryOptions } from "@/queries/projects"
-import { ProjectHeader } from "@/components/projects/detail/project-header"
 import { OverviewTab } from "@/components/projects/detail/overview-tab"
 import { ReviewsTab } from "@/components/projects/detail/reviews-tab"
 import { SourcesTab } from "@/components/projects/detail/sources-tab"
@@ -47,11 +46,6 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden p-6">
-      {/* Header */}
-      <div className="pb-4">
-        <ProjectHeader project={project} isPending={isPending} />
-      </div>
-
       {/* Tabs */}
       <Tabs value={tab} onValueChange={handleTabChange} className="flex min-h-0 flex-1 flex-col">
         <TabsList variant="line">

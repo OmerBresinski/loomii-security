@@ -49,7 +49,6 @@ function ReviewStatusIconSvg({ status }: { status: string | null }) {
         </svg>
       )
     case "READY":
-    case "IN_REVIEW":
       // Soft lavender half-filled circle
       return (
         <svg width="15" height="15" viewBox="0 0 16 16">
@@ -62,6 +61,21 @@ function ReviewStatusIconSvg({ status }: { status: string | null }) {
             strokeWidth="1.5"
           />
           <path d="M8 1.5 A6.5 6.5 0 0 1 8 14.5" fill="oklch(0.72 0.12 280)" />
+        </svg>
+      )
+    case "IN_REVIEW":
+      // Warm yellow half-filled circle
+      return (
+        <svg width="15" height="15" viewBox="0 0 16 16">
+          <circle
+            cx="8"
+            cy="8"
+            r="6.5"
+            fill="none"
+            stroke="oklch(0.75 0.15 85)"
+            strokeWidth="1.5"
+          />
+          <path d="M8 1.5 A6.5 6.5 0 0 1 8 14.5" fill="oklch(0.75 0.15 85)" />
         </svg>
       )
     case "DRAFT":

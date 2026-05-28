@@ -38,12 +38,14 @@ function getRiskTextClass(risk: string): string {
 
 interface PropertiesPanelProps {
   project: ProjectDetail
+  criticalReviewCount: number
   onAssigneeHover: () => void
   assigneePickerContent: React.ReactNode
 }
 
 export function PropertiesPanel({
   project,
+  criticalReviewCount,
   onAssigneeHover,
   assigneePickerContent,
 }: PropertiesPanelProps) {
@@ -80,6 +82,18 @@ export function PropertiesPanel({
           ) : (
             <span className="text-xs text-muted-foreground">None</span>
           )}
+        </div>
+
+        {/* Critical Reviews */}
+        <div className="flex items-center">
+          <span className="w-[150px] shrink-0 text-xs text-muted-foreground">
+            Critical Reviews
+          </span>
+          <span
+            className={`text-xs font-medium tabular-nums ${criticalReviewCount > 0 ? "text-red-400" : "text-muted-foreground"}`}
+          >
+            {criticalReviewCount}
+          </span>
         </div>
 
         {/* Created */}

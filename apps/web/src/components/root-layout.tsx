@@ -53,6 +53,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { ProjectIconDisplay, IconPicker } from "@/components/projects/icon-picker"
+import { useProjectDetail } from "@/queries/projects"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/hooks/use-auth"
 import { useUnreadCount } from "@/queries/notifications"
@@ -121,15 +123,24 @@ function AppBreadcrumb() {
         {segments.map((segment, index) => {
           const isLast = index === segments.length - 1
           const href = "/" + segments.slice(0, index + 1).join("/")
+          const isProjectSegment = segments[index - 1] === "projects" && segment !== "new"
 
-          // Resolve dynamic segment labels from cache
+          // Project detail segment — render with reactive icon/label
+          if (isProjectSegment && isLast) {
+            return (
+              <React.Fragment key={href}>
+                {index > 0 && <BreadcrumbSeparator />}
+                <BreadcrumbItem>
+                  <ProjectBreadcrumbSegment projectId={segment} />
+                </BreadcrumbItem>
+              </React.Fragment>
+            )
+          }
+
+          // Standard segment
           let label: string
-          if (segments[index - 1] === "projects" && segment !== "new") {
-            // This is a projectId segment — look up the name from cache
-            const cached = queryClient.getQueryData<{ name: string }>([
-              "projects",
-              segment,
-            ])
+          if (isProjectSegment) {
+            const cached = queryClient.getQueryData<{ name: string }>(["projects", segment])
             label = cached?.name ?? segment
           } else {
             label =
@@ -156,6 +167,43 @@ function AppBreadcrumb() {
       </BreadcrumbList>
     </Breadcrumb>
   )
+}
+
+/** Reactive project breadcrumb segment — subscribes to project query for live icon/color updates */
+function ProjectBreadcrumbSegment({ projectId }: { projectId: string }) {
+  const { data: project } = useProjectDetail(projectId)
+
+  return (
+    <span className="flex items-center gap-2">
+      {project && (
+        <IconPicker projectId={projectId} icon={project.icon} color={project.color}>
+          <button className="flex size-5 items-center justify-center rounded hover:bg-accent">
+            <ProjectIconDisplay icon={project.icon} color={project.color} size={14} />
+          </button>
+        </IconPicker>
+      )}
+      <BreadcrumbPage>{project?.name ?? projectId}</BreadcrumbPage>
+      {project?.summaryUpdatedAt && (
+        <span className="text-[11px] text-muted-foreground">
+          Updated {timeAgoBreadcrumb(project.summaryUpdatedAt)}
+        </span>
+      )}
+    </span>
+  )
+}
+
+function timeAgoBreadcrumb(dateStr: string): string {
+  const now = Date.now()
+  const then = new Date(dateStr).getTime()
+  const diff = now - then
+  const minutes = Math.floor(diff / 60_000)
+  if (minutes < 1) return "just now"
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 30) return `${days}d ago`
+  return new Date(dateStr).toLocaleDateString()
 }
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
