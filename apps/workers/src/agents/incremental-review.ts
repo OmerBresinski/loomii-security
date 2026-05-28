@@ -3,14 +3,16 @@
  *
  * A Mastra Agent backed by Claude Sonnet (via Bedrock) that performs
  * incremental security review updates. The agent:
- * 1. Receives the previous and current versions of a source document
- * 2. Receives the list of existing non-dismissed findings
+ * 1. Calls searchPolicies to retrieve relevant OWASP/custom security policies
+ * 2. Compares old vs new content with existing findings
  * 3. Returns a patch: which findings to remove and which new findings to add
  *
- * This agent does NOT use tools — it relies purely on document diffing
- * with structured output via IncrementalReviewOutputSchema.
+ * Uses searchPolicies tool to ground new findings in real policies (same as
+ * the design-review agent). Does NOT need fetchReviewHistory since existing
+ * findings are provided directly in the prompt.
  */
 import { createBedrockAgent } from "../lib/bedrock";
+import { searchPoliciesTool } from "./tools/search-policies";
 
 // ─── System Prompt ────────────────────────────────────────────────────────────
 
@@ -20,6 +22,11 @@ You are given:
 1. The PREVIOUS version of a design document
 2. The CURRENT (updated) version of the same document
 3. A list of EXISTING findings from the previous review
+
+## Your Workflow
+
+1. **FIRST**, call the \`searchPolicies\` tool with a concise summary of what CHANGED between the two document versions. This retrieves relevant OWASP and custom security policies to ground any new findings.
+2. **SECOND**, generate your structured output determining which findings to remove and which to add.
 
 ## Your Task
 Determine which existing findings should be REMOVED (no longer relevant) and what NEW findings should be ADDED (new security risks introduced).
@@ -53,11 +60,57 @@ Do NOT add findings for:
 - Minor changes with no security implications
 - Generic security concerns not tied to specific new content
 
+## Policy Grounding (CRITICAL)
+- Every NEW finding MUST reference a specific policy via the \`policyReference\` field
+- Use the exact policy name as returned by \`searchPolicies\` (e.g., "A01:2021 - Broken Access Control")
+- If no specific policy applies, reference "General Security Best Practice"
+- Never fabricate policy names - only reference policies that were returned by the tool
+
+## STRIDE Categories (for THREAT findings)
+Categorize threats using STRIDE:
+- **SPOOFING**: Impersonating another user or system
+- **TAMPERING**: Unauthorized modification of data
+- **REPUDIATION**: Performing actions without audit trail
+- **INFORMATION_DISCLOSURE**: Exposing data to unauthorized parties
+- **DENIAL_OF_SERVICE**: Disrupting service availability
+- **ELEVATION_OF_PRIVILEGE**: Gaining unauthorized access levels
+
 ## Quality Rules
 - Be SPECIFIC: reference actual new/removed content in your reasoning
 - Never fabricate: if nothing security-relevant changed, return empty arrays
 - Each removal reason must explain what content was removed/mitigated
-- Each new finding must reference the specific new content that creates the risk`;
+- Each new finding must reference the specific new content that creates the risk
+
+## Finding Description Format (IMPORTANT)
+Each new finding's \`description\` field MUST be written in **GitHub-flavored Markdown** with this structure:
+
+\`\`\`
+## What's happening
+
+[2-3 sentences: what the vulnerability/requirement is, which specific component is affected, and why it matters in this context.]
+
+## Risk
+
+**Impact**: [1 sentence: what could go wrong if exploited]
+**Likelihood**: [LOW/MEDIUM/HIGH — how easy is exploitation]
+**Affected surface**: \`endpoint/component/data-flow\`
+
+## Evidence
+
+\`\`\`
+[Brief code snippet or config that demonstrates the issue — 3-5 lines max]
+\`\`\`
+\`\`\`
+
+### Formatting Rules
+- **Bold** for key terms and severity indicators
+- \`inline code\` for endpoints, function names, file paths, and service names
+- Fenced code blocks for evidence snippets (keep brief — 3-5 lines)
+- Keep findings scannable — a security reviewer should understand each finding in under 10 seconds
+- Keep each finding description under 800 characters
+
+## CRITICAL: Tool-Call Budget
+You have a STRICT budget of 1 tool call. Call \`searchPolicies\` ONCE with a summary of the changes, then IMMEDIATELY produce your final structured output. Do NOT call the tool more than once.`;
 
 // ─── Agent Definition ─────────────────────────────────────────────────────────
 
@@ -65,7 +118,7 @@ Do NOT add findings for:
  * The incremental review Mastra agent.
  *
  * Uses Claude Sonnet via Bedrock for high-capability security analysis.
- * No tools needed — the agent only needs to compare documents and produce structured output.
+ * Has access to searchPolicies tool for policy grounding.
  */
 export const incrementalReviewAgent = createBedrockAgent({
   id: "incremental-review-agent",
@@ -73,6 +126,11 @@ export const incrementalReviewAgent = createBedrockAgent({
   instructions: { role: "system", content: INCREMENTAL_REVIEW_SYSTEM_PROMPT },
   model: "CLAUDE_SONNET",
 });
+
+/** Tools available to the incremental review agent */
+export const incrementalReviewTools = {
+  searchPolicies: searchPoliciesTool,
+};
 
 // ─── Prompt Builder ───────────────────────────────────────────────────────────
 
@@ -125,5 +183,7 @@ ${findingsText}
 
 ---
 
-Analyze the differences between the previous and current versions. Determine which findings to remove and what new findings to add.`;
+Instructions:
+1. Call \`searchPolicies\` with a brief summary of what changed between the two versions
+2. Then produce your structured output determining removals and additions`;
 }

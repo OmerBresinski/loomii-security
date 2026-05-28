@@ -23,6 +23,7 @@ import { IncrementalReviewOutputSchema } from "@loomii/shared/schemas";
 import type { IncrementalReviewOutput } from "@loomii/shared/schemas";
 import {
   incrementalReviewAgent,
+  incrementalReviewTools,
   buildIncrementalReviewPrompt,
 } from "../agents/incremental-review";
 import { logger } from "../lib/logger";
@@ -183,7 +184,7 @@ async function invokeAgent({
 
   try {
     const result = (await (incrementalReviewAgent.generate as Function)(prompt, {
-      maxSteps: 1,
+      maxSteps: 4,
       modelSettings: {
         temperature: 0.1,
         maxOutputTokens: 8000,
@@ -192,6 +193,20 @@ async function invokeAgent({
       abortSignal: controller.signal,
       structuredOutput: {
         schema: IncrementalReviewOutputSchema,
+      },
+      prepareStep: async ({ stepNumber }: { stepNumber: number }) => {
+        // Step 0: tool-calling phase (search policies for grounding)
+        if (stepNumber < 1) {
+          return {
+            tools: incrementalReviewTools,
+            toolChoice: "auto" as const,
+          };
+        }
+        // Steps 1+: no tools — forces structured output generation
+        return {
+          tools: {},
+          toolChoice: "none" as const,
+        };
       },
     })) as { object: unknown; text: string; usage?: { promptTokens?: number; completionTokens?: number; totalTokens?: number } };
 
