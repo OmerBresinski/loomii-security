@@ -64,12 +64,30 @@ export async function processReviewGeneration(
         existingReview.status === "GENERATING" &&
         Date.now() - new Date(existingReview.updatedAt).getTime() > 5 * 60 * 1000;
 
-      if (!isError && !isStaleGenerating) {
+      // Also allow re-processing if the context bundle was updated after
+      // the existing review was created (source content has changed)
+      const bundleUpdatedAt = await db.contextBundle.findUnique({
+        where: { id: contextId },
+        select: { updatedAt: true },
+      });
+      const isStaleContent =
+        bundleUpdatedAt &&
+        new Date(bundleUpdatedAt.updatedAt).getTime() >
+          new Date(existingReview.updatedAt).getTime();
+
+      if (!isError && !isStaleGenerating && !isStaleContent) {
         childLogger.info(
           { existingReviewId: existingReview.id, status: existingReview.status },
           "Bundle already has active review, skipping"
         );
         return;
+      }
+
+      if (isStaleContent) {
+        childLogger.info(
+          { existingReviewId: existingReview.id },
+          "Source content updated since last review, re-generating"
+        );
       }
 
       if (isStaleGenerating) {

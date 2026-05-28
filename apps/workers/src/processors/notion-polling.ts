@@ -238,6 +238,20 @@ export async function processNotionPolling(
         content: page.title ?? "",
       });
       newEventCount++;
+    } else {
+      // Source was updated — re-process with a longer debounce (5 min)
+      // to allow the user to finish editing before triggering a re-review
+      await enqueueWithDebounce(
+        {
+          eventId: event.id,
+          tenantId,
+          sourceType: "notion",
+          sourceId: page.id,
+          content: page.title ?? "",
+        },
+        { delayMs: 5 * 60_000 }
+      );
+      newEventCount++;
     }
   }
 
