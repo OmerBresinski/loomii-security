@@ -79,6 +79,14 @@ export interface EventsPayload {
   timestamp: string;
 }
 
+export interface IncrementalReviewPayload {
+  tenantId: string;
+  contextBundleId: string;
+  reviewId: string;
+  previousContent: Record<string, unknown>;
+  newContent: Record<string, unknown>;
+}
+
 export interface InitialBackfillPayload {
   tenantId: string;
   linearIntegrationId: string | null;
@@ -101,5 +109,6 @@ export interface QueuePayloadMap {
   "summary-generation": SummaryGenerationPayload;
   "project-matching": ProjectMatchingPayload;
   "initial-backfill": InitialBackfillPayload;
+  "incremental-review": IncrementalReviewPayload;
   events: EventsPayload;
 }

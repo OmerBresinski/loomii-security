@@ -47,12 +47,12 @@ import type {
 
 describe("@loomii/queue", () => {
   describe("queue name constants", () => {
-    it("exports all 11 queue name constants", () => {
-      expect(Object.keys(QUEUE_NAMES)).toHaveLength(11);
+    it("exports all 12 queue name constants", () => {
+      expect(Object.keys(QUEUE_NAMES)).toHaveLength(12);
     });
 
-    it("ALL_QUEUE_NAMES contains all 11 queue names", () => {
-      expect(ALL_QUEUE_NAMES).toHaveLength(11);
+    it("ALL_QUEUE_NAMES contains all 12 queue names", () => {
+      expect(ALL_QUEUE_NAMES).toHaveLength(12);
       expect(ALL_QUEUE_NAMES).toContain("context-assembly");
       expect(ALL_QUEUE_NAMES).toContain("risk-classification");
       expect(ALL_QUEUE_NAMES).toContain("embedding-generation");
@@ -63,6 +63,7 @@ describe("@loomii/queue", () => {
       expect(ALL_QUEUE_NAMES).toContain("summary-generation");
       expect(ALL_QUEUE_NAMES).toContain("project-matching");
       expect(ALL_QUEUE_NAMES).toContain("initial-backfill");
+      expect(ALL_QUEUE_NAMES).toContain("incremental-review");
       expect(ALL_QUEUE_NAMES).toContain("events");
     });
 

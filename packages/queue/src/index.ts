@@ -13,6 +13,7 @@ export {
   eventsQueue,
   summaryGenerationQueue,
   projectMatchingQueue,
+  incrementalReviewQueue,
   initialBackfillQueue,
 } from "./queues";
 export type {
@@ -25,6 +26,7 @@ export type {
   ThreatModelUpdatePayload,
   SummaryGenerationPayload,
   ProjectMatchingPayload,
+  IncrementalReviewPayload,
   InitialBackfillPayload,
   EventsPayload,
   QueuePayloadMap,

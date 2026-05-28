@@ -450,6 +450,7 @@ model Finding {
   dismissalReason DismissalReason? @map("dismissal_reason")
   dismissedBy     String?          @map("dismissed_by")
   dismissedAt     DateTime?        @map("dismissed_at")
+  confirmedBy     String?          @map("confirmed_by")
   confirmedAt     DateTime?        @map("confirmed_at")
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime         @updatedAt @map("updated_at")

@@ -17,6 +17,7 @@ export const QUEUE_NAMES = {
   SUMMARY_GENERATION: "summary-generation",
   PROJECT_MATCHING: "project-matching",
   INITIAL_BACKFILL: "initial-backfill",
+  INCREMENTAL_REVIEW: "incremental-review",
   EVENTS: "events",
 } as const;
 
@@ -99,6 +100,11 @@ export const summaryGenerationQueue = new Queue<QueuePayloadMap["summary-generat
 
 export const projectMatchingQueue = new Queue<QueuePayloadMap["project-matching"]>(
   QUEUE_NAMES.PROJECT_MATCHING,
+  { connection: getConnection() }
+);
+
+export const incrementalReviewQueue = new Queue<QueuePayloadMap["incremental-review"]>(
+  QUEUE_NAMES.INCREMENTAL_REVIEW,
   { connection: getConnection() }
 );
 

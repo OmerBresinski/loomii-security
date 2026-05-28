@@ -71,6 +71,9 @@ export {
 } from "./review-output";
 export type { ReviewOutput, ReviewFinding } from "./review-output";
 
+export { IncrementalReviewOutputSchema } from "./incremental-review";
+export type { IncrementalReviewOutput } from "./incremental-review";
+
 export {
   ThreatModelUpdateOutputSchema,
   NewComponentSchema,

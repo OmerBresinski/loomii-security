@@ -305,7 +305,7 @@ reviewRoutes.post("/:id/confirm-publish", async (c) => {
   // 1. Bulk confirm all non-dismissed findings
   const confirmResult = await db.finding.updateMany({
     where: { review: { id: reviewId }, status: null },
-    data: { status: "CONFIRMED", confirmedAt: new Date() },
+    data: { status: "CONFIRMED", confirmedAt: new Date(), confirmedBy: userId },
   });
 
   // 2. Post comment to external sources (graceful degradation)
