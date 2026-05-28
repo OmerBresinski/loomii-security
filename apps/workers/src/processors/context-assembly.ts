@@ -20,6 +20,7 @@ import { db } from "@loomii/db";
 import {
   riskClassificationQueue,
   embeddingQueue,
+  incrementalReviewQueue,
   type ContextAssemblyPayload,
 } from "@loomii/queue";
 import { decrypt } from "@loomii/shared";
@@ -231,6 +232,25 @@ async function assembleContext(params: AssembleParams): Promise<"DONE"> {
     "Saving context bundle"
   );
 
+  // Check for existing bundle + review (for incremental review branching)
+  const existingBundle = await db.contextBundle.findUnique({
+    where: { eventId },
+    select: {
+      id: true,
+      content: true,
+      review: {
+        select: { id: true, status: true },
+      },
+    },
+  });
+
+  const hasExistingReview =
+    existingBundle?.review != null &&
+    existingBundle.review.status !== "GENERATING" &&
+    existingBundle.review.status !== "ERROR";
+
+  const previousContent = hasExistingReview ? existingBundle.content : null;
+
   const bundle = await db.contextBundle.upsert({
     where: { eventId },
     update: {
@@ -266,21 +286,53 @@ async function assembleContext(params: AssembleParams): Promise<"DONE"> {
     data: { status: "COMPLETED", processedAt: new Date() },
   });
 
-  // 6. Enqueue downstream jobs
+  // 6. Enqueue downstream jobs (branch: incremental vs full pipeline)
   childLogger.info("Enqueueing downstream jobs");
 
-  await Promise.allSettled([
-    riskClassificationQueue.add("classify", {
-      tenantId,
-      contextId: bundle.id,
-      designDocId: sourceId,
-    }),
-    embeddingQueue.add("generate", {
-      tenantId,
-      documentId: bundle.id,
-      content: JSON.stringify(content),
-    }),
-  ]);
+  if (hasExistingReview && previousContent && existingBundle) {
+    // Source already has a completed review — run incremental update
+    childLogger.info(
+      { reviewId: existingBundle.review!.id },
+      "Existing review detected, enqueueing incremental-review"
+    );
+
+    await Promise.allSettled([
+      incrementalReviewQueue.add(
+        "incremental",
+        {
+          tenantId,
+          contextBundleId: existingBundle.id,
+          reviewId: existingBundle.review!.id,
+          previousContent: previousContent as Record<string, unknown>,
+          newContent: content as Record<string, unknown>,
+        },
+        {
+          attempts: 3,
+          backoff: { type: "exponential", delay: 5000 },
+        }
+      ),
+      // Embedding generation still runs (search index stays fresh)
+      embeddingQueue.add("generate", {
+        tenantId,
+        documentId: bundle.id,
+        content: JSON.stringify(content),
+      }),
+    ]);
+  } else {
+    // No existing review (or ERROR/GENERATING) — full pipeline
+    await Promise.allSettled([
+      riskClassificationQueue.add("classify", {
+        tenantId,
+        contextId: bundle.id,
+        designDocId: sourceId,
+      }),
+      embeddingQueue.add("generate", {
+        tenantId,
+        documentId: bundle.id,
+        content: JSON.stringify(content),
+      }),
+    ]);
+  }
 
   childLogger.info(
     { bundleId: bundle.id, missingItems: missingItems.length },

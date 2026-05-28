@@ -13,6 +13,7 @@ import { processSummaryGeneration } from "./summary-generation";
 import { processProjectMatching } from "./project-matching";
 import { processEvents } from "./events";
 import { processInitialBackfill } from "./initial-backfill";
+import { processIncrementalReview } from "./incremental-review";
 
 /**
  * Processor registry - maps queue names to their job processor functions.
@@ -57,6 +58,7 @@ export const processors: Record<QueueName, Processor> = {
   [QUEUE_NAMES.SUMMARY_GENERATION]: processSummaryGeneration as Processor,
   [QUEUE_NAMES.PROJECT_MATCHING]: processProjectMatching as Processor,
   [QUEUE_NAMES.INITIAL_BACKFILL]: processInitialBackfill as Processor,
+  [QUEUE_NAMES.INCREMENTAL_REVIEW]: processIncrementalReview as Processor,
   [QUEUE_NAMES.EVENTS]: processEvents as Processor,
 };
 
@@ -75,5 +77,6 @@ export const concurrency: Record<QueueName, number> = {
   [QUEUE_NAMES.SUMMARY_GENERATION]: 2,
   [QUEUE_NAMES.PROJECT_MATCHING]: 5,
   [QUEUE_NAMES.INITIAL_BACKFILL]: 5,
+  [QUEUE_NAMES.INCREMENTAL_REVIEW]: 2,
   [QUEUE_NAMES.EVENTS]: 10,
 };

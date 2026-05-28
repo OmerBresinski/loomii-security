@@ -31,6 +31,7 @@ const mockDb = {
     upsert: mock((_args: any) =>
       Promise.resolve({ id: "bundle_123", content: {} } as any)
     ),
+    findUnique: mock((_args: any) => Promise.resolve(null as any)),
   },
 };
 
@@ -205,6 +206,7 @@ mock.module("@loomii/queue", () => ({
   contextAssemblyQueue: { add: mock() },
   riskClassificationQueue: mockRiskClassificationQueue,
   embeddingQueue: mockEmbeddingQueue,
+  incrementalReviewQueue: { add: mock((_name: string, _payload: any, _opts?: any) => Promise.resolve({ id: "incr_job_123" })) },
   notionPollingQueue: { add: mock() },
   eventsQueue: { add: mock() },
   integrationHealthQueue: { add: mock() },
@@ -219,6 +221,7 @@ mock.module("@loomii/queue", () => ({
     INTEGRATION_HEALTH: "integration-health",
     REVIEW_GENERATION: "review-generation",
     THREAT_MODEL_UPDATE: "threat-model-update",
+    INCREMENTAL_REVIEW: "incremental-review",
     EVENTS: "events",
   },
   ALL_QUEUE_NAMES: [
@@ -229,6 +232,7 @@ mock.module("@loomii/queue", () => ({
     "integration-health",
     "review-generation",
     "threat-model-update",
+    "incremental-review",
     "events",
   ],
 }));
