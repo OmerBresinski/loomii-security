@@ -89,12 +89,7 @@ export function PropertiesPanel({ project, onAssigneeHover, assigneePickerConten
       <div className="border-t border-border" />
 
       {/* Findings Section */}
-      <div className="space-y-3">
-        <h3 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          Findings
-        </h3>
-        <FindingsSeverityBreakdown findings={project.findingsBySeverity} />
-      </div>
+      <FindingsSeverityBreakdown findings={project.findingsBySeverity} />
     </div>
   )
 }

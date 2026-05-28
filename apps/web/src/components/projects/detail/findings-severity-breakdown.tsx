@@ -29,10 +29,10 @@ export function FindingsSeverityBreakdown({ findings }: FindingsSeverityBreakdow
         const count = findings[key]
         if (count === 0) return null
         return (
-          <div key={key} className="flex items-center gap-2">
-            <span className="text-[13px] text-muted-foreground">{label}</span>
+          <div key={key} className="flex items-center">
+            <span className="w-[120px] shrink-0 text-[13px] text-muted-foreground">{label}</span>
             <FindingSeverityIcon severity={key.toUpperCase()} />
-            <span className="text-[13px] font-medium tabular-nums text-foreground">{count}</span>
+            <span className="ml-1.5 text-[13px] font-medium tabular-nums text-foreground">{count}</span>
           </div>
         )
       })}
