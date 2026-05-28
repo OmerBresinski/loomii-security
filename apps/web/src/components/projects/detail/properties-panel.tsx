@@ -48,16 +48,16 @@ export function PropertiesPanel({ project, onAssigneeHover, assigneePickerConten
       {/* Properties Section */}
       <div className="space-y-4">
         {/* Assignee */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Assignee</span>
+        <div className="flex items-center">
+          <span className="w-[150px] shrink-0 text-sm text-muted-foreground">Assignee</span>
           <div onMouseEnter={onAssigneeHover}>
             {assigneePickerContent}
           </div>
         </div>
 
         {/* Risk Level */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Risk</span>
+        <div className="flex items-center">
+          <span className="w-[150px] shrink-0 text-sm text-muted-foreground">Risk</span>
           {project.highestRisk ? (
             <div className="flex items-center gap-1.5">
               <FindingSeverityIcon severity={project.highestRisk} />
@@ -71,15 +71,15 @@ export function PropertiesPanel({ project, onAssigneeHover, assigneePickerConten
         </div>
 
         {/* Created */}
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-muted-foreground">Created</span>
+        <div className="flex items-center">
+          <span className="w-[150px] shrink-0 text-sm text-muted-foreground">Created</span>
           <span className="text-sm text-foreground">{timeAgo(project.createdAt)}</span>
         </div>
 
         {/* Last Activity */}
         {project.lastActivity && (
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Last Activity</span>
+          <div className="flex items-center">
+            <span className="w-[150px] shrink-0 text-sm text-muted-foreground">Last Activity</span>
             <span className="text-sm text-foreground">{timeAgo(project.lastActivity)}</span>
           </div>
         )}
