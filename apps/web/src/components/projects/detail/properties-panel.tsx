@@ -47,7 +47,7 @@ interface PropertiesPanelProps {
 
 export function PropertiesPanel({ project, onAssigneeHover, assigneePickerContent }: PropertiesPanelProps) {
   return (
-    <div className="rounded-md border border-border bg-card p-4 space-y-4">
+    <div className="rounded-md border border-border bg-[#26272B] p-4 space-y-4">
       {/* Properties Section */}
       <div className="space-y-3">
         <h3 className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
