@@ -14,10 +14,10 @@ export function FindingTypeIcon({ type }: { type: string }) {
 
 // ─── Finding Severity Icon (bar-chart style) ────────────────────────────────
 
-export function FindingSeverityIcon({ severity }: { severity: string }) {
+export function FindingSeverityIcon({ severity, size = 14 }: { severity: string; size?: number }) {
   if (severity === "CRITICAL") {
     return (
-      <svg width="14" height="14" viewBox="0 0 16 16" className="text-red-400">
+      <svg width={size} height={size} viewBox="0 0 16 16" className="text-red-400">
         <rect width="16" height="16" rx="3" fill="currentColor" opacity="0.8" />
         <text
           x="8"
@@ -42,7 +42,7 @@ export function FindingSeverityIcon({ severity }: { severity: string }) {
         : "text-green-400"
 
   return (
-    <svg width="14" height="14" viewBox="0 0 16 16" className={color}>
+    <svg width={size} height={size} viewBox="0 0 16 16" className={color}>
       <rect
         x="2"
         y="10"

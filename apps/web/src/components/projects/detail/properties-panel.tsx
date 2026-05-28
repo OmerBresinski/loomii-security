@@ -60,7 +60,7 @@ export function PropertiesPanel({ project, onAssigneeHover, assigneePickerConten
           <span className="w-[150px] shrink-0 text-xs text-muted-foreground">Risk</span>
           {project.highestRisk ? (
             <div className="flex items-center gap-1.5">
-              <FindingSeverityIcon severity={project.highestRisk} />
+              <FindingSeverityIcon severity={project.highestRisk} size={16} />
               <span className={`text-xs font-medium ${getRiskTextClass(project.highestRisk)}`}>
                 {project.highestRisk.charAt(0) + project.highestRisk.slice(1).toLowerCase()}
               </span>
