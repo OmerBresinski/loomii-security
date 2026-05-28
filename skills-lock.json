@@ -55,6 +55,12 @@
       "skillPath": "plugins/tanstack-router/skills/tanstack-router/SKILL.md",
       "computedHash": "24beccc4016f91bab65547209cfd849ea5e66f3d5d92820683a9dd84669ced56"
     },
+    "thermo-nuclear-code-quality-review": {
+      "source": "cursor/plugins",
+      "sourceType": "github",
+      "skillPath": "thermos/skills/thermo-nuclear-code-quality-review/SKILL.md",
+      "computedHash": "9052b01b46b1d8dbf94c45f9313ec1983443f9a460e83d49cdc7fe0f640ca476"
+    },
     "use-railway": {
       "source": "railwayapp/railway-skills",
       "sourceType": "github",
