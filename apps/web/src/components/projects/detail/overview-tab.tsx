@@ -62,19 +62,21 @@ export function OverviewTab({
 
   return (
     <div className="flex h-full flex-col gap-6">
-      <StatsRow
-        project={project}
-        sources={sources}
-        reviews={reviews}
-        isPending={isPending}
-      />
-      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[1fr_400px]">
-        {/* Left column: Summary */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[1fr_400px] lg:gap-x-40">
+        {/* Left column: Stats + Summary */}
         <div className="min-w-0 lg:min-h-0 lg:overflow-y-auto lg:pr-2">
-          <SummaryCard project={project} isPending={isPending} />
+          <div className="flex flex-col gap-6">
+            <StatsRow
+              project={project}
+              sources={sources}
+              reviews={reviews}
+              isPending={isPending}
+            />
+            <SummaryCard project={project} isPending={isPending} />
+          </div>
         </div>
 
-        {/* Right column: Properties + Sources */}
+        {/* Right column: Properties + Sources (full height) */}
         <div className="flex flex-col gap-6 lg:min-h-0 lg:overflow-y-auto">
           {project && <PropertiesPanelContainer project={project} />}
           <SourcesList sources={sources} isPending={sourcesPending} />
