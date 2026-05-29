@@ -3,14 +3,16 @@
  * Two key schemes exist:
  * - Review-level keys: LINEAR, NOTION, GITHUB (from review.source)
  * - Source-type keys: LINEAR_ISSUE, NOTION_PAGE (from source.sourceType)
+ *
+ * Favicons are served locally from /public/favicons — zero external requests.
  */
 
 // ─── Single source of truth for provider favicons ───────────────────────────
 
 const PROVIDER_FAVICONS = {
-  linear: "https://www.google.com/s2/favicons?domain=linear.app&sz=64",
-  notion: "https://www.google.com/s2/favicons?domain=notion.so&sz=64",
-  github: "https://www.google.com/s2/favicons?domain=github.com&sz=64",
+  linear: "/favicons/linear.png",
+  notion: "/favicons/notion.png",
+  github: "/favicons/github.png",
 } as const
 
 // ─── Review-level keys (from review.source) ─────────────────────────────────
