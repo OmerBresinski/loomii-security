@@ -1,5 +1,5 @@
 import { useMemo } from "react"
-import { Pie, PieChart, Cell, Tooltip, ResponsiveContainer } from "recharts"
+import { Pie, PieChart, Cell, Tooltip } from "recharts"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ChartContainer } from "@/components/ui/chart"
 import { useUsage, useDailyUsage } from "@/queries/usage"

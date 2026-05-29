@@ -1,6 +1,6 @@
 // ─── Step 4: Monitoring Scope ────────────────────────────────────────────────
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useMonitoringScope } from "@/queries/onboarding"
 import { useSaveMonitoringScope } from "@/mutations/onboarding"
+import { useToggleSet } from "@/hooks/use-toggle-set"
 
 interface MonitoringScopeProps {
   onNext: () => void
@@ -25,11 +26,9 @@ export function MonitoringScope({ onNext, onSkip, onBack }: MonitoringScopeProps
   const { data, isPending } = useMonitoringScope()
   const saveScope = useSaveMonitoringScope()
 
-  const [selectedTeams, setSelectedTeams] = useState<Set<string>>(new Set())
-  const [selectedProjects, setSelectedProjects] = useState<Set<string>>(
-    new Set()
-  )
-  const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set())
+  const [selectedTeams, toggleTeam, setAllTeams] = useToggleSet()
+  const [selectedProjects, toggleProject, setAllProjects] = useToggleSet()
+  const [selectedPages, togglePage, setAllPages] = useToggleSet()
 
   const hasLinear =
     data && (data.linearTeams.length > 0 || data.linearProjects.length > 0)
@@ -43,38 +42,11 @@ export function MonitoringScope({ onNext, onSkip, onBack }: MonitoringScopeProps
     }
   }, [isPending, hasAnyResources]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function toggleTeam(id: string) {
-    setSelectedTeams((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
-  function toggleProject(id: string) {
-    setSelectedProjects((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
-  function togglePage(id: string) {
-    setSelectedPages((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
   function selectAll() {
     if (data) {
-      setSelectedTeams(new Set(data.linearTeams.map((t) => t.id)))
-      setSelectedProjects(new Set(data.linearProjects.map((p) => p.id)))
-      setSelectedPages(new Set(data.notionPages.map((p) => p.id)))
+      setAllTeams(data.linearTeams.map((t) => t.id))
+      setAllProjects(data.linearProjects.map((p) => p.id))
+      setAllPages(data.notionPages.map((p) => p.id))
     }
   }
 

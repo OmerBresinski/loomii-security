@@ -132,14 +132,6 @@ export async function fetchApi<T = unknown>(
   })
 
   if (response.status === 401) {
-    clearSession()
-    // Avoid redirect loops: only redirect if not already on login/auth pages
-    if (
-      !window.location.pathname.startsWith("/login") &&
-      !window.location.pathname.startsWith("/auth")
-    ) {
-      window.location.href = "/login"
-    }
     throw new ApiError(401, "UNAUTHORIZED", "Session expired")
   }
 

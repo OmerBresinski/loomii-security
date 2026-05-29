@@ -53,7 +53,7 @@ export function useCreateProject() {
         method: "POST",
         body: data,
       }),
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: projectKeys.all })
     },
   })
@@ -82,11 +82,22 @@ export function useUpdateProject(projectId: string) {
         projectKeys.detail(projectId)
       )
 
-      // Optimistically update the detail cache
+      // Optimistically update only the specific fields that the mutation changes.
+      // Avoid blind spread of `data` into cache — the request shape (e.g. `assignedToId`)
+      // doesn't match the cache shape (e.g. `assignedTo` object).
       if (previousDetail) {
+        const updated: ProjectDetail = { ...previousDetail }
+        if (data.name !== undefined) updated.name = data.name
+        if (data.icon !== undefined) updated.icon = data.icon
+        if (data.color !== undefined) updated.color = data.color
+        // Note: `assignedToId` is intentionally NOT applied here because
+        // it's a foreign key that maps to the `assignedTo` object in cache.
+        // The `useAssignProject` mutation handles assignee changes with proper
+        // object resolution. The server response via onSettled will reconcile.
+
         queryClient.setQueryData<ProjectDetail>(
           projectKeys.detail(projectId),
-          { ...previousDetail, ...data }
+          updated
         )
       }
 
@@ -102,11 +113,8 @@ export function useUpdateProject(projectId: string) {
       }
     },
     onSettled: () => {
-      // Refetch to sync with server
-      queryClient.invalidateQueries({
-        queryKey: projectKeys.detail(projectId),
-      })
-      queryClient.invalidateQueries({ queryKey: projectKeys.all })
+      // Refetch to sync with server — prefix-matches all project queries
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
     },
   })
 }
@@ -161,13 +169,7 @@ export function useLinkSources(projectId: string) {
         { method: "POST", body: data }
       ),
     onSettled: () => {
-      queryClient.invalidateQueries({
-        queryKey: projectKeys.sources(projectId),
-      })
-      queryClient.invalidateQueries({
-        queryKey: projectKeys.detail(projectId),
-      })
-      queryClient.invalidateQueries({ queryKey: projectKeys.all })
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
     },
   })
 }
@@ -185,13 +187,7 @@ export function useUnlinkSource(projectId: string) {
         { method: "DELETE" }
       ),
     onSettled: () => {
-      queryClient.invalidateQueries({
-        queryKey: projectKeys.sources(projectId),
-      })
-      queryClient.invalidateQueries({
-        queryKey: projectKeys.detail(projectId),
-      })
-      queryClient.invalidateQueries({ queryKey: projectKeys.all })
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
     },
   })
 }
@@ -243,9 +239,7 @@ export function useArchiveSource(projectId: string) {
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({
-        queryKey: projectKeys.sources(projectId),
-      })
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
     },
   })
 }
@@ -262,21 +256,9 @@ export function useRelinkSource(projectId: string) {
         `/api/v1/projects/${projectId}/sources/relink`,
         { method: "POST", body: data }
       ),
-    onSettled: (_data, _err, variables) => {
-      // Invalidate both source and target project
-      queryClient.invalidateQueries({
-        queryKey: projectKeys.sources(projectId),
-      })
-      queryClient.invalidateQueries({
-        queryKey: projectKeys.detail(projectId),
-      })
-      queryClient.invalidateQueries({
-        queryKey: projectKeys.sources(variables.targetProjectId),
-      })
-      queryClient.invalidateQueries({
-        queryKey: projectKeys.detail(variables.targetProjectId),
-      })
-      queryClient.invalidateQueries({ queryKey: projectKeys.all })
+    onSettled: () => {
+      // Invalidate all project queries (covers both source and target project)
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
     },
   })
 }
@@ -355,11 +337,8 @@ export function useAssignProject(projectId: string) {
       }
     },
     onSettled: () => {
-      // Refetch to sync with server
-      queryClient.invalidateQueries({
-        queryKey: projectKeys.detail(projectId),
-      })
-      queryClient.invalidateQueries({ queryKey: projectKeys.all })
+      // Refetch to sync with server — prefix-matches all project queries
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
     },
   })
 }

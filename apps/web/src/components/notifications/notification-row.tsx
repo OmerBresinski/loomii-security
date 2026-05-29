@@ -1,3 +1,4 @@
+import { memo } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import {
   Shield01Icon,
@@ -11,6 +12,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { timeAgo } from "@/lib/format-time"
 import type { NotificationItem } from "@/queries/notifications"
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -31,38 +33,26 @@ const TYPE_LABELS: Record<string, string> = {
   summary_updated: "Summary",
 }
 
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function timeAgo(dateStr: string): string {
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diff = now - then
-
-  const minutes = Math.floor(diff / 60_000)
-  if (minutes < 1) return "just now"
-  if (minutes < 60) return `${minutes}m ago`
-
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-
-  const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}d ago`
-
-  return new Date(dateStr).toLocaleDateString()
-}
-
 // ─── Component ──────────────────────────────────────────────────────────────
 
 interface NotificationRowProps {
   notification: NotificationItem
 }
 
-export function NotificationRow({ notification }: NotificationRowProps) {
+export const NotificationRow = memo(function NotificationRow({ notification }: NotificationRowProps) {
   const iconConfig = TYPE_ICONS[notification.type]
   const label = TYPE_LABELS[notification.type] ?? notification.type
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault()
+          e.currentTarget.click()
+        }
+      }}
       className={`flex h-[44px] cursor-pointer items-center px-4 hover:bg-accent dark:hover:bg-[#25262A] ${
         !notification.read ? "bg-accent/30" : ""
       }`}
@@ -110,4 +100,4 @@ export function NotificationRow({ notification }: NotificationRowProps) {
       </div>
     </div>
   )
-}
+})

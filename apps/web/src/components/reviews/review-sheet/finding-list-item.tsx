@@ -1,3 +1,4 @@
+import { memo } from "react"
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowUpRight01Icon } from "@hugeicons/core-free-icons"
 import {
@@ -16,7 +17,7 @@ interface FindingListItemProps {
   onClick: (findingId: string) => void
 }
 
-export function FindingListItem({ finding, onClick }: FindingListItemProps) {
+export const FindingListItem = memo(function FindingListItem({ finding, onClick }: FindingListItemProps) {
   return (
     <div
       className="group flex h-11 cursor-pointer items-center gap-2.5 border-b border-border/30 px-3 last:border-b-0 hover:bg-accent/50 dark:hover:bg-[#25262A]/50"
@@ -54,4 +55,4 @@ export function FindingListItem({ finding, onClick }: FindingListItemProps) {
       />
     </div>
   )
-}
+})

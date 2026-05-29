@@ -73,7 +73,7 @@ export function useDisconnectIntegration() {
         { method: "DELETE" }
       ),
 
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: settingsKeys.integrations() })
     },
   })
@@ -141,7 +141,7 @@ export function useInviteMember() {
         body: { email, role },
       }),
 
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: settingsKeys.team() })
     },
   })

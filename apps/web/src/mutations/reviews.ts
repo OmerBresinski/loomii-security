@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { fetchApi } from "@/lib/api-client"
 import { reviewKeys, type ReviewDetail } from "@/queries/reviews"
-import type { DismissalReason } from "@/components/reviews/review-sheet/constants"
+import type { DismissalReason } from "@/types/reviews"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -144,7 +144,7 @@ export function useConfirmPublish(reviewId: string) {
         `/api/v1/reviews/${reviewDbId}/confirm-publish`,
         { method: "POST" }
       ),
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: reviewKeys.detail(reviewId) })
       queryClient.invalidateQueries({ queryKey: reviewKeys.all })
     },

@@ -1,3 +1,4 @@
+import { memo } from "react"
 import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react"
 import {
   Link01Icon,
@@ -97,7 +98,7 @@ interface ActivityEventProps {
   isLast?: boolean
 }
 
-export function ActivityEvent({ event, isLast }: ActivityEventProps) {
+export const ActivityEvent = memo(function ActivityEvent({ event, isLast }: ActivityEventProps) {
   const config = eventConfigs[event.type] ?? fallbackConfig
   const description = config.label(event.data)
 
@@ -129,4 +130,4 @@ export function ActivityEvent({ event, isLast }: ActivityEventProps) {
       </div>
     </div>
   )
-}
+})

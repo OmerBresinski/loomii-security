@@ -1,19 +1,8 @@
 import { HugeiconsIcon } from "@hugeicons/react"
 import { ArrowUpRight01Icon } from "@hugeicons/core-free-icons"
 import { Skeleton } from "@/components/ui/skeleton"
+import { sourceTypeFavicons as sourceFavicons, sourceTypeLabels } from "@/lib/source-constants"
 import type { ProjectSourcesResponse } from "@/queries/projects"
-
-// ─── Source Icons ───────────────────────────────────────────────────────────
-
-const sourceFavicons: Record<string, string> = {
-  LINEAR_ISSUE: "https://www.google.com/s2/favicons?domain=linear.app&sz=64",
-  NOTION_PAGE: "https://www.google.com/s2/favicons?domain=notion.so&sz=64",
-}
-
-const sourceTypeLabels: Record<string, string> = {
-  LINEAR_ISSUE: "Linear",
-  NOTION_PAGE: "Notion",
-}
 
 // ─── Component ──────────────────────────────────────────────────────────────
 

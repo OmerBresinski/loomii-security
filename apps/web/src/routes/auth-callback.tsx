@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import { useNavigate, useSearch } from "@tanstack/react-router"
-import { completeAuthExchange } from "@/lib/auth"
+import { completeAuthExchange } from "@/lib/auth-store"
 
 /**
  * Auth callback route: /auth/callback
@@ -10,7 +10,7 @@ import { completeAuthExchange } from "@/lib/auth"
  */
 export default function AuthCallbackPage() {
   const navigate = useNavigate()
-  const search = useSearch({ strict: false }) as { exchange_id?: string }
+  const search = useSearch({ from: "/auth/callback" })
   const [error, setError] = useState<string | null>(null)
   // Guard against React StrictMode double-invocation
   const exchangeAttempted = useRef(false)

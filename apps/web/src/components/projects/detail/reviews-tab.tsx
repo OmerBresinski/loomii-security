@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, memo } from "react"
 import { useNavigate, useSearch } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -10,119 +10,14 @@ import {
 import {
   useProjectReviews,
   type ProjectReview,
-  type ReviewFilters,
 } from "@/queries/projects"
+import type { ReviewFilters } from "@/queries/reviews"
 import { reviewDetailQueryOptions, type Review } from "@/queries/reviews"
 import { ReviewSheet } from "@/components/reviews/review-sheet"
 import { ReviewStatusIcon } from "@/components/reviews/review-status-icon"
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function timeAgo(dateStr: string): string {
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diff = now - then
-
-  const minutes = Math.floor(diff / 60_000)
-  if (minutes < 1) return "just now"
-  if (minutes < 60) return `${minutes}m ago`
-
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-
-  const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}d ago`
-
-  return new Date(dateStr).toLocaleDateString()
-}
-
-// ─── Risk Icons ─────────────────────────────────────────────────────────────
-
-const riskLabels: Record<string, string> = {
-  CRITICAL: "Critical",
-  HIGH: "High",
-  MEDIUM: "Medium",
-  LOW: "Low",
-  INFO: "Info",
-}
-
-function RiskIcon({ level }: { level: string }) {
-  if (level === "CRITICAL") {
-    return (
-      <svg
-        width="16"
-        height="16"
-        viewBox="0 0 16 16"
-        className="text-muted-foreground text-primary/60 dark:text-muted-foreground"
-      >
-        <rect width="16" height="16" rx="3" fill="currentColor" />
-        <text
-          x="8"
-          y="12"
-          textAnchor="middle"
-          fontSize="11"
-          fontWeight="bold"
-          fill="var(--background)"
-        >
-          !
-        </text>
-      </svg>
-    )
-  }
-
-  const activeBars =
-    level === "HIGH" ? 3 : level === "MEDIUM" ? 2 : level === "LOW" ? 1 : 0
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      className="text-primary/60 dark:text-muted-foreground"
-    >
-      <rect
-        x="2"
-        y="10"
-        width="3"
-        height="5"
-        rx="0.5"
-        fill="currentColor"
-        opacity={activeBars >= 1 ? 1 : 0.3}
-      />
-      <rect
-        x="6.5"
-        y="6"
-        width="3"
-        height="9"
-        rx="0.5"
-        fill="currentColor"
-        opacity={activeBars >= 2 ? 1 : 0.3}
-      />
-      <rect
-        x="11"
-        y="2"
-        width="3"
-        height="13"
-        rx="0.5"
-        fill="currentColor"
-        opacity={activeBars >= 3 ? 1 : 0.3}
-      />
-    </svg>
-  )
-}
-
-// ─── Source ─────────────────────────────────────────────────────────────────
-
-const sourceFavicons: Record<string, string> = {
-  LINEAR: "https://www.google.com/s2/favicons?domain=linear.app&sz=64",
-  NOTION: "https://www.google.com/s2/favicons?domain=notion.so&sz=64",
-  GITHUB: "https://www.google.com/s2/favicons?domain=github.com&sz=64",
-}
-
-const sourceLabels: Record<string, string> = {
-  LINEAR: "Linear",
-  NOTION: "Notion",
-  GITHUB: "GitHub",
-}
+import { RiskIcon, riskLabels } from "@/components/shared/risk-icon"
+import { timeAgo } from "@/lib/format-time"
+import { sourceFavicons, sourceLabels } from "@/lib/source-constants"
 
 // ─── Review Row ─────────────────────────────────────────────────────────────
 
@@ -132,7 +27,7 @@ interface ProjectReviewRowProps {
   onMouseEnter?: () => void
 }
 
-function ProjectReviewRow({
+const ProjectReviewRow = memo(function ProjectReviewRow({
   review,
   onClick,
   onMouseEnter,
@@ -201,7 +96,7 @@ function ProjectReviewRow({
       </div>
     </div>
   )
-}
+})
 
 // ─── Reviews Tab ────────────────────────────────────────────────────────────
 
@@ -213,10 +108,7 @@ export function ReviewsTab({ projectId }: ReviewsTabProps) {
   const [filters] = useState<ReviewFilters>({})
   const { data, isPending } = useProjectReviews(projectId, filters)
   const queryClient = useQueryClient()
-  const search = useSearch({ strict: false }) as Record<
-    string,
-    string | undefined
-  >
+  const search = useSearch({ from: "/projects/$projectId" })
   const navigate = useNavigate()
 
   const reviews = useMemo(() => data?.reviews ?? [], [data?.reviews])

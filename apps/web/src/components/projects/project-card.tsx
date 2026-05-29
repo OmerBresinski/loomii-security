@@ -1,26 +1,9 @@
+import { memo } from "react"
 import { Link } from "@tanstack/react-router"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { riskLabels } from "@/components/shared/risk-icon"
+import { timeAgo } from "@/lib/format-time"
 import type { ProjectListItem } from "@loomii/shared"
-
-// ─── Helpers ────────────────────────────────────────────────────────────────
-
-function timeAgo(dateStr: string): string {
-  const now = Date.now()
-  const then = new Date(dateStr).getTime()
-  const diff = now - then
-
-  const minutes = Math.floor(diff / 60_000)
-  if (minutes < 1) return "just now"
-  if (minutes < 60) return `${minutes}m ago`
-
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-
-  const days = Math.floor(hours / 24)
-  if (days < 30) return `${days}d ago`
-
-  return new Date(dateStr).toLocaleDateString()
-}
 
 // ─── Risk Indicator ─────────────────────────────────────────────────────────
 
@@ -30,14 +13,6 @@ const riskColors: Record<string, string> = {
   MEDIUM: "bg-yellow-500",
   LOW: "bg-blue-500",
   INFO: "bg-muted-foreground/40",
-}
-
-const riskLabels: Record<string, string> = {
-  CRITICAL: "Critical",
-  HIGH: "High",
-  MEDIUM: "Medium",
-  LOW: "Low",
-  INFO: "Info",
 }
 
 function RiskDot({ level }: { level: string }) {
@@ -57,7 +32,7 @@ interface ProjectCardProps {
   project: ProjectListItem
 }
 
-export function ProjectCard({ project }: ProjectCardProps) {
+export const ProjectCard = memo(function ProjectCard({ project }: ProjectCardProps) {
   return (
     <Link
       to="/projects/$projectId"
@@ -92,4 +67,4 @@ export function ProjectCard({ project }: ProjectCardProps) {
       </Card>
     </Link>
   )
-}
+})

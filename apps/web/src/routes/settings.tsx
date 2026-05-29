@@ -12,7 +12,7 @@ import { UsageTab } from "@/components/settings/usage-tab"
 
 export default function SettingsPage() {
   const { role } = useAuth()
-  const search = useSearch({ strict: false }) as { tab?: string }
+  const search = useSearch({ from: "/settings" })
   const navigate = useNavigate()
 
   const isAdmin = role === "ADMIN" || role === "SECURITY_LEAD"
@@ -21,10 +21,7 @@ export default function SettingsPage() {
   const handleTabChange = useCallback(
     (value: string) => {
       navigate({
-        search: { tab: value === "profile" ? undefined : value } as Record<
-          string,
-          string | undefined
-        >,
+        search: { tab: value === "profile" ? undefined : value },
         replace: true,
       })
     },

@@ -14,7 +14,7 @@ import { useMarkAsRead } from "@/mutations/notifications"
 
 export default function NotificationsPage() {
   const navigate = useNavigate()
-  const search = useSearch({ strict: false }) as { filter?: string }
+  const search = useSearch({ from: "/notifications" })
   const markAsRead = useMarkAsRead()
 
   // Derive filter from URL — computed during render, no effect needed

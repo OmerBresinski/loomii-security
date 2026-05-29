@@ -1,8 +1,6 @@
-import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { useProjectActivity } from "@/queries/projects"
+import { useProjectActivityInfinite } from "@/queries/projects"
 import { ActivityTimeline, ActivityTimelineSkeleton } from "./activity-timeline"
-import type { ProjectActivity } from "@/queries/projects"
 
 // ─── Activity Tab ───────────────────────────────────────────────────────────
 
@@ -11,43 +9,45 @@ interface ActivityTabProps {
 }
 
 export function ActivityTab({ projectId }: ActivityTabProps) {
-  const [cursors, setCursors] = useState<string[]>([])
-  const currentCursor = cursors[cursors.length - 1] as string | undefined
+  const {
+    data,
+    isPending,
+    isError,
+    error,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useProjectActivityInfinite(projectId)
 
-  const { data, isPending } = useProjectActivity(projectId, currentCursor)
+  const allEvents = data?.pages.flatMap((p) => p.events) ?? []
 
-  // Accumulate all loaded events across pages
-  const [previousEvents, setPreviousEvents] = useState<ProjectActivity[]>([])
-
-  const allEvents = currentCursor
-    ? [...previousEvents, ...(data?.events ?? [])]
-    : (data?.events ?? [])
-
-  function handleLoadMore() {
-    if (!data?.nextCursor) return
-    // Save current events before loading next page
-    setPreviousEvents(allEvents)
-    setCursors((prev) => [...prev, data.nextCursor!])
+  if (isPending) {
+    return <ActivityTimelineSkeleton />
   }
 
-  if (isPending && allEvents.length === 0) {
-    return <ActivityTimelineSkeleton />
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center gap-2 py-8 text-sm text-destructive">
+        <p>Failed to load activity</p>
+        <p className="text-xs text-muted-foreground">{error.message}</p>
+      </div>
+    )
   }
 
   return (
     <div className="flex flex-col gap-4">
       <ActivityTimeline events={allEvents} />
 
-      {data?.nextCursor ? (
+      {hasNextPage ? (
         <div className="flex justify-center pb-4">
           <Button
             variant="ghost"
             size="sm"
-            onClick={handleLoadMore}
-            disabled={isPending}
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
             className="text-[12px] text-muted-foreground"
           >
-            {isPending ? "Loading..." : "Load more"}
+            {isFetchingNextPage ? "Loading..." : "Load more"}
           </Button>
         </div>
       ) : null}

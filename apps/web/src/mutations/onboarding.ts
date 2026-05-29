@@ -66,7 +66,7 @@ export function useConfigurePolicies() {
         body: { enabledPolicies },
       }),
 
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: onboardingKeys.state() })
     },
   })
@@ -93,7 +93,7 @@ export function useSaveMonitoringScope() {
         body: { linearProjectIds, linearTeamIds, notionPageIds },
       }),
 
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: onboardingKeys.state() })
     },
   })
@@ -111,7 +111,7 @@ export function useStartSync() {
         method: "POST",
       }),
 
-    onSuccess: () => {
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: onboardingKeys.sync() })
     },
   })
@@ -129,7 +129,7 @@ export function useCompleteOnboarding() {
         method: "POST",
       }),
 
-    onSuccess: () => {
+    onSettled: () => {
       // Update localStorage so route guards know onboarding is done
       setOnboardingCompleted(true)
       queryClient.invalidateQueries({ queryKey: onboardingKeys.state() })

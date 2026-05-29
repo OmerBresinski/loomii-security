@@ -57,7 +57,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { useUpdateProjectIcon } from "@/stores/project-icons"
+import { useUpdateProjectIcon } from "@/mutations/project-icons"
 
 // ─── Available Icons ────────────────────────────────────────────────────────
 

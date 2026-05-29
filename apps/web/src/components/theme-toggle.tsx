@@ -1,9 +1,9 @@
 import { useTheme } from "@/components/theme-provider"
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
 
-  const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)
+  const isDark = resolvedTheme === "dark"
 
   const toggle = () => {
     setTheme(isDark ? "light" : "dark")

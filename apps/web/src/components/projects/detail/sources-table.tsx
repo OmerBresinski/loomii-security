@@ -33,20 +33,9 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
+import { sourceTypeFavicons as sourceFavicons, sourceTypeLabels } from "@/lib/source-constants"
 import type { ProjectSource } from "@/queries/projects"
 import { MoveSourceDialog } from "./move-source-dialog"
-
-// ─── Source Icons & Labels ──────────────────────────────────────────────────
-
-const sourceFavicons: Record<string, string> = {
-  LINEAR_ISSUE: "https://www.google.com/s2/favicons?domain=linear.app&sz=64",
-  NOTION_PAGE: "https://www.google.com/s2/favicons?domain=notion.so&sz=64",
-}
-
-const sourceTypeLabels: Record<string, string> = {
-  LINEAR_ISSUE: "Linear",
-  NOTION_PAGE: "Notion",
-}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -154,6 +143,14 @@ function SourceRow({
   return (
     <>
       <div
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault()
+            if (source.sourceUrl) window.open(source.sourceUrl, "_blank", "noopener,noreferrer")
+          }
+        }}
         className="group flex h-[44px] items-center gap-3 pr-3 pl-[20px] hover:bg-accent/50 dark:hover:bg-[#25262A]/50 cursor-pointer"
         onClick={() => {
           if (source.sourceUrl) window.open(source.sourceUrl, "_blank", "noopener,noreferrer")

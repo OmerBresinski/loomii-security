@@ -14,7 +14,7 @@ import { getLoginUrl } from "@/lib/api-client"
 export default function LoginPage() {
   const { isAuthenticated, isLoading } = useAuth()
   const navigate = useNavigate()
-  const search = useSearch({ strict: false }) as { error?: string }
+  const search = useSearch({ from: "/login" })
 
   // If already authenticated, redirect to /reviews (no flash)
   useEffect(() => {

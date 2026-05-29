@@ -29,7 +29,7 @@ export default function ProjectDetailPage() {
 
   function prefetchOverview() {
     queryClient.prefetchQuery(projectSourcesQueryOptions(projectId))
-    queryClient.prefetchQuery(projectReviewsQueryOptions(projectId))
+    queryClient.prefetchQuery(projectReviewsQueryOptions(projectId, {}))
   }
 
   function prefetchSources() {

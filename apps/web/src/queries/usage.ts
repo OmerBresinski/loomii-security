@@ -37,11 +37,19 @@ export interface DailyUsageResponse {
   daily: DailyUsage[]
 }
 
+// ─── Query Key Factory ──────────────────────────────────────────────────────
+
+export const usageKeys = {
+  all: ["usage"] as const,
+  summary: () => [...usageKeys.all] as const,
+  daily: () => [...usageKeys.all, "daily"] as const,
+}
+
 // ─── Query Options ──────────────────────────────────────────────────────────
 
 export function usageQueryOptions() {
   return queryOptions({
-    queryKey: ["usage"],
+    queryKey: usageKeys.summary(),
     queryFn: ({ signal }) => fetchApi<UsageResponse>("/api/v1/usage", { signal }),
     staleTime: 60_000,
   })
@@ -49,7 +57,7 @@ export function usageQueryOptions() {
 
 export function dailyUsageQueryOptions() {
   return queryOptions({
-    queryKey: ["usage", "daily"],
+    queryKey: usageKeys.daily(),
     queryFn: ({ signal }) => fetchApi<DailyUsageResponse>("/api/v1/usage/daily", { signal }),
     staleTime: 60_000,
   })

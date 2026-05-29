@@ -16,18 +16,7 @@ import {
   type SourceSearchResult,
 } from "@/queries/projects"
 import { useLinkSources } from "@/mutations/projects"
-
-// ─── Source Icons ───────────────────────────────────────────────────────────
-
-const sourceFavicons: Record<string, string> = {
-  LINEAR_ISSUE: "https://www.google.com/s2/favicons?domain=linear.app&sz=64",
-  NOTION_PAGE: "https://www.google.com/s2/favicons?domain=notion.so&sz=64",
-}
-
-const sourceTypeLabels: Record<string, string> = {
-  LINEAR_ISSUE: "Linear",
-  NOTION_PAGE: "Notion",
-}
+import { sourceTypeFavicons as sourceFavicons, sourceTypeLabels } from "@/lib/source-constants"
 
 // ─── Add Sources Dialog ─────────────────────────────────────────────────────
 

@@ -1,9 +1,10 @@
-import { queryOptions, useQuery, keepPreviousData } from "@tanstack/react-query"
+import { queryOptions, infiniteQueryOptions, useQuery, useInfiniteQuery, keepPreviousData } from "@tanstack/react-query"
 import { fetchApi } from "@/lib/api-client"
 import type {
   ProjectListResponse,
   ProjectDetail,
 } from "@loomii/shared"
+import type { ReviewFilters } from "@/queries/reviews"
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -47,11 +48,6 @@ export interface ProjectReview {
 
 export interface ProjectReviewsResponse {
   reviews: ProjectReview[]
-}
-
-export interface ReviewFilters {
-  status?: string[]
-  riskLevel?: string[]
 }
 
 export interface ProjectActivity {
@@ -170,6 +166,23 @@ export function projectActivityQueryOptions(projectId: string, cursor?: string) 
   })
 }
 
+/** Activity feed for a project (infinite query) */
+export function projectActivityInfiniteQueryOptions(projectId: string) {
+  return infiniteQueryOptions({
+    queryKey: projectKeys.activity(projectId),
+    queryFn: ({ signal, pageParam }) => {
+      const params = new URLSearchParams()
+      if (pageParam) params.set("cursor", pageParam)
+      const qs = params.toString()
+      const path = `/api/v1/projects/${projectId}/activity${qs ? `?${qs}` : ""}`
+      return fetchApi<ProjectActivityResponse>(path, { signal })
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    enabled: projectId.length > 0,
+  })
+}
+
 /** Source search – enabled only when query >= 2 chars, stale for 10s */
 export function sourceSearchQueryOptions(query: string, type?: string) {
   const params = new URLSearchParams()
@@ -205,6 +218,10 @@ export function useProjectReviews(projectId: string, filters?: ReviewFilters) {
 
 export function useProjectActivity(projectId: string, cursor?: string) {
   return useQuery(projectActivityQueryOptions(projectId, cursor))
+}
+
+export function useProjectActivityInfinite(projectId: string) {
+  return useInfiniteQuery(projectActivityInfiniteQueryOptions(projectId))
 }
 
 export function useSourceSearch(query: string, type?: string) {

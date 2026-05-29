@@ -7,6 +7,8 @@ import {
 } from "@tanstack/react-router"
 import { z } from "zod"
 import { RootLayout } from "@/components/root-layout"
+import { DefaultErrorComponent } from "@/components/error-boundary"
+import { DefaultNotFoundComponent } from "@/components/not-found"
 import { getSessionToken, getStoredRole, getOnboardingCompleted } from "@/lib/api-client"
 import { queryClient } from "@/lib/query-client"
 import { reviewsInfiniteQueryOptions } from "@/queries/reviews"
@@ -70,15 +72,25 @@ const rootRoute = createRootRoute({
 
 // ─── Public Routes (no auth required) ───────────────────────────────────────
 
+const loginSearchSchema = z.object({
+  error: z.string().optional(),
+})
+
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
+  validateSearch: loginSearchSchema,
   component: lazyRouteComponent(() => import("@/routes/login")),
+})
+
+const authCallbackSearchSchema = z.object({
+  exchange_id: z.string().optional(),
 })
 
 const authCallbackRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/auth/callback",
+  validateSearch: authCallbackSearchSchema,
   component: lazyRouteComponent(() => import("@/routes/auth-callback")),
 })
 
@@ -107,6 +119,7 @@ const reviewsRoute = createRoute({
   path: "/reviews",
   beforeLoad: requireAuth,
   validateSearch: reviewSearchSchema,
+  errorComponent: DefaultErrorComponent,
   loader: ({ search }) => {
     if (!search) return
     queryClient.prefetchInfiniteQuery(reviewsInfiniteQueryOptions({
@@ -139,23 +152,27 @@ const threatsRoute = createRoute({
   component: lazyRouteComponent(() => import("@/routes/threats")),
 })
 
+const settingsSearchSchema = z.object({
+  tab: z.string().optional(),
+})
+
 const settingsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/settings",
   beforeLoad: requireAuth,
-  validateSearch: (search: Record<string, unknown>) => ({
-    tab: (search.tab as string) || undefined,
-  }),
+  validateSearch: settingsSearchSchema,
   component: lazyRouteComponent(() => import("@/routes/settings")),
+})
+
+const notificationsSearchSchema = z.object({
+  filter: z.string().optional(),
 })
 
 const notificationsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/notifications",
   beforeLoad: requireAuth,
-  validateSearch: (search: Record<string, unknown>) => ({
-    filter: (search.filter as string) || undefined,
-  }),
+  validateSearch: notificationsSearchSchema,
   component: lazyRouteComponent(() => import("@/routes/notifications")),
 })
 
@@ -227,14 +244,17 @@ const projectNewRoute = createRoute({
   component: lazyRouteComponent(() => import("@/routes/projects-new")),
 })
 
+const projectDetailSearchSchema = z.object({
+  tab: z.string().optional().default("overview"),
+  review: z.string().optional(),
+})
+
 const projectDetailRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/projects/$projectId",
   beforeLoad: requireAuth,
-  validateSearch: (search: Record<string, unknown>) => ({
-    tab: (search.tab as string) || "overview",
-    review: search.review as string | undefined,
-  }),
+  errorComponent: DefaultErrorComponent,
+  validateSearch: projectDetailSearchSchema,
   loader: ({ params }) => {
     // Prefetch detail, sources, and reviews in parallel (overview is the default tab)
     queryClient.prefetchQuery(projectDetailQueryOptions(params.projectId))
@@ -268,6 +288,8 @@ const routeTree = rootRoute.addChildren([
 export const router = createRouter({
   routeTree,
   defaultPreload: "intent",
+  defaultErrorComponent: DefaultErrorComponent,
+  defaultNotFoundComponent: DefaultNotFoundComponent,
 })
 
 // Register router for type safety

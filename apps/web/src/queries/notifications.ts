@@ -77,6 +77,8 @@ export function notificationsInfiniteQueryOptions(
     },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    getPreviousPageParam: () => undefined,
+    maxPages: 10,
     refetchOnWindowFocus: true,
     staleTime: 5_000,
     placeholderData: keepPreviousData,

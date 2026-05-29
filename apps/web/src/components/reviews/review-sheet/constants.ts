@@ -5,6 +5,11 @@ import {
   Wrench01Icon,
   EyeIcon,
 } from "@hugeicons/core-free-icons"
+import { DISMISSAL_REASONS, type DismissalReason } from "@/types/reviews"
+
+// Re-export for consumers that already import from here
+export { DISMISSAL_REASONS }
+export type { DismissalReason }
 
 // ─── Review Steps ───────────────────────────────────────────────────────────
 
@@ -15,15 +20,6 @@ import {
 // REMOVED: FINDING_STATUSES (old 5-status dropdown deleted)
 
 // ─── Dismissal Reasons (new) ────────────────────────────────────────────────
-
-export const DISMISSAL_REASONS = [
-  "FALSE_POSITIVE",
-  "NOT_APPLICABLE",
-  "DUPLICATE",
-  "ALREADY_MITIGATED",
-] as const
-
-export type DismissalReason = (typeof DISMISSAL_REASONS)[number]
 
 export const dismissalReasonLabels: Record<DismissalReason, string> = {
   FALSE_POSITIVE: "False positive",
@@ -57,13 +53,8 @@ export const findingTypeIcons: Record<string, IconSvgElement> = {
 
 // ─── Risk Labels ────────────────────────────────────────────────────────────
 
-export const riskLabels: Record<string, string> = {
-  CRITICAL: "Critical",
-  HIGH: "High",
-  MEDIUM: "Medium",
-  LOW: "Low",
-  INFO: "Info",
-}
+// Re-export from canonical shared location
+export { riskLabels } from "@/components/shared/risk-icon"
 
 // ─── Severity Labels ────────────────────────────────────────────────────────
 

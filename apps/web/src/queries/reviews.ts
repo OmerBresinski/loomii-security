@@ -75,7 +75,7 @@ export const reviewKeys = {
 
 // ─── Query Options ──────────────────────────────────────────────────────────
 
-function buildQueryParams(filters: ReviewFilters, cursor: string | null): string {
+function buildQueryParams(filters: ReviewFilters, cursor: string | undefined): string {
   const params = new URLSearchParams()
 
   if (filters.status && filters.status.length > 0) {
@@ -104,8 +104,10 @@ export function reviewsInfiniteQueryOptions(filters: ReviewFilters) {
         `/api/v1/reviews${buildQueryParams(filters, pageParam)}`,
         { signal }
       ),
-    initialPageParam: null as string | null,
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+    getPreviousPageParam: () => undefined,
+    maxPages: 10,
     staleTime: 10_000,
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,
