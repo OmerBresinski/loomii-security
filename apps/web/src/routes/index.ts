@@ -17,6 +17,7 @@ import {
   projectDetailQueryOptions,
   projectSourcesQueryOptions,
   projectReviewsQueryOptions,
+  projectActivityInfiniteQueryOptions,
 } from "@/queries/projects"
 import { onboardingStateQueryOptions, monitoringScopeQueryOptions } from "@/queries/onboarding"
 
@@ -255,11 +256,28 @@ const projectDetailRoute = createRoute({
   beforeLoad: requireAuth,
   errorComponent: DefaultErrorComponent,
   validateSearch: projectDetailSearchSchema,
-  loader: ({ params }) => {
-    // Prefetch detail, sources, and reviews in parallel (overview is the default tab)
+  loaderDeps: ({ search }) => ({ tab: search.tab }),
+  loader: ({ params, deps: { tab } }) => {
+    // Always prefetch project detail
     queryClient.prefetchQuery(projectDetailQueryOptions(params.projectId))
-    queryClient.prefetchQuery(projectSourcesQueryOptions(params.projectId))
-    queryClient.prefetchQuery(projectReviewsQueryOptions(params.projectId))
+
+    // Prefetch tab-specific data based on the active tab
+    switch (tab) {
+      case "activity":
+        queryClient.prefetchInfiniteQuery(projectActivityInfiniteQueryOptions(params.projectId))
+        break
+      case "sources":
+        queryClient.prefetchQuery(projectSourcesQueryOptions(params.projectId))
+        break
+      case "reviews":
+        queryClient.prefetchQuery(projectReviewsQueryOptions(params.projectId, {}))
+        break
+      default:
+        // Overview tab — prefetch sources + reviews (shown in summary)
+        queryClient.prefetchQuery(projectSourcesQueryOptions(params.projectId))
+        queryClient.prefetchQuery(projectReviewsQueryOptions(params.projectId, {}))
+        break
+    }
   },
   component: lazyRouteComponent(() => import("@/routes/project-detail")),
 })

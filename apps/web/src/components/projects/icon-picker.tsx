@@ -186,7 +186,7 @@ export function IconPicker({ projectId, icon: currentIcon, color: currentColor, 
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
+      <PopoverTrigger onClick={(e) => e.stopPropagation()} className="appearance-none border-none bg-transparent p-0 cursor-pointer">
         {children}
       </PopoverTrigger>
       <PopoverContent className="w-[320px] bg-[#2C2D30] border-[#3A3B3F] p-0" align="start" onClick={(e) => e.stopPropagation()}>

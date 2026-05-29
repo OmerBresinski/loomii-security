@@ -26,9 +26,9 @@ export function ProjectHeader({ project, isPending }: ProjectHeaderProps) {
     <div className="flex items-center gap-3">
       {/* Project Icon */}
       <IconPicker projectId={project.id} icon={project.icon} color={project.color}>
-        <button className="flex size-8 items-center justify-center rounded-md hover:bg-accent">
+        <div className="flex size-8 items-center justify-center rounded-md hover:bg-accent">
           <ProjectIconDisplay icon={project.icon} color={project.color} size={20} />
-        </button>
+        </div>
       </IconPicker>
 
       {/* Project Name */}

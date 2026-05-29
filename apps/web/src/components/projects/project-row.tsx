@@ -49,7 +49,7 @@ export const ProjectRow = memo(function ProjectRow({ project }: ProjectRowProps)
         icon={project.icon}
         color={project.color}
       >
-        <button
+        <div
           onClick={(e) => e.preventDefault()}
           className="flex shrink-0 items-center justify-center rounded-sm px-[2px] py-[2px] transition-colors duration-100 hover:bg-white/5"
         >
@@ -58,7 +58,7 @@ export const ProjectRow = memo(function ProjectRow({ project }: ProjectRowProps)
             color={project.color}
             size={16}
           />
-        </button>
+        </div>
       </IconPicker>
 
       {/* Name */}

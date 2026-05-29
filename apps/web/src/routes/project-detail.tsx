@@ -1,7 +1,7 @@
 import { getRouteApi, useNavigate } from "@tanstack/react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useProjectDetail, projectReviewsQueryOptions, projectSourcesQueryOptions, projectActivityQueryOptions } from "@/queries/projects"
+import { useProjectDetail, projectReviewsQueryOptions, projectSourcesQueryOptions, projectActivityInfiniteQueryOptions } from "@/queries/projects"
 import { OverviewTab } from "@/components/projects/detail/overview-tab"
 import { ReviewsTab } from "@/components/projects/detail/reviews-tab"
 import { SourcesTab } from "@/components/projects/detail/sources-tab"
@@ -41,7 +41,7 @@ export default function ProjectDetailPage() {
   }
 
   function prefetchActivity() {
-    queryClient.prefetchQuery(projectActivityQueryOptions(projectId))
+    queryClient.prefetchInfiniteQuery(projectActivityInfiniteQueryOptions(projectId))
   }
 
   return (

@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
   Popover,
@@ -50,15 +49,13 @@ export function MultiSelectFilter({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 text-xs">
-          {label}
-          {selected.length > 0 && (
-            <Badge variant="secondary" className="ml-1.5 px-1 py-0 text-[10px] tabular-nums">
-              {selected.length}
-            </Badge>
-          )}
-        </Button>
+      <PopoverTrigger className="group/button inline-flex shrink-0 items-center justify-center rounded-4xl border border-border bg-background text-sm font-medium whitespace-nowrap transition-all outline-none select-none hover:bg-muted hover:text-foreground h-8 gap-1 px-3 text-xs">
+        {label}
+        {selected.length > 0 && (
+          <Badge variant="secondary" className="ml-1.5 px-1 py-0 text-[10px] tabular-nums">
+            {selected.length}
+          </Badge>
+        )}
       </PopoverTrigger>
       <PopoverContent className="w-48 p-0" align="start">
         <Command>
