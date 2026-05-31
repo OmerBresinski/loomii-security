@@ -1,8 +1,24 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/figtree";
-@import "@fontsource-variable/roboto-slab";
+
+/* Self-hosted fonts with font-display: block to prevent FOUT.
+   Files served from /public/fonts — same origin, no swap flash. */
+@font-face {
+  font-family: "Figtree Variable";
+  font-style: normal;
+  font-display: block;
+  font-weight: 300 900;
+  src: url("/fonts/figtree-latin-wght-normal.woff2") format("woff2-variations");
+}
+
+@font-face {
+  font-family: "Roboto Slab Variable";
+  font-style: normal;
+  font-display: block;
+  font-weight: 100 900;
+  src: url("/fonts/roboto-slab-latin-wght-normal.woff2") format("woff2-variations");
+}
 
 @plugin "@tailwindcss/typography";
 
